@@ -1,0 +1,218 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
+import 'package:roomy_finder/models/user.dart';
+
+class PropertyAd {
+  String id;
+  User poster;
+  String type;
+  int quantity;
+  int quantityTaken;
+  String preferedRentType;
+  num monthlyPrice;
+  num weeklyPrice;
+  num dailyPrice;
+  bool deposit;
+  num? depositPrice;
+  String posterType;
+  Map<String, String>? agentInfo;
+  String description;
+  List<String> images;
+  List<String> videos;
+  List<String> amenties;
+  DateTime createdAt;
+  Map<String, Object> address;
+  Map<String, Object> socialPreferences;
+
+  bool get isMine => poster.isMe;
+  bool get isAvailable => quantity != quantityTaken;
+  String get rentAndPriceText => "Rent : $monthlyPrice AED";
+  String get disPlayText => "$quantity $type${quantity > 1 ? "s" : ""} to rent";
+  String get priceText => "$monthlyPrice AED";
+  String? get depositPriceText => deposit ? "Deposit $depositPrice AED" : null;
+  String get locationText {
+    return "${address["city"]}, ${address["location"]}, ${address["buildingName"]}";
+  }
+
+  PropertyAd({
+    required this.id,
+    required this.poster,
+    required this.type,
+    required this.quantity,
+    required this.quantityTaken,
+    required this.preferedRentType,
+    required this.monthlyPrice,
+    required this.weeklyPrice,
+    required this.dailyPrice,
+    required this.deposit,
+    this.depositPrice,
+    required this.posterType,
+    this.agentInfo,
+    required this.description,
+    required this.images,
+    required this.videos,
+    required this.amenties,
+    required this.createdAt,
+    required this.address,
+    required this.socialPreferences,
+  });
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'id': id,
+      'poster': poster.toMap(),
+      'type': type,
+      'quantity': quantity,
+      'quantityTaken': quantityTaken,
+      'preferedRentType': preferedRentType,
+      'monthlyPrice': monthlyPrice,
+      'weeklyPrice': weeklyPrice,
+      'dailyPrice': dailyPrice,
+      'deposit': deposit,
+      'depositPrice': depositPrice,
+      'posterType': posterType,
+      'agentInfo': agentInfo,
+      'description': description,
+      'images': images,
+      'videos': videos,
+      'amenties': amenties,
+      'createdAt': createdAt.toIso8601String(),
+      'address': address,
+      'socialPreferences': socialPreferences,
+    };
+  }
+
+  factory PropertyAd.fromMap(Map<String, dynamic> map) {
+    return PropertyAd(
+      id: map['id'] as String,
+      poster: User.fromMap(map['poster'] as Map<String, dynamic>),
+      type: map['type'] as String,
+      quantity: map['quantity'] as int,
+      quantityTaken: map['quantityTaken'] as int,
+      preferedRentType: map['preferedRentType'] as String,
+      monthlyPrice: map['monthlyPrice'] as num,
+      weeklyPrice: map['weeklyPrice'] as num,
+      dailyPrice: map['dailyPrice'] as num,
+      deposit: map['deposit'] as bool,
+      depositPrice:
+          map['depositPrice'] != null ? map['depositPrice'] as num : null,
+      posterType: map['posterType'] as String,
+      description: map['description'] as String,
+      images: List<String>.from((map['images'] as List)),
+      videos: List<String>.from((map['videos'] as List)),
+      amenties: List<String>.from((map['amenties'] as List)),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      address: Map<String, Object>.from((map['address'] as Map)),
+      agentInfo: map["agentInfo"] == null
+          ? null
+          : Map<String, String>.from((map['agentInfo'] as Map)),
+      socialPreferences:
+          Map<String, Object>.from((map['socialPreferences'] as Map)),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory PropertyAd.fromJson(String source) =>
+      PropertyAd.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  PropertyAd copyWith({
+    String? id,
+    User? poster,
+    String? type,
+    int? quantity,
+    int? quantityTaken,
+    String? preferedRentType,
+    num? monthlyPrice,
+    num? weeklyPrice,
+    num? dailyPrice,
+    bool? deposit,
+    num? depositPrice,
+    String? posterType,
+    String? description,
+    List<String>? images,
+    List<String>? videos,
+    List<String>? amenties,
+    DateTime? createdAt,
+    Map<String, Object>? address,
+    Map<String, Object>? socialPreferences,
+  }) {
+    return PropertyAd(
+      id: id ?? this.id,
+      poster: poster ?? this.poster,
+      type: type ?? this.type,
+      quantity: quantity ?? this.quantity,
+      quantityTaken: quantityTaken ?? this.quantityTaken,
+      preferedRentType: preferedRentType ?? this.preferedRentType,
+      monthlyPrice: monthlyPrice ?? this.monthlyPrice,
+      weeklyPrice: weeklyPrice ?? this.weeklyPrice,
+      dailyPrice: dailyPrice ?? this.dailyPrice,
+      deposit: deposit ?? this.deposit,
+      depositPrice: depositPrice ?? this.depositPrice,
+      posterType: posterType ?? this.posterType,
+      description: description ?? this.description,
+      images: images ?? this.images,
+      videos: videos ?? this.videos,
+      amenties: amenties ?? this.amenties,
+      createdAt: createdAt ?? this.createdAt,
+      address: address ?? this.address,
+      socialPreferences: socialPreferences ?? this.socialPreferences,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'PropertyAd(id: $id, poster: $poster, type: $type, quantity: $quantity, quantityTaken: $quantityTaken, preferedRentType: $preferedRentType, monthlyPrice: $monthlyPrice, weeklyPrice: $weeklyPrice, dailyPrice: $dailyPrice, deposit: $deposit, depositPrice: $depositPrice, posterType: $posterType, description: $description, images: $images, videos: $videos, amenties: $amenties, createdAt: $createdAt, address: $address, socialPreferences: $socialPreferences)';
+  }
+
+  @override
+  bool operator ==(covariant PropertyAd other) {
+    if (identical(this, other)) return true;
+
+    return other.id == id &&
+        other.poster == poster &&
+        other.type == type &&
+        other.quantity == quantity &&
+        other.quantityTaken == quantityTaken &&
+        other.preferedRentType == preferedRentType &&
+        other.monthlyPrice == monthlyPrice &&
+        other.weeklyPrice == weeklyPrice &&
+        other.dailyPrice == dailyPrice &&
+        other.deposit == deposit &&
+        other.depositPrice == depositPrice &&
+        other.posterType == posterType &&
+        other.description == description &&
+        listEquals(other.images, images) &&
+        listEquals(other.videos, videos) &&
+        listEquals(other.amenties, amenties) &&
+        other.createdAt == createdAt &&
+        mapEquals(other.address, address) &&
+        mapEquals(other.socialPreferences, socialPreferences);
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        poster.hashCode ^
+        type.hashCode ^
+        quantity.hashCode ^
+        quantityTaken.hashCode ^
+        preferedRentType.hashCode ^
+        monthlyPrice.hashCode ^
+        weeklyPrice.hashCode ^
+        dailyPrice.hashCode ^
+        deposit.hashCode ^
+        depositPrice.hashCode ^
+        posterType.hashCode ^
+        description.hashCode ^
+        images.hashCode ^
+        videos.hashCode ^
+        amenties.hashCode ^
+        createdAt.hashCode ^
+        address.hashCode ^
+        socialPreferences.hashCode;
+  }
+}
