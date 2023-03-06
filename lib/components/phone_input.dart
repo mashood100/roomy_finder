@@ -44,6 +44,7 @@ class PhoneNumberInput extends StatelessWidget {
         suffixIcon: withSuffixIcon ? const Icon(Icons.phone) : null,
         contentPadding: const EdgeInsets.all(5),
       ),
+      formatInput: false,
     );
   }
 }
