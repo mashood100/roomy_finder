@@ -38,6 +38,18 @@ class PropertyBooking {
   bool get isMine => poster.isMe;
   bool get isOffered => status == 'offered';
   bool get isPending => status == 'pending';
+
+  num get adPricePerRentype {
+    switch (rentType) {
+      case "Monthly":
+        return ad.monthlyPrice;
+      case "Weekly":
+        return ad.weeklyPrice;
+      default:
+        return ad.dailyPrice;
+    }
+  }
+
   num get budget {
     switch (rentType) {
       case "Monthly":

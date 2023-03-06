@@ -11,7 +11,7 @@ import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
-import 'package:roomy_finder/screens/booking/pay_rent.dart';
+// import 'package:roomy_finder/screens/booking/pay_property_booking.dart';
 import 'package:roomy_finder/screens/messages/chat.dart';
 
 class _ViewPropertyBookingScreenController extends LoadingController {
@@ -86,7 +86,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   }
 
   void payRent(PropertyBooking booking) {
-    Get.to(() => PayrentScreen(type: "PROPERTY", ad: booking));
+    // Get.to(() => PayProperyBookingScreen(booking: booking));
   }
 
   Future<void> chatWithClient(PropertyBooking booking) async {
