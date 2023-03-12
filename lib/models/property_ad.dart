@@ -2,6 +2,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:roomy_finder/classes/place_autocomplete.dart';
 
 import 'package:roomy_finder/models/user.dart';
 
@@ -27,14 +29,30 @@ class PropertyAd {
   Map<String, Object> address;
   Map<String, Object> socialPreferences;
 
+  CameraPosition? cameraPosition;
+  PlaceAutoCompletePredicate? autoCompletePredicate;
+
   bool get isMine => poster.isMe;
   bool get isAvailable => quantity != quantityTaken;
-  String get rentAndPriceText => "Rent : $monthlyPrice AED";
   String get disPlayText => "$quantity $type${quantity > 1 ? "s" : ""} to rent";
-  String get priceText => "$monthlyPrice AED";
   String? get depositPriceText => deposit ? "Deposit $depositPrice AED" : null;
   String get locationText {
     return "${address["city"]}, ${address["location"]}, ${address["buildingName"]}";
+  }
+
+  num get monthlyCommission => monthlyPrice * 0.1;
+  num get weeklyCommission => monthlyPrice * 0.1;
+  num get dailyCommission => monthlyPrice * 0.05;
+
+  num get prefferedRentDisplayPrice {
+    switch (preferedRentType) {
+      case "Monthly":
+        return monthlyPrice + monthlyCommission;
+      case "Weekly":
+        return weeklyPrice + weeklyCommission;
+      default:
+        return dailyPrice + dailyCommission;
+    }
   }
 
   PropertyAd({
@@ -58,7 +76,9 @@ class PropertyAd {
     required this.createdAt,
     required this.address,
     required this.socialPreferences,
-  });
+    this.cameraPosition,
+    this.autoCompletePredicate,
+  }) : assert(images.isNotEmpty);
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -82,6 +102,8 @@ class PropertyAd {
       'createdAt': createdAt.toIso8601String(),
       'address': address,
       'socialPreferences': socialPreferences,
+      'cameraPosition': cameraPosition?.toMap(),
+      'autoCompletePredicate': autoCompletePredicate?.toMap(),
     };
   }
 
@@ -111,6 +133,12 @@ class PropertyAd {
           : Map<String, String>.from((map['agentInfo'] as Map)),
       socialPreferences:
           Map<String, Object>.from((map['socialPreferences'] as Map)),
+      cameraPosition: map["cameraPosition"] == null
+          ? null
+          : CameraPosition.fromMap(map["cameraPosition"]),
+      autoCompletePredicate: map["autoCompletePredicate"] == null
+          ? null
+          : PlaceAutoCompletePredicate.fromMap(map["autoCompletePredicate"]),
     );
   }
 
@@ -130,6 +158,7 @@ class PropertyAd {
     num? weeklyPrice,
     num? dailyPrice,
     bool? deposit,
+    bool? isPostPaid,
     num? depositPrice,
     String? posterType,
     String? description,
@@ -213,6 +242,7 @@ class PropertyAd {
         amenties.hashCode ^
         createdAt.hashCode ^
         address.hashCode ^
-        socialPreferences.hashCode;
+        socialPreferences.hashCode ^
+        cameraPosition.hashCode;
   }
 }

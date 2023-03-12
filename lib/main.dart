@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:month_year_picker/month_year_picker.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
@@ -20,10 +21,15 @@ import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
+
 // import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isAndroid) {
+    await AndroidInAppWebViewController.setWebContentsDebuggingEnabled(true);
+  }
 
   // final pref = await SharedPreferences.getInstance();
   // pref.clear();
@@ -45,9 +51,12 @@ void main() async {
   FirebaseMessaging.onMessage.listen((msg) {
     NotificationController.firebaseMessagingHandler(msg);
     if (msg.data["event"] == "new-message") {
+      NotificationController.messageHandler(msg);
       AppController.instance.haveNewMessage(true);
     } else {
-      AppController.instance.haveNewNotification(true);
+      AppController.instance.unreadNotificationCount(
+        AppController.instance.unreadNotificationCount.value + 1,
+      );
     }
   });
 
@@ -73,10 +82,20 @@ void main() async {
       NotificationChannel(
         channelGroupKey: 'notification_channel_group',
         channelKey: 'notification_channel',
-        channelName: 'basic_notifications',
+        channelName: 'Basic notifications',
         channelDescription: 'Room Finder default notification channel',
         defaultColor: Colors.purple,
         importance: NotificationImportance.High,
+        channelShowBadge: true,
+        ledColor: Colors.purple,
+      ),
+      NotificationChannel(
+        channelGroupKey: 'chat_channel_group_key',
+        channelKey: 'chat_channel_key',
+        channelName: 'Chat nottifications channel',
+        channelDescription:
+            'Room Finder chat notifications notification channel',
+        defaultColor: Colors.purple,
         channelShowBadge: true,
         ledColor: Colors.purple,
       ),
@@ -85,6 +104,10 @@ void main() async {
       NotificationChannelGroup(
         channelGroupKey: 'notification_channel_group',
         channelGroupName: 'Notification Group',
+      ),
+      NotificationChannelGroup(
+        channelGroupKey: 'chat_channel_group_key',
+        channelGroupName: 'Chat group notification',
       ),
     ],
     debug: true,
@@ -135,10 +158,19 @@ class MyApp extends StatelessWidget {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         // backgroundColor: Color.fromRGBO(255, 123, 77, 1),
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
+        // showSelectedLabels: false,
+        // showUnselectedLabels: false,
+        unselectedLabelStyle: TextStyle(fontSize: 15),
+        selectedLabelStyle: TextStyle(fontSize: 15),
         type: BottomNavigationBarType.fixed,
-        selectedIconTheme: IconThemeData(color: Colors.purple),
+        selectedIconTheme: IconThemeData(
+          color: Color.fromRGBO(255, 123, 77, 1),
+          size: 30,
+        ),
+        unselectedIconTheme: IconThemeData(
+          color: Color.fromRGBO(255, 123, 77, 1),
+          size: 30,
+        ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         // backgroundColor: Color.fromARGB(255, 1, 31, 56),
@@ -194,10 +226,16 @@ class MyApp extends StatelessWidget {
         // backgroundColor: Color.fromRGBO(255, 123, 77, 1),
         elevation: 3,
         type: BottomNavigationBarType.fixed,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        selectedIconTheme: IconThemeData(color: Colors.purple),
-        selectedLabelStyle: TextStyle(fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontSize: 15),
+        selectedLabelStyle: TextStyle(fontSize: 15),
+        selectedIconTheme: IconThemeData(
+          color: Color.fromRGBO(255, 123, 77, 1),
+          size: 30,
+        ),
+        unselectedIconTheme: IconThemeData(
+          color: Color.fromRGBO(255, 123, 77, 1),
+          size: 30,
+        ),
       ),
 
       dividerTheme: const DividerThemeData(color: Colors.grey),
@@ -281,6 +319,10 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+
+  if (message.data["event"] == "new-message") {
+    NotificationController.messageHandler(message);
+  }
 
   NotificationController.firebaseMessagingHandler(message);
 }

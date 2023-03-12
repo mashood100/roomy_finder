@@ -288,7 +288,7 @@ const unitedArabEmiteCities = [
   "Sharjah",
   "Umm al-Quwain",
   "Fujairah",
-  "Ajam",
+  "Ajman",
 ];
 var unitedArabEmiteLocations = [
   ...dubaiCities,

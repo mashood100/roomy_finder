@@ -1,35 +1,45 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 
-import 'package:flutter_credit_card/flutter_credit_card.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:jiffy/jiffy.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import "package:path/path.dart" as path;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_credit_card/flutter_credit_card.dart';
 import 'package:flutter_switch/flutter_switch.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
-import 'package:roomy_finder/components/label.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/data/cities.dart';
-import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/screens/utility_screens/google_map.dart';
+// import 'package:roomy_finder/screens/utility_screens/google_map.dart';
 import 'package:uuid/uuid.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/components/alert.dart';
+import 'package:roomy_finder/classes/place_autocomplete.dart';
+import 'package:roomy_finder/components/label.dart';
+import 'package:roomy_finder/components/place_seach_delagate.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 
 class _PostRoommateAdController extends LoadingController {
   final bool isPremium;
   final RoommateAd? oldData;
+
+  CameraPosition? cameraPosition;
+  PlaceAutoCompletePredicate? autoCompletePredicate;
 
   _PostRoommateAdController({required this.isPremium, this.oldData});
 
@@ -47,6 +57,8 @@ class _PostRoommateAdController extends LoadingController {
   // Information
   final oldImages = <String>[].obs;
   final images = <XFile>[].obs;
+
+  final oldVideos = <String>[].obs;
   final videos = <XFile>[].obs;
   final interests = <String>[].obs;
   final languages = <String>[].obs;
@@ -96,36 +108,13 @@ class _PostRoommateAdController extends LoadingController {
     "cvvCode": "",
   }.obs;
 
-  List<String> get _areasBasedOnCity {
-    switch (address["city"]) {
-      case "Dubai":
-        return dubaiCities;
-      case "Abu Dhabi":
-        return abuDahbiCities;
-      case "Sharjah":
-        return sharjahCities;
-      case "Umm al-Quwain":
-      case "Fujairah":
-      case "Ajam":
-        return [...jeddahCities, ...meccaCities, ...riyadhCities];
-      default:
-        return [
-          ...jeddahCities,
-          ...meccaCities,
-          ...riyadhCities,
-          ...dubaiCities,
-          ...abuDahbiCities,
-          ...sharjahCities,
-        ];
-    }
-  }
-
   @override
   void onInit() {
     _pageController = PageController();
 
     if (oldData != null) {
       oldImages.addAll(oldData!.images);
+      oldVideos.addAll(oldData!.videos);
 
       information["type"] = oldData!.type;
       information["rentType"] = oldData!.rentType;
@@ -151,6 +140,9 @@ class _PostRoommateAdController extends LoadingController {
           List<String>.from(oldData!.aboutYou["languages"] as List);
       interests.value =
           List<String>.from(oldData!.aboutYou["interests"] as List);
+
+      cameraPosition = oldData?.cameraPosition;
+      autoCompletePredicate = oldData?.autoCompletePredicate;
 
       socialPreferences.value = oldData!.socialPreferences;
     }
@@ -207,6 +199,28 @@ class _PostRoommateAdController extends LoadingController {
     }
   }
 
+  Future<void> _pickVideo() async {
+    if (videos.length >= 10) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      final data = await picker.pickVideo(source: ImageSource.gallery);
+      if (data != null) {
+        videos.add(data);
+      }
+    } catch (e) {
+      Get.log("$e");
+      showGetSnackbar('someThingWhenWrong'.tr, severity: Severity.error);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  void _playVideo(String source, bool isAsset) {
+    Get.to(() => PlayVideoScreen(source: source, isAsset: isAsset));
+  }
+
   Future<void> saveAd() async {
     isLoading(true);
 
@@ -223,6 +237,8 @@ class _PostRoommateAdController extends LoadingController {
         "address": address,
         "aboutYou": aboutYou,
         "socialPreferences": socialPreferences,
+        "cameraPosition": cameraPosition?.toMap(),
+        "autoCompletePredicate": autoCompletePredicate?.toMap(),
       };
 
       final imagesTaskFuture = images.map((e) async {
@@ -527,7 +543,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                               ),
                               validator: (value) {
                                 if (value == null ||
-                                    value == "Please choose choose a date") {
+                                    value == "Please choose a date") {
                                   return 'thisFieldIsRequired'.tr;
                                 }
 
@@ -542,7 +558,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                               textFieldConfiguration: TextFieldConfiguration(
                                 controller: controller._cityController,
                                 decoration: InputDecoration(
-                                  hintText: 'city'.tr,
+                                  hintText: 'Example : Dubai'.tr,
                                 ),
                               ),
                               itemBuilder: (context, itemData) {
@@ -557,10 +573,13 @@ class PostRoomateAdScreen extends StatelessWidget {
                               },
                               suggestionsCallback: (pattern) {
                                 return unitedArabEmiteCities.where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
+                                  (e) {
+                                    final lowerPattern =
+                                        pattern.toLowerCase().trim();
+                                    final lowerSearch = e.toLowerCase().trim();
+                                    return lowerSearch.contains(lowerPattern) ||
+                                        lowerSearch == lowerPattern;
+                                  },
                                 );
                               },
                               validator: (value) {
@@ -580,45 +599,85 @@ class PostRoomateAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             // Location
                             Text('location'.tr),
-                            TypeAheadFormField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._locationController,
-                                decoration: InputDecoration(
-                                  hintText: 'location'.tr,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Card(
+                                    child: TextFormField(
+                                      readOnly: true,
+                                      controller:
+                                          controller._locationController,
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            '20 Dhabyan Street - Abu Dhabi',
+                                        suffixIcon: IconButton(
+                                          onPressed: controller
+                                                  ._locationController
+                                                  .text
+                                                  .isEmpty
+                                              ? null
+                                              : () {
+                                                  controller
+                                                      .address["location"] = "";
+                                                  controller._locationController
+                                                      .clear();
+                                                },
+                                          icon: const Icon(Icons.clear),
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'thisFieldIsRequired'.tr;
+                                        }
+                                        return null;
+                                      },
+                                      onSaved: (newValue) {
+                                        if (newValue != null) {
+                                          controller.address["location"] =
+                                              newValue;
+                                          controller._locationController.text =
+                                              newValue;
+                                        }
+                                      },
+                                      onTap: () async {
+                                        final result = await showSearch(
+                                          context: context,
+                                          delegate: PlaceSearchDelegate(
+                                            initialstring: controller
+                                                ._locationController.text,
+                                          ),
+                                        );
+
+                                        if (result
+                                            is PlaceAutoCompletePredicate) {
+                                          controller.address["location"] =
+                                              result.mainText;
+                                          controller._locationController.text =
+                                              result.mainText;
+                                          controller.autoCompletePredicate =
+                                              result;
+                                        }
+                                      },
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["location"] = suggestion;
-                                controller._locationController.text =
-                                    suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return controller._areasBasedOnCity.where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
-                                );
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              onSaved: (newValue) {
-                                if (newValue != null) {
-                                  controller.address["location"] = newValue;
-                                  controller._locationController.text =
-                                      newValue;
-                                }
-                              },
+                                // Card(
+                                //   child: Padding(
+                                //     padding: const EdgeInsets.all(2),
+                                //     child: IconButton(
+                                //       onPressed: () async {
+                                //         final res = await Get.to(() =>
+                                //             const FlutterGoogleMapScreen());
+                                //         Get.log("$res");
+                                //       },
+                                //       icon: const Icon(
+                                //         Icons.room_outlined,
+                                //         color: Colors.blue,
+                                //       ),
+                                //     ),
+                                //   ),
+                                // ),
+                              ],
                             ),
 
                             const SizedBox(height: 10),
@@ -629,8 +688,8 @@ class PostRoomateAdScreen extends StatelessWidget {
                               initialValue:
                                   controller.address["buildingName"] as String,
                               enabled: controller.isLoading.isFalse,
-                              decoration:
-                                  InputDecoration(hintText: 'buildingName'.tr),
+                              decoration: InputDecoration(
+                                  hintText: 'Your property building'.tr),
                               onChanged: (value) =>
                                   controller.address["buildingName"] = value,
                               validator: (value) {
@@ -649,7 +708,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                                   .information["description"] as String,
                               enabled: controller.isLoading.isFalse,
                               decoration: InputDecoration(
-                                hintText: 'description'.tr,
+                                hintText: 'Add your add description here'.tr,
                               ),
                               onChanged: (value) =>
                                   controller.information["description"] = value,
@@ -663,6 +722,104 @@ class PostRoomateAdScreen extends StatelessWidget {
                               maxLines: 5,
                               maxLength: 500,
                             ),
+
+                            // GetBuilder<_PostRoommateAdController>(
+                            //     builder: (controller) {
+                            //   return Row(
+                            //     children: [
+                            //       if (controller.cameraPosition == null)
+                            //         Expanded(
+                            //           child: Padding(
+                            //             padding: const EdgeInsets.symmetric(
+                            //                 horizontal: 5),
+                            //             child: ElevatedButton.icon(
+                            //               style: ElevatedButton.styleFrom(
+                            //                 backgroundColor: Colors.blue,
+                            //               ),
+                            //               onPressed: () async {
+                            //                 final pos = await Get.to(
+                            //                   () => FlutterGoogleMapScreen(
+                            //                     initialPosition:
+                            //                         controller.cameraPosition,
+                            //                   ),
+                            //                 );
+
+                            //                 if (pos is CameraPosition) {
+                            //                   controller.cameraPosition = pos;
+                            //                   controller.update();
+                            //                 }
+                            //               },
+                            //               icon: const Icon(
+                            //                 Icons.map,
+                            //                 color: Colors.white,
+                            //               ),
+                            //               label: const Text('Add map location',
+                            //                   style: TextStyle(
+                            //                     color: Colors.white,
+                            //                   )),
+                            //             ),
+                            //           ),
+                            //         ),
+                            //       if (controller.cameraPosition != null)
+                            //         Expanded(
+                            //           child: Padding(
+                            //             padding: const EdgeInsets.symmetric(
+                            //                 horizontal: 5),
+                            //             child: ElevatedButton.icon(
+                            //               style: ElevatedButton.styleFrom(
+                            //                 backgroundColor: Colors.red,
+                            //               ),
+                            //               onPressed: () async {
+                            //                 controller.cameraPosition = null;
+                            //                 controller.update();
+                            //               },
+                            //               icon: const Icon(
+                            //                 Icons.map,
+                            //                 color: Colors.white,
+                            //               ),
+                            //               label: const Text(
+                            //                 "Remove map",
+                            //                 style: TextStyle(
+                            //                   color: Colors.white,
+                            //                 ),
+                            //               ),
+                            //             ),
+                            //           ),
+                            //         ),
+                            //       if (controller.cameraPosition != null)
+                            //         Expanded(
+                            //           child: Padding(
+                            //             padding: const EdgeInsets.symmetric(
+                            //                 horizontal: 5),
+                            //             child: ElevatedButton.icon(
+                            //               style: ElevatedButton.styleFrom(
+                            //                 backgroundColor: Colors.blue,
+                            //               ),
+                            //               onPressed: () {
+                            //                 Get.to(() => FlutterGoogleMapScreen(
+                            //                       initialPosition:
+                            //                           controller.cameraPosition,
+                            //                     ));
+                            //               },
+                            //               icon: const Icon(
+                            //                 Icons.visibility,
+                            //                 color: Colors.white,
+                            //               ),
+                            //               label: GetBuilder<
+                            //                       _PostRoommateAdController>(
+                            //                   builder: (controller) {
+                            //                 return const Text("View location",
+                            //                     style: TextStyle(
+                            //                       color: Colors.white,
+                            //                     ));
+                            //               }),
+                            //             ),
+                            //           ),
+                            //         ),
+                            //     ],
+                            //   );
+                            // }),
+                            // const SizedBox(height: 10),
 
                             /// Address
                             Center(child: Text("aboutYou".tr)),
@@ -784,7 +941,10 @@ class PostRoomateAdScreen extends StatelessWidget {
                                           ));
                                     }).toList(),
                                     IconButton(
-                                      onPressed: controller.addLangues,
+                                      onPressed: () {
+                                        FocusScope.of(context).unfocus();
+                                        controller.addLangues();
+                                      },
                                       icon: const Icon(Icons.add_circle),
                                     )
                                   ],
@@ -799,101 +959,97 @@ class PostRoomateAdScreen extends StatelessWidget {
                     ),
 
                     // Images/Videos
+
                     SingleChildScrollView(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-                          Alert(
-                            text: "Help everyone imagine What it's like "
-                                    "to live at your property upload clear"
-                                    " photo and video of your property"
-                                .tr,
-                          ),
-                          const SizedBox(height: 10),
-                          if (controller.oldImages.isNotEmpty)
-                            Text("Old Images".tr),
-                          if (controller.oldImages.isNotEmpty)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: controller.oldImages
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                                width: 1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                            margin: const EdgeInsets.all(5),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              child: Image.network(
-                                                e,
-                                                height: 300,
-                                              ),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              controller.oldImages.remove(e);
-                                            },
-                                            child: const Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red,
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
+                          Center(
+                            child: Text(
+                              "Images and videos".tr,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
                             ),
-                          Text("images".tr),
-                          if (controller.images.isEmpty)
+                          ),
+                          if (controller.images.isEmpty &&
+                              controller.oldImages.isEmpty &&
+                              controller.videos.isEmpty &&
+                              controller.oldVideos.isEmpty)
                             Card(
                               child: Container(
+                                alignment: Alignment.center,
                                 padding: const EdgeInsets.all(10),
-                                height: 100,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(),
-                                      icon: const Icon(Icons.image),
-                                      label: Text("pictures".tr),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(
-                                              gallery: false),
-                                      icon: const Icon(Icons.camera),
-                                      label: Text("camera".tr),
-                                    ),
-                                  ],
+                                height: 150,
+                                child: const Text(
+                                  "Help everyone imagine What it's like "
+                                  "to live at your property upload clear"
+                                  " photo and video of your property",
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
-                            )
-                          else
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: controller.images
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          Container(
+                            ),
+                          if (controller.images.length +
+                                  controller.oldImages.length !=
+                              0)
+                            GridView.count(
+                              crossAxisCount: Get.width > 370 ? 4 : 2,
+                              crossAxisSpacing: 10,
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              children: [
+                                ...controller.oldImages.map((e) {
+                                  return {
+                                    "onTap": () =>
+                                        controller.oldImages.remove(e),
+                                    "imageUrl": e,
+                                    "isFile": false,
+                                    "onViewImage": () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: Get.context!,
+                                        builder: (context) {
+                                          return SafeArea(
+                                            child: CachedNetworkImage(
+                                              imageUrl: e,
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                  };
+                                }),
+                                ...controller.images.map((e) {
+                                  return {
+                                    "onTap": () => controller.images.remove(e),
+                                    "imageUrl": e.path,
+                                    "isFile": true,
+                                    "onViewImage": () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: Get.context!,
+                                        builder: (context) {
+                                          return SafeArea(
+                                            child: Image.file(File(e.path)),
+                                          );
+                                        },
+                                      );
+                                    }
+                                  };
+                                }),
+                              ]
+                                  .map(
+                                    (e) => Stack(
+                                      alignment: Alignment.topRight,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: e["onViewImage"] as void
+                                              Function()?,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: double.infinity,
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: Colors.grey,
@@ -906,47 +1062,168 @@ class PostRoomateAdScreen extends StatelessWidget {
                                             child: ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(5),
-                                              child: Image.file(
-                                                File(e.path),
-                                                height: 300,
-                                              ),
+                                              child:
+                                                  Builder(builder: (context) {
+                                                if (e["isFile"] == true) {
+                                                  return Image.file(
+                                                    File("${e["imageUrl"]}"),
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                }
+                                                return CachedNetworkImage(
+                                                  imageUrl: "${e["imageUrl"]}",
+                                                  fit: BoxFit.cover,
+                                                );
+                                              }),
                                             ),
                                           ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              controller.images.remove(e);
-                                            },
+                                        ),
+                                        GestureDetector(
+                                          onTap: e["onTap"] as void Function()?,
+                                          child: const Icon(
+                                            Icons.remove_circle,
+                                            color: Colors.red,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          if (controller.videos.length +
+                                  controller.oldVideos.length !=
+                              0)
+                            GridView.count(
+                              crossAxisCount: Get.width > 370 ? 4 : 2,
+                              crossAxisSpacing: 10,
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              children: [
+                                ...controller.oldVideos.map((e) {
+                                  return {
+                                    "onTap": () =>
+                                        controller.oldVideos.remove(e),
+                                    "onPlayVideo": () {
+                                      controller._playVideo(e, false);
+                                    },
+                                    "url": e,
+                                    "isFile": false,
+                                  };
+                                }),
+                                ...controller.videos.map((e) {
+                                  return {
+                                    "onTap": () => controller.videos.remove(e),
+                                    "onPlayVideo": () {
+                                      controller._playVideo(e.path, false);
+                                    },
+                                    "url": e.path,
+                                    "isFile": true,
+                                  };
+                                }),
+                              ]
+                                  .map(
+                                    (e) => Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                              width: 1,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          margin: const EdgeInsets.all(5),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            child: Builder(builder: (context) {
+                                              if (e["isFile"] == true) {
+                                                return FutureBuilder(
+                                                  builder: (ctx, asp) {
+                                                    if (asp.hasData) {
+                                                      return Image.memory(
+                                                        asp.data!,
+                                                        fit: BoxFit.cover,
+                                                        alignment:
+                                                            Alignment.center,
+                                                      );
+                                                    }
+                                                    return Container();
+                                                  },
+                                                  future: VideoThumbnail
+                                                      .thumbnailData(
+                                                    video: "${e["url"]}",
+                                                  ),
+                                                );
+                                              }
+                                              return FutureBuilder(
+                                                builder: (ctx, asp) {
+                                                  if (asp.hasData) {
+                                                    return Image.file(
+                                                      File("${asp.data}"),
+                                                      fit: BoxFit.cover,
+                                                      alignment:
+                                                          Alignment.center,
+                                                    );
+                                                  }
+                                                  return Container();
+                                                },
+                                                future: VideoThumbnail
+                                                    .thumbnailFile(
+                                                  video: "${e["url"]}",
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: e["onPlayVideo"] as void
+                                              Function()?,
+                                          child: const Icon(
+                                            Icons.play_arrow,
+                                            size: 40,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: GestureDetector(
+                                            onTap:
+                                                e["onTap"] as void Function()?,
                                             child: const Icon(
                                               Icons.remove_circle,
                                               color: Colors.red,
                                             ),
-                                          )
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
                             ),
-                          if (controller.images.isNotEmpty &&
-                              controller.images.length < 10)
-                            const SizedBox(height: 10),
-                          if (controller.images.isNotEmpty &&
-                              controller.images.length < 10)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                SizedBox(
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
                                   height: 35,
                                   child: ElevatedButton.icon(
                                     onPressed: controller.images.length >= 10
                                         ? null
                                         : () => controller._pickPicture(),
                                     icon: const Icon(Icons.image),
-                                    label: Text("pictures".tr),
+                                    label: Text("Images".tr),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                SizedBox(
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: SizedBox(
                                   height: 35,
                                   child: ElevatedButton.icon(
                                     onPressed: controller.images.length >= 10
@@ -957,8 +1234,23 @@ class PostRoomateAdScreen extends StatelessWidget {
                                     label: Text("camera".tr),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 35,
+                                  child: ElevatedButton.icon(
+                                    onPressed: controller.images.length >= 10
+                                        ? null
+                                        : controller._pickVideo,
+                                    icon: const Icon(Icons.video_camera_back),
+                                    label: Text("Videos".tr),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
                           const SizedBox(height: 50),
                         ],
                       ),

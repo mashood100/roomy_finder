@@ -1,5 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
+// const SERVER_URL = "http://192.168.43.128:39005";
 // const SERVER_URL = "http://192.168.43.34:39005";
 const SERVER_URL = "http://roomyfinder.ap-1.evennode.com";
 
@@ -24,3 +25,6 @@ const TERMS_AND_CONDITIONS_LINK = "$SERVER_URL/public/terms-and-conditions";
 const FEED_BACK_LINK = "$SERVER_URL/public/feedback";
 
 const SHARE_APP_LINK = "https://roomfinder.page.link/share";
+
+// Google cloud
+const GOOGLE_CLOUD_API_KEY = "AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8";

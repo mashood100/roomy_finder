@@ -4,14 +4,14 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/models/message.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user.dart' as app_user;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class ChatConversation {
-  final List<Message> messages;
-  final User me;
-  final User friend;
+  final app_user.User me;
+  final app_user.User friend;
+  final List<types.Message> messages;
   final DateTime createdAt;
 
   ChatConversation({
@@ -30,25 +30,14 @@ class ChatConversation {
         messages = [];
 
   String get key => "$conversationsKey${me.id}#${friend.id}";
-  int get hasUreadMessages => messages.where((e) => e.isRead == false).length;
+  int get hasUreadMessages => messages.where((e) => false).length;
 
-  void newMessageFromContent(String content, bool byMe) {
-    final msg = Message.fomNow(content: content, sender: byMe ? me : friend);
-
-    if (!messages.contains(msg)) {
-      messages.add(msg);
-      saveChat();
-      addUserConversationKeyToStorage(key);
-    }
+  void newMessage(types.Message msg) {
+    if (messages.contains(msg)) messages.remove(msg);
+    messages.insert(0, msg);
+    saveChat();
+    addUserConversationKeyToStorage(key);
   }
-
-  // void newMessage(Message msg) {
-  //   if (!messages.contains(msg)) {
-  //     messages.add(msg);
-  //     saveChat();
-  //     addUserConversationKeyToStorage(key);
-  //   }
-  // }
 
   static String createConvsertionKey(String myId, String frienId) {
     return "$conversationsKey$myId#$frienId";
@@ -72,8 +61,9 @@ class ChatConversation {
     try {
       final pref = await SharedPreferences.getInstance();
       pref.setString(key, toJson());
-    } catch (e) {
-      Get.log("e");
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
     }
   }
 
@@ -83,8 +73,9 @@ class ChatConversation {
       final source = pref.getString(key);
       if (source == null) return null;
       return ChatConversation.fromJson(source);
-    } catch (e) {
-      Get.log("e");
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
       return null;
     }
   }
@@ -94,8 +85,9 @@ class ChatConversation {
       final pref = await SharedPreferences.getInstance();
       pref.remove(key);
       return true;
-    } catch (e) {
-      Get.log("e");
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
       return false;
     }
   }
@@ -129,7 +121,7 @@ class ChatConversation {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'messages': messages.map((x) => x.toMap()).toList(),
+      'messages': messages.map((x) => x.toJson()).toList(),
       'me': me.toMap(),
       'friend': friend.toMap(),
       'createdAt': createdAt.toIso8601String(),
@@ -138,18 +130,20 @@ class ChatConversation {
 
   factory ChatConversation.fromMap(Map<String, dynamic> map) {
     return ChatConversation(
-      messages: List<Message>.from(
-        (map['messages'] as List).map<Message>(
-          (x) => Message.fromMap(x as Map<String, dynamic>),
+      messages: List<types.Message>.from(
+        (map['messages'] as List).map<types.Message>(
+          (x) => types.Message.fromJson(x as Map<String, dynamic>),
         ),
       ),
-      me: User.fromMap(map['me'] as Map<String, dynamic>),
-      friend: User.fromMap(map['friend'] as Map<String, dynamic>),
+      me: app_user.User.fromMap(map['me'] as Map<String, dynamic>),
+      friend: app_user.User.fromMap(map['friend'] as Map<String, dynamic>),
       createdAt: DateTime.parse(map['createdAt']),
     );
   }
 
-  String toJson() => json.encode(toMap());
+  String toJson() {
+    return json.encode(toMap());
+  }
 
   factory ChatConversation.fromJson(String source) =>
       ChatConversation.fromMap(json.decode(source) as Map<String, dynamic>);

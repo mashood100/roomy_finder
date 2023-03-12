@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:roomy_finder/models/property_ad.dart';
@@ -15,9 +14,9 @@ class PropertyBooking {
   DateTime checkOut;
   String rentType;
   bool isPayed;
-  DateTime? lastPaymentDate;
-  DateTime? lastTransactionId;
   DateTime createdAt;
+  String? paymentService;
+  String? transactionId;
 
   PropertyBooking({
     required this.id,
@@ -30,15 +29,16 @@ class PropertyBooking {
     required this.checkOut,
     required this.rentType,
     required this.isPayed,
-    this.lastPaymentDate,
-    this.lastTransactionId,
     required this.createdAt,
+    this.paymentService,
+    this.transactionId,
   });
 
   bool get isMine => poster.isMe;
   bool get isOffered => status == 'offered';
   bool get isPending => status == 'pending';
 
+  /// The price of the ad with to the renttype choosen
   num get adPricePerRentype {
     switch (rentType) {
       case "Monthly":
@@ -50,16 +50,91 @@ class PropertyBooking {
     }
   }
 
-  num get budget {
+  /// The total renting fee of the booking (depends on the quantity
+  /// booked and rent duration)
+  num get rentFee {
+    final num fee;
     switch (rentType) {
       case "Monthly":
-        return ad.monthlyPrice * quantity;
+        fee = ad.monthlyPrice * quantity * rentPeriod;
+        break;
       case "Weekly":
-        return ad.weeklyPrice * quantity;
+        fee = ad.weeklyPrice * quantity * rentPeriod;
+        break;
       default:
-        return ad.dailyPrice * quantity;
+        fee = ad.dailyPrice * quantity * rentPeriod;
+    }
+    return fee;
+  }
+
+  /// Commission fee (10% of rent fee[rentFee])
+  num get commissionFee {
+    switch (rentType) {
+      case "Monthly":
+      case "Weekly":
+        return rentFee * 0.1;
+      default:
+        return rentFee * 0.05;
     }
   }
+
+  /// TAV (5% of commission fee [commissionFee])
+  num get vatFee => commissionFee * 0.05;
+
+  /// The sum of the rent fee and the commission fee
+  num get displayPrice => rentFee + commissionFee;
+
+  num calculateFee(num percentage) {
+    return (rentFee + commissionFee + vatFee) * percentage;
+  }
+
+  /// The number of periods(days,weeks,monyhs) the rent will last
+  int get rentPeriod {
+    // The difference in milliseconds between the checkout and the checkin date
+    final checkOutCheckInMillisecondsDifference =
+        checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+
+    final int period;
+
+    switch (rentType) {
+      case "Monthly":
+        const oneMothDuration = 1000 * 3600 * 24 * 30;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneMothDuration).ceil();
+
+        break;
+      case "Weekly":
+        const oneWeekDuration = 1000 * 3600 * 24 * 7;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneWeekDuration).ceil();
+        break;
+      default:
+        const oneDayDuration = 1000 * 3600 * 24;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneDayDuration).ceil();
+        break;
+    }
+
+    return period;
+  }
+
+  String get rentPeriodUnit {
+    final String rentPeriodUnit;
+    switch (rentType) {
+      case "Monthly":
+        rentPeriodUnit = "Month";
+        break;
+      case "Weekly":
+        rentPeriodUnit = "Week";
+        break;
+      default:
+        rentPeriodUnit = "Day";
+    }
+    return rentPeriodUnit;
+  }
+
+  String get capitaliezedStatus =>
+      status.replaceFirst(status[0], status[0].toUpperCase());
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -73,9 +148,9 @@ class PropertyBooking {
       'checkOut': checkOut.toIso8601String(),
       'rentType': rentType,
       'isPayed': isPayed,
-      'lastPaymentDate': lastPaymentDate?.toIso8601String(),
-      'lastTransactionId': lastTransactionId?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+      'paymentService': paymentService,
+      'transactionId': transactionId,
     };
   }
 
@@ -91,19 +166,17 @@ class PropertyBooking {
       checkOut: DateTime.parse(map['checkOut'] as String),
       rentType: map['rentType'] as String,
       isPayed: map['isPayed'] as bool,
-      lastPaymentDate: map['lastPaymentDate'] != null
-          ? DateTime.parse(map['lastPaymentDate'] as String)
-          : null,
-      lastTransactionId: map['lastTransactionId'] != null
-          ? DateTime.parse(map['lastTransactionId'] as String)
-          : null,
       createdAt: DateTime.parse(map['createdAt'] as String),
+      paymentService: map['paymentService'] != null
+          ? map['paymentService'] as String
+          : null,
+      transactionId:
+          map['transactionId'] != null ? map['transactionId'] as String : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  // ignore: unused_element
   factory PropertyBooking.fromJson(String source) =>
       PropertyBooking.fromMap(json.decode(source) as Map<String, dynamic>);
 
@@ -117,10 +190,5 @@ class PropertyBooking {
   @override
   int get hashCode {
     return id.hashCode;
-  }
-
-  @override
-  String toString() {
-    return 'PropertyBooking(id: $id, ad: $ad, poster: $poster, client: $client, quantity: $quantity, status: $status, checkIn: $checkIn, checkOut: $checkOut, rentType: $rentType, isPayed: $isPayed, lastPaymentDate: $lastPaymentDate, lastTransactionId: $lastTransactionId, createdAt: $createdAt)';
   }
 }

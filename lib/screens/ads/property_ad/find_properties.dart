@@ -37,13 +37,20 @@ class _FindPropertiesController extends LoadingController {
         queryParameters: query,
       );
 
-      final data = (res.data as List).map((e) => PropertyAd.fromMap(e));
+      final data = (res.data as List).map((e) {
+        try {
+          var propertyAd = PropertyAd.fromMap(e);
+          return propertyAd;
+        } catch (e) {
+          return null;
+        }
+      });
 
       if (isReFresh) {
         ads.clear();
         _skip = 0;
       }
-      ads.addAll(data);
+      ads.addAll(data.whereType<PropertyAd>());
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -117,7 +124,10 @@ class FindPropertiesAdsScreen extends StatelessWidget {
               final ad = controller.ads[index];
               return PropertyAdWidget(
                 ad: ad,
-                onTap: () => Get.to(() => ViewPropertyAd(ad: ad)),
+                onTap: () async {
+                  await Get.to(() => ViewPropertyAd(ad: ad));
+                  controller.update();
+                },
               );
             },
             itemCount: controller.ads.length + 1,

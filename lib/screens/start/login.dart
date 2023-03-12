@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +34,9 @@ class _LoginController extends LoadingController {
       final data = {
         'email': _emailController.text,
         "password": _passwordController.text,
-        "fcmToken": await FirebaseMessaging.instance.getToken(),
+        "fcmToken": Platform.isIOS
+            ? await FirebaseMessaging.instance.getAPNSToken()
+            : await FirebaseMessaging.instance.getToken(),
       };
 
       final res = await dio.post("/auth/login", data: data);
@@ -114,103 +118,167 @@ class LoginScreen extends StatelessWidget {
     final controller = Get.put(_LoginController());
     return Obx(() {
       return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: const Text("Login"),
-        ),
+        appBar: AppBar(toolbarHeight: 0),
         body: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: controller.formkey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      Text('email'.tr),
-                      TextFormField(
-                        controller: controller._emailController,
-                        decoration: InputDecoration(
-                          suffixIcon: const Icon(CupertinoIcons.mail),
-                          hintText: "emailAddress".tr,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'thisFieldIsRequired'.tr;
-                          }
-
-                          if (!value.isEmail) return 'invalidEmail'.tr;
-
-                          return null;
-                        },
-                        keyboardType: TextInputType.emailAddress,
+            SingleChildScrollView(
+              child: Form(
+                key: controller.formkey,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.only(
+                        bottom: 25,
+                        left: 5,
                       ),
-                      const SizedBox(height: 10),
-                      Text('password'.tr),
-                      TextFormField(
-                        obscureText: controller.showPassword.isFalse,
-                        controller: controller._passwordController,
-                        decoration: InputDecoration(
-                          hintText: "enterYourPassword".tr,
-                          suffixIcon: IconButton(
-                            onPressed: controller.showPassword.toggle,
-                            icon: controller.showPassword.isTrue
-                                ? const Icon(CupertinoIcons.eye_slash_fill)
-                                : const Icon(CupertinoIcons.eye_fill),
-                          ),
+                      decoration: BoxDecoration(
+                        color: Get.theme.appBarTheme.backgroundColor,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'thisFieldIsRequired'.tr;
-                          }
-
-                          return null;
-                        },
-                        keyboardType: TextInputType.visiblePassword,
                       ),
-                      const SizedBox(height: 20),
-                      Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("rememberMe".tr),
-                          Checkbox(
-                            value: controller.rememberMe.isTrue,
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (_) => controller.rememberMe.toggle(),
+                          Row(
+                            children: const [
+                              BackButton(color: Colors.white),
+                              SizedBox(width: 10),
+                              Text(
+                                "Welcome Back!",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () => Get.toNamed('/reset_password'),
-                            child: Text('forgotPassword'.tr),
-                          )
+                          const SizedBox(height: 10),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              "Please sign in to continue",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 60),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : controller._login,
-                          child: Text("login".tr),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text("dontHaveAnAccount".tr),
-                          TextButton(
-                            onPressed: () =>
-                                Get.to(() => const RegistrationScreen()),
-                            child: Text('registration'.tr),
-                          )
+                          Text('email'.tr),
+                          TextFormField(
+                            controller: controller._emailController,
+                            decoration: InputDecoration(
+                              suffixIcon: const Icon(CupertinoIcons.mail),
+                              hintText: "emailAddress".tr,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'thisFieldIsRequired'.tr;
+                              }
+
+                              if (!value.isEmail) return 'invalidEmail'.tr;
+
+                              return null;
+                            },
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 10),
+                          Text('password'.tr),
+                          TextFormField(
+                            obscureText: controller.showPassword.isFalse,
+                            controller: controller._passwordController,
+                            decoration: InputDecoration(
+                              hintText: "enterYourPassword".tr,
+                              suffixIcon: IconButton(
+                                onPressed: controller.showPassword.toggle,
+                                icon: controller.showPassword.isTrue
+                                    ? const Icon(CupertinoIcons.eye_slash_fill)
+                                    : const Icon(CupertinoIcons.eye_fill),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'thisFieldIsRequired'.tr;
+                              }
+
+                              return null;
+                            },
+                            keyboardType: TextInputType.visiblePassword,
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                child: Checkbox(
+                                  value: controller.rememberMe.isTrue,
+                                  onChanged: controller.isLoading.isTrue
+                                      ? null
+                                      : (_) => controller.rememberMe.toggle(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text("rememberMe".tr),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () => Get.toNamed('/reset_password'),
+                                child: Text('forgotPassword'.tr),
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context)
+                                    .appBarTheme
+                                    .backgroundColor,
+                              ),
+                              onPressed: controller.isLoading.isTrue
+                                  ? null
+                                  : controller._login,
+                              child: Text(
+                                "Sign in".tr,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Center(child: Text("dontHaveAnAccount".tr)),
+                              TextButton(
+                                onPressed: () =>
+                                    Get.off(() => const RegistrationScreen()),
+                                child: Text(
+                                  'Register now'.tr,
+                                  style: TextStyle(
+                                    color:
+                                        Get.theme.appBarTheme.backgroundColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    )
+                  ],
                 ),
               ),
             ),

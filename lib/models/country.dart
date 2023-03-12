@@ -24,6 +24,9 @@ class Country {
   /// @example `fr,en`, `id`
   final String locale;
 
+  /// The currency convertion rate respect to AEU
+  final num aedCurrencyConvertRate;
+
   /// The country's localization code
   /// @example `en_US`, `fr_FR`, `fr_CM`, `en`, `fr`
 
@@ -34,6 +37,7 @@ class Country {
     required this.currencyCode,
     required this.flag,
     required this.locale,
+    required this.aedCurrencyConvertRate,
   });
 
   String get flagPhone => "$flag +$phone";
@@ -50,7 +54,7 @@ class Country {
       localeCode = '';
     }
 
-    return countries.firstWhere(
+    return allCountries.firstWhere(
       (e) => e.code == localeCode,
       orElse: () => defaultCountry,
     );
@@ -66,6 +70,7 @@ class Country {
       'currencyCode': currencyCode,
       'flag': flag,
       'locale': locale,
+      'aedCurrencyConvertRate': aedCurrencyConvertRate,
     };
   }
 
@@ -77,6 +82,7 @@ class Country {
       currencyCode: map['currencyCode'] as String,
       flag: map['flag'] as String,
       locale: map['locale'] as String,
+      aedCurrencyConvertRate: map['aedCurrencyConvertRate'] as num,
     );
   }
 
@@ -92,6 +98,7 @@ class Country {
     String? currencyCode,
     String? flag,
     String? locale,
+    num? aedCurrencyConvertRate,
   }) {
     return Country(
       name: name ?? this.name,
@@ -100,6 +107,8 @@ class Country {
       currencyCode: currencyCode ?? this.currencyCode,
       flag: flag ?? this.flag,
       locale: locale ?? this.locale,
+      aedCurrencyConvertRate:
+          aedCurrencyConvertRate ?? this.aedCurrencyConvertRate,
     );
   }
 
@@ -120,7 +129,7 @@ class Country {
   int get hashCode => code.hashCode;
 
   static Country getCountryFromCode(String countryCode) {
-    return countries.firstWhere(
+    return allCountries.firstWhere(
       (e) => e.code == countryCode,
       orElse: () => Country.NULL_COUNTRY,
     );
@@ -134,6 +143,7 @@ class Country {
     currencyCode: "NULL",
     flag: "",
     locale: '',
+    aedCurrencyConvertRate: 0,
   );
 }
 
@@ -144,10 +154,11 @@ const defaultCountry = Country(
   currencyCode: "AED",
   flag: "🇦🇪",
   locale: 'ar',
+  aedCurrencyConvertRate: 1,
 );
 
 // data
-final countries = _countriesMap.map((e) => Country.fromMap(e));
+final allCountries = _countriesMap.map((e) => Country.fromMap(e));
 
 const _countriesMap = [
   {
@@ -158,6 +169,7 @@ const _countriesMap = [
     "currencySymbol": "إ.د",
     "flag": "🇦🇪",
     "locale": "ar",
+    "aedCurrencyConvertRate": 1,
   },
   {
     "name": "Saudi Arabia",
@@ -167,6 +179,7 @@ const _countriesMap = [
     "currencySymbol": "﷼",
     "flag": "🇸🇦",
     "locale": "ar",
+    "aedCurrencyConvertRate": 1.0211028,
   },
   {
     "name": "Qatar",
@@ -176,6 +189,7 @@ const _countriesMap = [
     "currencySymbol": "ق.ر",
     "flag": "🇶🇦",
     "locale": "ar",
+    "aedCurrencyConvertRate": 0.99115044,
   },
   {
     "name": "Bahrain",
@@ -185,6 +199,7 @@ const _countriesMap = [
     "currencySymbol": ".د.ب",
     "flag": "🇧🇭",
     "locale": "ar",
+    "aedCurrencyConvertRate": 0.10238257,
   },
   {
     "name": "Kuwait",
@@ -194,6 +209,7 @@ const _countriesMap = [
     "currencySymbol": "ك.د",
     "flag": "🇰🇼",
     "locale": "ar",
+    "aedCurrencyConvertRate": 0.083579123,
   },
   {
     "name": "Oman",
@@ -203,6 +219,7 @@ const _countriesMap = [
     "currencySymbol": ".ع.ر",
     "flag": "🇴🇲",
     "locale": "ar",
+    "aedCurrencyConvertRate": 0.10484834,
   },
   {
     "name": "United States",
@@ -212,6 +229,7 @@ const _countriesMap = [
     "currencySymbol": "\$",
     "flag": "🇺🇸",
     "locale": "en",
+    "aedCurrencyConvertRate": 0.27229408,
   },
   {
     "name": "United Kingdom",
@@ -221,6 +239,7 @@ const _countriesMap = [
     "currencySymbol": "£",
     "flag": "🇬🇧",
     "locale": "en,ga,cy,gd,kw",
+    "aedCurrencyConvertRate": 0.22630919,
   },
   {
     "name": "India",
@@ -230,6 +249,7 @@ const _countriesMap = [
     "currencySymbol": "₹",
     "flag": "🇮🇳",
     "locale": "hi,en",
+    "aedCurrencyConvertRate": 22.318706,
   },
   {
     "name": "Turkey",
@@ -239,18 +259,8 @@ const _countriesMap = [
     "currencySymbol": "₺",
     "flag": "🇹🇷",
     "locale": "tr,en",
+    "aedCurrencyConvertRate": 5.1619963,
   },
 ];
 
-const listOfCountries = [
-  "United Arab Emirates",
-  "Saudi Arabia",
-  "Qatar",
-  "Bahrain",
-  "Oman",
-  "Kuwait",
-  "USA",
-  "UK",
-  "India",
-  "turkey"
-];
+final allCountriesNames = allCountries.map((e) => e.name).toList();

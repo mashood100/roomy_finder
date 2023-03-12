@@ -1,20 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_credit_card/flutter_credit_card.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class _UpgradePlanController extends LoadingController {
-  final _cardFormKey = GlobalKey<FormState>();
-
-  final cardDetails = {
-    "cardNumber": "",
-    "expiryDate": "",
-    "cardHolderName": "",
-    "cvvCode": "",
-  }.obs;
-
   Future<void> upgradePlan() async {
     try {
       isLoading(true);
@@ -26,6 +21,87 @@ class _UpgradePlanController extends LoadingController {
     } catch (e) {
       Get.log("$e");
       showConfirmDialog("someThingWentWrong".tr, isAlert: true);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> _payRent(String service) async {
+    try {
+      isLoading(true);
+      switch (service) {
+        case "STRIPE":
+        case "PAYPAL":
+          await showConfirmDialog(
+            "You will need to logout and then login back after completing the payment",
+            isAlert: true,
+          );
+          final String endPoint;
+
+          if (service == "STRIPE") {
+            endPoint = "/profile/upgrade-plan/stripe";
+          } else if (service == "PAYPAL") {
+            endPoint = "/profile/upgrade-plan/paypal";
+          } else {
+            return;
+          }
+          // 1. create payment intent on the server
+          final res = await ApiService.getDio.post(
+            endPoint,
+          );
+
+          if (res.statusCode == 409) {
+            showToast("Already premium");
+            AppController.instance.user.update((val) {
+              if (val != null) val.isPremium = true;
+            });
+            Get.back();
+          } else if (res.statusCode == 200) {
+            showToast("Payment initiated. Redirecting....");
+            isLoading(false);
+
+            final uri = Uri.parse(res.data["paymentUrl"]);
+
+            if (await canLaunchUrl(uri)) {
+              launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          } else {
+            showConfirmDialog("Something when wrong", isAlert: true);
+            Get.log("${res.data}}");
+            return;
+          }
+
+          break;
+
+        case "ROOMY_FINDER_CARD":
+          showGetSnackbar("Payment with Roomy Finder can is comming soon!");
+          break;
+        case "PAY_CASH":
+          final result = await showConfirmDialog(
+            "Please confirm that you want to pay cash to the landlord",
+          );
+          if (result == true) {
+            final res = await ApiService.getDio.post(
+              "/bookings/property-ad/pay-cash",
+            );
+
+            if (res.statusCode == 200) {
+              await showConfirmDialog(
+                "Congratulations. You can now see the landlord information",
+                isAlert: true,
+              );
+              Get.back(result: true);
+            } else {
+              showConfirmDialog("Something when wrong", isAlert: true);
+              Get.log("${res.data}}");
+            }
+          }
+          break;
+        default:
+      }
+    } catch (e, trace) {
+      showGetSnackbar("Something went wrong", severity: Severity.error);
+      Get.log('$trace');
     } finally {
       isLoading(false);
     }
@@ -42,87 +118,97 @@ class UpgragePlanScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("Upgrade plan")),
       body: Obx(() {
-        return SingleChildScrollView(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Column(
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CreditCardWidget(
-                    // formKey: controller._cardFormKey,
-                    cardNumber: controller.cardDetails["cardNumber"]!,
-                    expiryDate: controller.cardDetails["expiryDate"]!,
-                    cardHolderName: controller.cardDetails["cardHolderName"]!,
-                    cvvCode: controller.cardDetails["cvvCode"]!,
-                    onCreditCardWidgetChange: (card) {},
-                    showBackView: false,
-                    obscureCardNumber: false,
-                    obscureCardCvv: false,
-                  ),
-                  CreditCardForm(
-                    formKey: controller._cardFormKey,
-                    cardNumber: controller.cardDetails["cardNumber"]!,
-                    expiryDate: controller.cardDetails["expiryDate"]!,
-                    cardHolderName: controller.cardDetails["cardHolderName"]!,
-                    cvvCode: controller.cardDetails["cvvCode"]!,
-                    onCreditCardModelChange: (card) {
-                      controller.cardDetails["cardNumber"] = card.cardNumber;
-                      controller.cardDetails["cvvCode"] = card.cvvCode;
-                      controller.cardDetails["expiryDate"] = card.expiryDate;
-                      controller.cardDetails["cardHolderName"] =
-                          card.cardHolderName;
-                    },
-                    themeColor: Colors.purple,
-                    textColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
+                  Image.asset("assets/images/premium.png"),
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(10.0),
+                      child: Text(
+                        "Pay 250 AED to upgrade to premium",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Row(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: ElevatedButton(
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
                             onPressed: () {
-                              if (controller._cardFormKey.currentState
-                                      ?.validate() ==
-                                  true) {
-                                controller.upgradePlan();
-                              }
+                              controller._payRent("STRIPE");
                             },
-                            child: const Text("Upgrade"),
+                            icon: const Icon(Icons.credit_card),
+                            label: const Text("Pay with Credit or Debit card "),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
                             onPressed: () {
-                              Get.back();
-                              skipCallback!();
+                              controller._payRent("PAYPAL");
                             },
-                            child: const Text("Skip"),
+                            icon: const Icon(Icons.paypal, color: Colors.blue),
+                            label: const Text("Pay with PayPal"),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              controller._payRent("ROOMY_FINDER_CARD");
+                            },
+                            icon: const Icon(
+                              Icons.credit_card,
+                              color: Color.fromRGBO(96, 15, 116, 1),
+                            ),
+                            label: const Text("Pay with RoomyFinder card"),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              controller._payRent("PAY_CASH");
+                            },
+                            icon: const Icon(Icons.payments_rounded),
+                            label: const Text("Pay Cash at property"),
                           ),
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
-              if (controller.isLoading.isTrue)
-                Card(
-                  color: Colors.purple.withOpacity(0.5),
-                  child: Container(
-                    alignment: Alignment.center,
-                    height: 200,
-                    width: 200,
-                    child: const CupertinoActivityIndicator(
-                      color: Colors.white,
-                      radius: 30,
-                    ),
+            ),
+            if (controller.isLoading.isTrue)
+              Card(
+                color: Colors.purple.withOpacity(0.5),
+                child: Container(
+                  alignment: Alignment.center,
+                  height: 200,
+                  width: 200,
+                  child: const CupertinoActivityIndicator(
+                    color: Colors.white,
+                    radius: 30,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       }),
     );

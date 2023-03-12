@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_switch/flutter_switch.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:roomy_finder/classes/place_autocomplete.dart';
+import 'package:roomy_finder/components/place_seach_delagate.dart';
 import 'package:roomy_finder/data/cities.dart';
 
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -40,6 +43,10 @@ class _SearchRoommateMatchController extends LoadingController {
   final videos = <XFile>[].obs;
   final interests = <String>[].obs;
   final languages = <String>[].obs;
+
+// Google place search tools
+  CameraPosition? cameraPosition;
+  PlaceAutoCompletePredicate? autoCompletePredicate;
 
   PhoneNumber agentPhoneNumber = PhoneNumber();
 
@@ -99,7 +106,7 @@ class _SearchRoommateMatchController extends LoadingController {
         return sharjahCities;
       case "Umm al-Quwain":
       case "Fujairah":
-      case "Ajam":
+      case "Ajman":
         return [...jeddahCities, ...meccaCities, ...riyadhCities];
       default:
         return [
@@ -580,10 +587,13 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                           },
                           suggestionsCallback: (pattern) {
                             return unitedArabEmiteCities.where(
-                              (e) => e
-                                  .toLowerCase()
-                                  .toLowerCase()
-                                  .contains(pattern),
+                              (e) {
+                                final lowerPattern =
+                                    pattern.toLowerCase().trim();
+                                final lowerSearch = e.toLowerCase().trim();
+                                return lowerSearch.contains(lowerPattern) ||
+                                    lowerSearch == lowerPattern;
+                              },
                             );
                           },
                           validator: (value) {
@@ -602,31 +612,22 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         // Location
                         Text('location'.tr),
-                        TypeAheadFormField<String>(
-                          textFieldConfiguration: TextFieldConfiguration(
-                            controller: controller._locationController,
-                            decoration: InputDecoration(
-                              hintText: 'location'.tr,
+                        TextFormField(
+                          readOnly: true,
+                          controller: controller._locationController,
+                          decoration: InputDecoration(
+                            hintText: '20 Dhabyan Street - Abu Dhabi'.tr,
+                            suffixIcon: IconButton(
+                              onPressed: controller
+                                      ._locationController.text.isEmpty
+                                  ? null
+                                  : () {
+                                      controller.address["location"] = "";
+                                      controller._locationController.clear();
+                                    },
+                              icon: const Icon(Icons.clear),
                             ),
                           ),
-                          itemBuilder: (context, itemData) {
-                            return ListTile(
-                              dense: true,
-                              title: Text(itemData),
-                            );
-                          },
-                          onSuggestionSelected: (suggestion) {
-                            controller.address["location"] = suggestion;
-                            controller._locationController.text = suggestion;
-                          },
-                          suggestionsCallback: (pattern) {
-                            return controller._areasBasedOnCity.where(
-                              (e) => e
-                                  .toLowerCase()
-                                  .toLowerCase()
-                                  .contains(pattern),
-                            );
-                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'thisFieldIsRequired'.tr;
@@ -637,6 +638,22 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             if (newValue != null) {
                               controller.address["location"] = newValue;
                               controller._locationController.text = newValue;
+                            }
+                          },
+                          onTap: () async {
+                            final result = await showSearch(
+                              context: context,
+                              delegate: PlaceSearchDelegate(
+                                initialstring:
+                                    controller._locationController.text,
+                              ),
+                            );
+
+                            if (result is PlaceAutoCompletePredicate) {
+                              controller.address["location"] = result.mainText;
+                              controller._locationController.text =
+                                  result.mainText;
+                              controller.autoCompletePredicate = result;
                             }
                           },
                         ),

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
@@ -5,7 +6,7 @@ import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/user.dart';
-import 'package:roomy_finder/screens/messages/chat.dart';
+import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 
 class ViewUser extends StatelessWidget {
   const ViewUser({super.key, required this.user});
@@ -17,7 +18,7 @@ class ViewUser extends StatelessWidget {
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(5.0),
-          child: Image.network(source),
+          child: CachedNetworkImage(imageUrl: source),
         );
       },
     );
@@ -45,18 +46,9 @@ class ViewUser extends StatelessWidget {
                 onTap: () => _viewImage(user.profilePicture),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(100),
-                  child: Image.network(
-                    user.profilePicture,
+                  child: CachedNetworkImage(
+                    imageUrl: user.profilePicture,
                     height: MediaQuery.of(context).size.width * 0.5,
-                    errorBuilder: (ctx, e, trace) {
-                      Get.log('$trace');
-                      return const Card(
-                        child: SizedBox(
-                          height: 200,
-                          child: Icon(Icons.person, size: 100),
-                        ),
-                      );
-                    },
                   ),
                 ),
               ),
@@ -101,7 +93,7 @@ class ViewUser extends StatelessWidget {
                               ChatConversation.createConvsertionKey(
                                   AppController.me.id, user.id))) ??
                           ChatConversation.newConversation(friend: user);
-                      Get.to(() => ChatScreen(conversation: conv));
+                      Get.to(() => FlyerChatScreen(conversation: conv));
                     },
                     child: Text("Chat with ${user.fullName}"),
                   ),

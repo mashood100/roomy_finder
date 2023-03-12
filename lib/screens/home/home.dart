@@ -16,7 +16,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/screens/home/account_tab.dart';
 import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
-import 'package:roomy_finder/screens/home/messages_tab.dart';
+import 'package:roomy_finder/screens/home/chat_tab.dart';
 
 class HomeController extends LoadingController {
   final currentTabIndex = 0.obs;
@@ -100,6 +100,8 @@ class Home extends GetView<HomeController> {
             onTap: (index) {
               controller.currentTabIndex(index);
               if (index == 2) {
+                final chatController = Get.put(ChatTabController());
+                chatController.update();
                 AppController.instance.haveNewMessage(false);
               }
             },

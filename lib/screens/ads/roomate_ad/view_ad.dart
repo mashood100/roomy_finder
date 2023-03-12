@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
@@ -12,7 +15,9 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
-import 'package:roomy_finder/screens/messages/chat.dart';
+import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class _ViewRoommateAdController extends LoadingController {
   final RoommateAd ad;
@@ -80,14 +85,14 @@ class _ViewRoommateAdController extends LoadingController {
             ChatConversation.createConvsertionKey(
                 AppController.me.id, ad.poster.id))) ??
         ChatConversation.newConversation(friend: ad.poster);
-    Get.to(() => ChatScreen(conversation: conv));
+    Get.to(() => FlyerChatScreen(conversation: conv));
   }
 
   void _viewImage(String source) {
     showModalBottomSheet(
       context: Get.context!,
       builder: (context) {
-        return Image.network(source);
+        return CachedNetworkImage(imageUrl: source);
       },
     );
   }
@@ -110,18 +115,18 @@ class ViewRoommateAdScreen extends StatelessWidget {
           children: [
             Stack(
               children: [
-                Image.network(
-                  ad.poster.profilePicture,
+                CachedNetworkImage(
+                  imageUrl: ad.poster.profilePicture,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   height: 200,
-                  errorBuilder: (ctx, e, trace) {
-                    return const SizedBox(
-                      width: double.infinity,
-                      height: 150,
-                      child: Icon(Icons.broken_image, size: 50),
-                    );
-                  },
+                  // errorWidget: (ctx, e, trace) {
+                  //   return const SizedBox(
+                  //     width: double.infinity,
+                  //     height: 150,
+                  //     child: Icon(Icons.broken_image, size: 50),
+                  //   );
+                  // },
                 ),
                 const BackButton(),
               ],
@@ -192,13 +197,13 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   ),
                   const Divider(height: 20),
                   const Text(
-                    "Feel confortable with",
+                    "Interests & Features",
                     style: TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 5),
                   GridView.count(
                     crossAxisCount: 2,
-                    childAspectRatio: screenWidth > 370 ? 6 : 3,
+                    childAspectRatio: screenWidth > 370 ? 4 : 3,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     crossAxisSpacing: 10,
@@ -351,20 +356,10 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(5),
-                                child: Image.network(
-                                  e,
+                                child: CachedNetworkImage(
+                                  imageUrl: e,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (ctx, e, trace) {
-                                    return const SizedBox(
-                                      width: double.infinity,
-                                      height: 150,
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        size: 50,
-                                      ),
-                                    );
-                                  },
                                 ),
                               ),
                             ),
@@ -372,6 +367,63 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         )
                         .toList(),
                   ),
+                  const SizedBox(height: 20),
+                  const Text("Videos", style: TextStyle(fontSize: 14)),
+                  if (controller.ad.videos.isNotEmpty)
+                    GridView.count(
+                      crossAxisCount: screenWidth > 370 ? 4 : 2,
+                      crossAxisSpacing: 10,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      children: ad.videos
+                          .map(
+                            (e) => GestureDetector(
+                              onTap: () => Get.to(() {
+                                return PlayVideoScreen(
+                                    source: e, isAsset: false);
+                              }),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    height: double.infinity,
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: FutureBuilder(
+                                        builder: (ctx, asp) {
+                                          if (asp.hasData) {
+                                            return Image.file(
+                                              File(asp.data!),
+                                              fit: BoxFit.cover,
+                                            );
+                                          }
+                                          return Container();
+                                        },
+                                        future: VideoThumbnail.thumbnailFile(
+                                          video: e,
+                                          quality: 50,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.play_arrow,
+                                    size: 40,
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   const Divider(height: 20),
                 ],
               ),

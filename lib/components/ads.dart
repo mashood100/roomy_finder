@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
@@ -26,19 +28,16 @@ class PropertyAdWidget extends StatelessWidget {
               ),
               child: ad.images.isEmpty
                   ? const SizedBox(height: 150)
-                  : Image.network(
-                      ad.images[0],
+                  : CachedNetworkImage(
+                      imageUrl: ad.images[0],
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, e, trace) {
+                      errorWidget: (ctx, url, e) {
                         return const SizedBox(
-                          width: double.infinity,
+                          width: 150,
                           height: 150,
-                          child: Icon(
-                            Icons.broken_image,
-                            size: 50,
-                          ),
+                          child: CupertinoActivityIndicator(radius: 30),
                         );
                       },
                     ),
@@ -50,8 +49,12 @@ class PropertyAdWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    ad.rentAndPriceText,
-                    style: const TextStyle(fontSize: 14),
+                    formatMoney(ad.prefferedRentDisplayPrice,
+                        currencyCode: "AED"),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     "Posted ${relativeTimeText(ad.createdAt)}",
@@ -77,7 +80,7 @@ class PropertyAdWidget extends StatelessWidget {
               ),
             ),
             const Divider(),
-            Padding(
+            Container(
               padding: const EdgeInsets.only(
                 left: 5,
                 bottom: 10,
@@ -91,9 +94,14 @@ class PropertyAdWidget extends StatelessWidget {
                     children: [
                       const Icon(CupertinoIcons.location_solid),
                       const SizedBox(width: 5),
-                      Text(
-                        ad.locationText,
-                        style: const TextStyle(fontSize: 14),
+                      SizedBox(
+                        width: Get.width * 0.7,
+                        child: Text(
+                          "${ad.address["location"]}",
+                          style: const TextStyle(fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -181,12 +189,14 @@ class RoommateAdWidget extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(10),
               ),
-              child: Image.network(
-                ad.images.isNotEmpty ? ad.images[0] : ad.poster.profilePicture,
+              child: CachedNetworkImage(
+                imageUrl: ad.images.isNotEmpty
+                    ? ad.images[0]
+                    : ad.poster.profilePicture,
                 width: double.infinity,
                 height: 150,
                 fit: BoxFit.cover,
-                errorBuilder: (ctx, e, trace) {
+                errorWidget: (ctx, url, e) {
                   return const SizedBox(
                     width: double.infinity,
                     height: 150,

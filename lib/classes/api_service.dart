@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 
@@ -88,6 +89,48 @@ class ApiService {
     final res = await dio.get('$API_URL/profile//profile-info?userId=$userId');
     if (res.statusCode == 200) return res.data as Map<String, dynamic>?;
     return null;
+  }
+
+  static Future<Iterable<PlaceAutoCompletePredicate>> searchPlaceAutoComplete({
+    required String input,
+    String language = "en",
+    String types = "localities",
+  }) async {
+    if (input.isEmpty) return [];
+    // final encodedCity = Uri.encodeComponent(city);
+    final encodedInput = Uri.encodeComponent(input);
+
+    var query = {
+      "key": GOOGLE_CLOUD_API_KEY,
+      "input": encodedInput,
+      "language": language,
+    };
+
+    final res = await Dio().get(
+      "https://maps.googleapis.com/maps/api/place/autocomplete/json",
+      queryParameters: query,
+    );
+
+    if (res.statusCode == 200) {
+      final data = res.data;
+      if ((data["predictions"] as List).isNotEmpty) {}
+      if (data["status"] == "OK") {
+        final predicates = (data["predictions"] as List).map(
+          (e) => PlaceAutoCompletePredicate(
+            mainText: e["structured_formatting"]["main_text"],
+            secondaryText: e["structured_formatting"]["secondary_text"],
+            description: e["description"],
+            placeId: e["place_id"],
+            types: List<String>.from(e["types"]),
+          ),
+        );
+
+        return predicates;
+      } else {
+        return [];
+      }
+    }
+    return [];
   }
 }
 

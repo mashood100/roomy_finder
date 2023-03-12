@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,7 +7,6 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/app_locale.dart';
-import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/screens/ads/post_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/search_query.dart';
@@ -53,22 +53,17 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     if (AppController.me.isPremium) {
                       Get.to(() => const PremiumRoommatesAdsScreen());
                     } else {
-                      final upgrade = await showConfirmDialog(
-                          "Only premium members can see premium ADs."
-                          " Do you want to upgrade you plan?");
-                      if (upgrade == true) {
-                        Get.to(
-                          () => UpgragePlanScreen(
-                            skipCallback: () {
-                              Get.to(
-                                () {
-                                  return const PremiumRoommatesAdsScreen();
-                                },
-                              );
-                            },
-                          ),
-                        );
-                      }
+                      Get.to(
+                        () => UpgragePlanScreen(
+                          skipCallback: () {
+                            Get.to(
+                              () {
+                                return const PremiumRoommatesAdsScreen();
+                              },
+                            );
+                          },
+                        ),
+                      );
                     }
                   },
                 ),
@@ -88,13 +83,29 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: Text('Post your properties for fast advertisation'.tr),
+                  flex: 2,
+                  child: Text(
+                    'Post your properties for fast advertisation'.tr,
+                    style: const TextStyle(),
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    Get.to(() => const PostAdScreen());
-                  },
-                  child: Text('postAd'.tr),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+                    ),
+                    onPressed: () {
+                      Get.to(() => const PostAdScreen());
+                    },
+                    child: Text(
+                      'postAd'.tr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 )
               ],
             ),
@@ -173,7 +184,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
       icon: const Icon(CupertinoIcons.home),
-      label: 'home'.tr,
+      label: 'Home'.tr,
     );
   }
 
@@ -227,7 +238,7 @@ class HomeUserInfo extends StatelessWidget {
                         Expanded(
                           child: Text(
                             AppController.me.email,
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
                       ],
@@ -288,15 +299,20 @@ class HomeUserInfo extends StatelessWidget {
           const SizedBox(width: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              AppController.me.profilePicture,
+            child: CachedNetworkImage(
+              imageUrl: AppController.me.profilePicture,
               height: 130,
-              errorBuilder: (ctx, e, trace) {
-                Get.log('$trace');
-                return const Card(
+              errorWidget: (ctx, url, e) {
+                Get.log('$e');
+                return Card(
                   child: SizedBox(
                     height: 130,
-                    child: Icon(Icons.person, size: 80),
+                    child: Icon(
+                      AppController.me.gender == "Male"
+                          ? Icons.person
+                          : Icons.person_2,
+                      size: 80,
+                    ),
                   ),
                 );
               },

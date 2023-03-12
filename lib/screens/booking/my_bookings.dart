@@ -1,12 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_booking.dart';
-import 'package:roomy_finder/models/roommate_booking.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 
 class _MyBookingsController extends LoadingController {
@@ -54,6 +54,7 @@ class MyBookingsCreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text("My Bookings"),
+          backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
           actions: [
             Obx(() {
               return IconButton(
@@ -82,7 +83,7 @@ class MyBookingsCreen extends StatelessWidget {
             );
           }
 
-          return Builder(builder: (context) {
+          return GetBuilder<_MyBookingsController>(builder: (controller) {
             if (controller.propertyBookings.isEmpty) {
               return Center(
                 child: Column(
@@ -99,26 +100,66 @@ class MyBookingsCreen extends StatelessWidget {
             return ListView.separated(
               itemBuilder: (context, index) {
                 final booking = controller.propertyBookings[index];
-                final title =
-                    "${booking.ad.type} in ${booking.ad.address["city"]},"
-                    " ${booking.ad.address["location"]}";
-                final subTitle =
-                    "${booking.status}, Since ${relativeTimeText(booking.createdAt)}"
-                    "\nBy ${booking.poster.fullName}";
 
-                return ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: Image.network(booking.ad.images[0]),
-                  ),
-                  title: Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(subTitle),
-                  onTap: () {
-                    Get.to(() => ViewPropertyBookingScreen(booking: booking));
+                return GestureDetector(
+                  onTap: () async {
+                    await Get.to(
+                      () => ViewPropertyBookingScreen(booking: booking),
+                    );
+                    controller.update();
                   },
+                  child: Card(
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: CachedNetworkImage(
+                            imageUrl: booking.ad.images[0],
+                            height: 120,
+                            width: 140,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Label(
+                                label: "Property : ",
+                                value: "${booking.quantity} ${booking.ad.type}"
+                                    "${booking.quantity > 1 ? "s" : ""}",
+                                boldValue: true,
+                              ),
+                              Label(
+                                label: "Location : ",
+                                value: "${booking.ad.address["location"]}",
+                                boldValue: true,
+                              ),
+                              Label(
+                                label: "Status     : ",
+                                value: booking.isPayed
+                                    ? "Paid"
+                                    : booking.capitaliezedStatus,
+                                boldValue: true,
+                                valueColor: booking.isPayed || booking.isOffered
+                                    ? Colors.green
+                                    : booking.isPending
+                                        ? Colors.blue
+                                        : Colors.red,
+                              ),
+                              Label(
+                                label: "Date  : ",
+                                value: Jiffy(booking.createdAt).yMMMEdjm,
+                                fontSize: 12,
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
                 );
               },
               itemCount: controller.propertyBookings.length,
@@ -129,53 +170,6 @@ class MyBookingsCreen extends StatelessWidget {
           });
         }),
       ),
-    );
-  }
-}
-
-class RoommateBookingWidget extends StatelessWidget {
-  final RoommateBooking booking;
-  final void Function()? onTap;
-  const RoommateBookingWidget({super.key, required this.booking, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-          child: Container(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "About ad",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const Label(label: "Type", value: "Property"),
-            Label(label: "Object", value: booking.ad.type),
-
-            Text(
-              "About client${!booking.isMine ? " (me)" : ""}",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Label(label: "Name", value: booking.poster.fullName),
-            // Label(label: "Email", value: booking.poster.email),
-            // Label(label: "Phone", value: booking.poster.phone),
-            const Divider(),
-            Label(label: "Status", value: booking.status),
-            Row(
-              children: [
-                Text("Booked on", style: textTheme.bodySmall),
-                const Spacer(),
-                Text(relativeTimeText(booking.createdAt)),
-              ],
-            ),
-          ],
-        ),
-      )),
     );
   }
 }

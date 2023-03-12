@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
@@ -111,17 +110,12 @@ class PostAdScreen extends StatelessWidget {
                   if (AppController.me.isPremium) {
                     Get.to(() => const PostRoomateAdScreen(isPremium: true));
                   } else {
-                    final upgrade = await showConfirmDialog(
-                        "Only premium members can post premium ADs."
-                        " Do you want to upgrade you plan?");
-                    if (upgrade == true) {
-                      Get.to(() => UpgragePlanScreen(
-                            skipCallback: () {
-                              Get.to(() =>
-                                  const PostRoomateAdScreen(isPremium: true));
-                            },
-                          ));
-                    }
+                    Get.to(() => UpgragePlanScreen(
+                          skipCallback: () {
+                            Get.to(() =>
+                                const PostRoomateAdScreen(isPremium: true));
+                          },
+                        ));
                   }
 
                   break;

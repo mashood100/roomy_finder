@@ -26,7 +26,7 @@ class AppController extends GetxController {
   late String? userPassword;
 
   final RxBool haveNewMessage = false.obs;
-  final RxBool haveNewNotification = false.obs;
+  final RxInt unreadNotificationCount = 0.obs;
 
   static AppVersion? updateVersion;
 

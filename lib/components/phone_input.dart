@@ -27,10 +27,11 @@ class PhoneNumberInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return InternationalPhoneNumberInput(
       selectorConfig: const SelectorConfig(
-          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-          // useEmoji: true,
-          setSelectorButtonAsPrefixIcon: true,
-          leadingPadding: 10),
+        selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+        // useEmoji: true,
+        setSelectorButtonAsPrefixIcon: true,
+        leadingPadding: 10,
+      ),
       initialValue: initialValue,
       onInputChanged: onChange,
       onSaved: onChange,

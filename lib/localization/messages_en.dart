@@ -122,7 +122,7 @@ const Map<String, String> enMessages = {
       "Operation failed the code may have expired. Resent the code",
   "videos": "Videos",
   "videoAndImages": "Videos and images",
-  "visitor": "Visitor",
+  "visitors": "Visitors",
   "whatAreYouPosting": "What are you posting?",
   "welcomeToRoomyFinder": "Welcome to Roomy Finder",
   "whereIsYourProperty": "Where is your property",

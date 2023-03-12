@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -8,9 +9,9 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/message.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class NotificationController {
   /// Use this method to detect when a new
@@ -128,6 +129,8 @@ class NotificationController {
       case "booking-offered":
       case "booking-declined":
       case "booking-cancelled":
+      case "pay-property-rent-fee-completed-client":
+      case "pay-property-rent-fee-completed-landlord":
         final message = msg.data["message"] ?? "new notification";
 
         if (msg.data["event"] != null) {
@@ -135,88 +138,80 @@ class NotificationController {
         }
 
         AwesomeNotifications().createNotification(
-          content: _createContent(
-            title: "Booking".tr,
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking",
             body: message,
+            notificationLayout: NotificationLayout.BigText,
           ),
         );
+
         break;
-      case "deal-ended":
-      case "deal-paid":
-        final message = msg.data["event"].toString();
+      case "plan-upgraded-successfully":
+        final message = msg.data["message"] ?? "new notification";
+
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["message"], message);
+          _saveNotification(msg.data["event"], message);
         }
 
         AwesomeNotifications().createNotification(
-          content: _createContent(
-            title: "Contracts/Deals".tr,
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Premium",
             body: message,
+            notificationLayout: NotificationLayout.BigText,
           ),
         );
-        break;
-
-      case 'new-message':
-        try {
-          final message = Message.fromJson(msg.data["jsonMessage"]);
-
-          final pref = await SharedPreferences.getInstance();
-          final jsonUser = pref.getString("user");
-
-          var user = AppNotication.currentUser ?? User.fromJson(jsonUser!);
-
-          final conv = (await ChatConversation.getSavedChat(
-                  ChatConversation.createConvsertionKey(
-                      user.id, message.sender.id))) ??
-              ChatConversation.newConversation(friend: message.sender);
-
-          conv.newMessageFromContent(message.content, false);
-          conv.saveChat();
-          ChatConversation.addUserConversationKeyToStorage(conv.key);
-
-          AwesomeNotifications().createNotification(
-            content: _createContent(
-              title: message.sender.fullName,
-              body: message.content,
-            ),
-          );
-        } catch (_) {}
 
         break;
+
       default:
         break;
     }
   }
-}
 
-NotificationContent _createContent({
-  String? title,
-  String? body,
-  Map<String, String?>? payload,
-}) {
-  return NotificationContent(
-    id: Random().nextInt(1000),
-    channelKey: "notification_channel",
-    groupKey: "notification_channel_group",
-    title: title,
-    body: body,
-    payload: payload,
-    notificationLayout: NotificationLayout.Default,
-  );
-}
+  static Future<void> messageHandler(RemoteMessage msg) async {
+    try {
+      final message = types.Message.fromJson(jsonDecode(msg.data["message"]));
+      final sender = User.fromJson(msg.data["sender"]);
+      final reciever = User.fromJson(msg.data["reciever"]);
 
-// NotificationContent _createMessageContent({
-//   String? title,
-//   String? body,
-//   Map<String, String?>? payload,
-// }) {
-//   return NotificationContent(
-//     id: Random().nextInt(1000),
-//     channelKey: "message_notification_channel",
-//     groupKey: "notification_message_group",
-//     title: title,
-//     body: body,
-//     payload: payload,
-//     notificationLayout: NotificationLayout.Messaging,
-//   );
-// }
+      final convKey =
+          ChatConversation.createConvsertionKey(reciever.id, sender.id);
+
+      final conv = await ChatConversation.getSavedChat(convKey) ??
+          ChatConversation.newConversation(friend: sender);
+
+      conv.newMessage(message);
+      conv.saveChat();
+      ChatConversation.addUserConversationKeyToStorage(conv.key);
+
+      final String notificationMessage;
+
+      if (message is types.TextMessage) {
+        notificationMessage = message.text;
+      } else if (message is types.ImageMessage) {
+        notificationMessage = "Sent an image";
+      } else if (message is types.AudioMessage) {
+        notificationMessage = "Sent a voice message";
+      } else {
+        notificationMessage = "Sent a file";
+      }
+
+      AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: Random().nextInt(1000),
+          channelKey: "chat_channel_key",
+          groupKey: "chat_channel_group_key",
+          title: sender.firstName,
+          body: notificationMessage,
+          notificationLayout: NotificationLayout.Messaging,
+        ),
+      );
+    } catch (_) {}
+  }
+}

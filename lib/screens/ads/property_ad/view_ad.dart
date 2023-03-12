@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
@@ -11,9 +15,13 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
+import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class _VewPropertyController extends LoadingController {
   _VewPropertyController(this.ad);
+  String? bookingId;
 
   final PropertyAd ad;
   late final RxString rentType;
@@ -45,52 +53,7 @@ class _VewPropertyController extends LoadingController {
     }
   }
 
-  Future<DateTime?> _weekPicker({
-    required BuildContext context,
-    required DateTime initialDate,
-  }) async {
-    final result = await showModalBottomSheet<DateTime>(
-      context: context,
-      builder: (context) {
-        return ListView.separated(
-          itemBuilder: (context, index) {
-            final date = Jiffy(initialDate.add(Duration(days: index * 7)));
-            return InkWell(
-              onTap: () {
-                Get.back(result: date.dateTime);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    Text("${index + 1}"),
-                    const Spacer(),
-                    Text(
-                      date.yMMMEd,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          separatorBuilder: (ctx, ind) => const Divider(),
-          itemCount: 365 * 100 ~/ 7,
-        );
-      },
-    );
-
-    return result;
-  }
-
-  Future<DateTime?> _pickDate({bool isCheck = false}) async {
+  Future<DateTime?> _pickDate({bool isCheckIn = false}) async {
     final DateTime? date;
 
     final context = Get.context!;
@@ -100,9 +63,8 @@ class _VewPropertyController extends LoadingController {
 
     switch (rentType.value) {
       case "Monthly":
-        final initialDate = isCheck
-            ? checkIn.value
-            : checkIn.value.add(const Duration(days: 30));
+        final initialDate =
+            isCheckIn ? firstDate : checkIn.value.add(const Duration(days: 30));
         date = await showMonthYearPicker(
           context: context,
           lastDate: lastDate,
@@ -112,19 +74,31 @@ class _VewPropertyController extends LoadingController {
         );
         break;
       case "Weekly":
-        final initialDate = checkIn.value.add(const Duration(days: 7));
-
-        date = await _weekPicker(
-          context: context,
-          initialDate: initialDate,
-        );
-        break;
-      default:
-        final initialDate = checkIn.value.add(const Duration(days: 1));
+        final initialDate =
+            isCheckIn ? firstDate : checkIn.value.add(const Duration(days: 7));
         date = await showDatePicker(
           context: context,
           lastDate: lastDate,
-          firstDate: firstDate,
+          firstDate: isCheckIn
+              ? firstDate
+              : checkIn.value.add(const Duration(days: 7)),
+          initialDate: initialDate,
+          selectableDayPredicate: (day) {
+            if (isCheckIn) return true;
+            final difference = day.difference(checkIn.value);
+            return difference.inDays % 7 == 0;
+          },
+        );
+        break;
+      default:
+        final initialDate =
+            isCheckIn ? firstDate : checkIn.value.add(const Duration(days: 1));
+        date = await showDatePicker(
+          context: context,
+          lastDate: lastDate,
+          firstDate: isCheckIn
+              ? firstDate
+              : checkIn.value.add(const Duration(days: 1)),
           initialDate: initialDate,
         );
     }
@@ -203,7 +177,7 @@ class _VewPropertyController extends LoadingController {
 
   Future<void> bookProperty(PropertyAd ad) async {
     final shouldContinue = await showConfirmDialog(
-      "Do you really want to book this ad",
+      "Please confirm",
     );
     if (shouldContinue != true) return;
     try {
@@ -219,11 +193,12 @@ class _VewPropertyController extends LoadingController {
       });
 
       if (res.statusCode == 200) {
+        bookingId = res.data["bookingId"];
         isLoading(false);
+        update();
+
         await showConfirmDialog(
-          "Your request has been sent and will be "
-          "sent to you with details via message"
-          " within 24 hours maximum",
+          "Your request have been sent to the landlord",
           isAlert: true,
         );
       } else if (res.statusCode == 400) {
@@ -266,11 +241,50 @@ class _VewPropertyController extends LoadingController {
     }
   }
 
+  Future<void> cancelBooking(PropertyAd ad) async {
+    final shouldContinue = await showConfirmDialog(
+      "Please confirm",
+    );
+    if (shouldContinue != true) return;
+    try {
+      isLoading(true);
+
+      final res = await ApiService.getDio.post(
+        "/bookings/property-ad/tenant/cancel",
+        data: {'bookingId': bookingId},
+      );
+
+      if (res.statusCode == 200) {
+        bookingId = null;
+        isLoading(false);
+        update();
+
+        await showConfirmDialog(
+          "Booking cancelled",
+          isAlert: true,
+        );
+      } else {
+        showGetSnackbar(
+          "Failed to cancel booking. Please try again",
+          severity: Severity.error,
+        );
+      }
+    } catch (e) {
+      Get.log("$e");
+      showGetSnackbar(
+        "Failed to cancel booking. Please try again",
+        severity: Severity.error,
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
   void _viewImage(String source) {
     showModalBottomSheet(
       context: Get.context!,
       builder: (context) {
-        return Image.network(source);
+        return CachedNetworkImage(imageUrl: source);
       },
     );
   }
@@ -458,47 +472,127 @@ class ViewPropertyAd extends StatelessWidget {
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
+
+                  // Google map representing the location of the properrty
+                  if (ad.cameraPosition != null)
+                    const Text("Map location", style: TextStyle(fontSize: 14)),
+                  if (ad.cameraPosition != null)
+                    SizedBox(
+                      height: 200,
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: ad.cameraPosition?.target ??
+                              const LatLng(1254, 412),
+                          zoom: 10,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
                   const Text("Images", style: TextStyle(fontSize: 14)),
-                  GridView.count(
-                    crossAxisCount: screenWidth > 370 ? 4 : 2,
-                    crossAxisSpacing: 10,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    children: ad.images
-                        .map(
-                          (e) => GestureDetector(
-                            onTap: () => controller._viewImage(e),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2.5),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: Image.network(
-                                  e,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (ctx, e, trace) {
-                                    return const SizedBox(
-                                      width: double.infinity,
-                                      height: 150,
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        size: 50,
-                                      ),
-                                    );
-                                  },
+                  if (controller.ad.images.isNotEmpty)
+                    GridView.count(
+                      crossAxisCount: screenWidth > 370 ? 4 : 2,
+                      crossAxisSpacing: 10,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      children: ad.images
+                          .map(
+                            (e) => GestureDetector(
+                              onTap: () => controller._viewImage(e),
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(5),
+                                  child: CachedNetworkImage(
+                                    imageUrl: e,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (ctx, e, trace) {
+                                      return const SizedBox(
+                                        width: double.infinity,
+                                        height: 150,
+                                        child: CupertinoActivityIndicator(
+                                            radius: 30),
+                                      );
+                                    },
+                                    progressIndicatorBuilder:
+                                        (context, url, downloadProgress) {
+                                      return CircularProgressIndicator(
+                                        value: downloadProgress.progress,
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                  ),
+                          )
+                          .toList(),
+                    ),
+                  const SizedBox(height: 20),
+                  const Text("Videos", style: TextStyle(fontSize: 14)),
+                  if (controller.ad.videos.isNotEmpty)
+                    GridView.count(
+                      crossAxisCount: screenWidth > 370 ? 4 : 2,
+                      crossAxisSpacing: 10,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      children: ad.videos
+                          .map(
+                            (e) => GestureDetector(
+                              onTap: () => Get.to(() {
+                                return PlayVideoScreen(
+                                    source: e, isAsset: false);
+                              }),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    height: double.infinity,
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: FutureBuilder(
+                                        builder: (ctx, asp) {
+                                          if (asp.hasData) {
+                                            return Image.file(
+                                              File(asp.data!),
+                                              fit: BoxFit.cover,
+                                            );
+                                          }
+                                          return Container();
+                                        },
+                                        future: VideoThumbnail.thumbnailFile(
+                                          video: e,
+                                          quality: 50,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.play_arrow,
+                                    size: 40,
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   const Divider(height: 20),
-                  if (!ad.isMine) ...[
+                  if (!ad.isMine && controller.bookingId == null) ...[
                     const Text(
                       "Booking",
                       style: TextStyle(
@@ -570,15 +664,12 @@ class ViewPropertyAd extends StatelessWidget {
                               children: [
                                 OutlinedButton(
                                   onPressed: () async {
-                                    final date = await controller._pickDate();
+                                    final date = await controller._pickDate(
+                                        isCheckIn: true);
 
                                     if (date != null) {
                                       controller.checkIn(date);
-
-                                      if (date
-                                          .isAfter(controller.checkOut.value)) {
-                                        controller._resetDates();
-                                      }
+                                      controller._resetDates();
                                     }
                                   },
                                   child: const Text("Change check In"),
@@ -632,15 +723,33 @@ class ViewPropertyAd extends StatelessWidget {
                   ],
                   const Divider(height: 20),
                   if (!ad.isMine)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () => controller.bookProperty(ad),
-                        child: const Text("Book property"),
-                      ),
-                    ),
+                    GetBuilder<_VewPropertyController>(builder: (controller) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: controller.bookingId != null
+                                ? Colors.red
+                                : const Color.fromRGBO(96, 15, 116, 1),
+                          ),
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : () {
+                                  if (controller.bookingId != null) {
+                                    controller.cancelBooking(ad);
+                                  } else {
+                                    controller.bookProperty(ad);
+                                  }
+                                },
+                          child: Text(
+                            controller.bookingId != null
+                                ? "Cancel booking"
+                                : "Book property",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),

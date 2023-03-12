@@ -1,16 +1,20 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/components/alert.dart';
 import 'package:roomy_finder/components/phone_input.dart';
+import 'package:roomy_finder/components/place_seach_delagate.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/data/constants.dart';
@@ -19,10 +23,14 @@ import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
+import 'package:roomy_finder/screens/utility_screens/google_map.dart';
+import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class _PostPropertyAdController extends LoadingController {
+  // Input controller
   final _informationFormKey = GlobalKey<FormState>();
   final _agentBrokerFormKey = GlobalKey<FormState>();
   final _addressFormKey = GlobalKey<FormState>();
@@ -46,6 +54,8 @@ class _PostPropertyAdController extends LoadingController {
   final amenties = <String>[].obs;
 
   PhoneNumber agentPhoneNumber = PhoneNumber();
+  CameraPosition? cameraPosition;
+  PlaceAutoCompletePredicate? autoCompletePredicate;
 
   final information = <String, Object?>{
     "type": "Bed",
@@ -85,30 +95,6 @@ class _PostPropertyAdController extends LoadingController {
     "phone": "",
   }.obs;
 
-  List<String> get _areasBasedOnCity {
-    switch (address["city"]) {
-      case "Dubai":
-        return dubaiCities;
-      case "Abu Dhabi":
-        return abuDahbiCities;
-      case "Sharjah":
-        return sharjahCities;
-      case "Umm al-Quwain":
-      case "Fujairah":
-      case "Ajam":
-        return [...jeddahCities, ...meccaCities, ...riyadhCities];
-      default:
-        return [
-          ...jeddahCities,
-          ...meccaCities,
-          ...riyadhCities,
-          ...dubaiCities,
-          ...abuDahbiCities,
-          ...sharjahCities,
-        ];
-    }
-  }
-
   @override
   void onInit() {
     _pageController = PageController();
@@ -141,6 +127,8 @@ class _PostPropertyAdController extends LoadingController {
       if (oldData!.agentInfo != null) {
         agentBrokerInformation(oldData!.agentInfo!);
       }
+      cameraPosition = oldData?.cameraPosition;
+      autoCompletePredicate = oldData?.autoCompletePredicate;
 
       socialPreferences(oldData!.socialPreferences);
     }
@@ -157,14 +145,14 @@ class _PostPropertyAdController extends LoadingController {
 
   void _moveToNextPage() {
     _pageController.nextPage(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 100),
       curve: Curves.linear,
     );
   }
 
   void _moveToPreviousPage() {
     _pageController.previousPage(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 100),
       curve: Curves.linear,
     );
   }
@@ -196,7 +184,29 @@ class _PostPropertyAdController extends LoadingController {
     }
   }
 
-  Future<void> saveAd() async {
+  Future<void> _pickVideo() async {
+    if (videos.length >= 10) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      final data = await picker.pickVideo(source: ImageSource.gallery);
+      if (data != null) {
+        videos.add(data);
+      }
+    } catch (e) {
+      Get.log("$e");
+      showGetSnackbar('someThingWhenWrong'.tr, severity: Severity.error);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  void _playVideo(String source, bool isAsset) {
+    Get.to(() => PlayVideoScreen(source: source, isAsset: isAsset));
+  }
+
+  Future<void> _savePropertyAd() async {
     isLoading(true);
 
     List<String> imagesUrls = [];
@@ -208,6 +218,86 @@ class _PostPropertyAdController extends LoadingController {
         "amenties": amenties,
         "agentInfo": agentBrokerInformation,
         "socialPreferences": socialPreferences,
+        "cameraPosition": cameraPosition?.toMap(),
+        "autoCompletePredicate": autoCompletePredicate?.toMap(),
+      };
+
+      if (data["deposit"] != true) data.remove("depositPrice");
+
+      final imagesTaskFuture = images.map((e) async {
+        final imgRef = FirebaseStorage.instance
+            .ref()
+            .child('images')
+            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+
+        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
+
+        final imageUrl = await (await uploadTask).ref.getDownloadURL();
+
+        return imageUrl;
+      }).toList();
+
+      imagesUrls = await Future.wait(imagesTaskFuture);
+
+      final videoTaskFuture = videos.map((e) async {
+        final imgRef = FirebaseStorage.instance
+            .ref()
+            .child('videos')
+            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+
+        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
+
+        final videoUrl = await (await uploadTask).ref.getDownloadURL();
+
+        return videoUrl;
+      }).toList();
+
+      videosUrls = await Future.wait(videoTaskFuture);
+
+      data["images"] = imagesUrls;
+      data["videos"] = videosUrls;
+
+      final res = await ApiService.getDio.post("/ads/property-ad", data: data);
+
+      if (res.statusCode != 200) {
+        deleteManyFilesFromUrl(imagesUrls);
+        deleteManyFilesFromUrl(videosUrls);
+      }
+
+      switch (res.statusCode) {
+        case 200:
+          Get.offNamedUntil(
+            "/my-property-ads",
+            ModalRoute.withName('/home'),
+          );
+
+          break;
+        default:
+          showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
+      }
+    } catch (e) {
+      Get.log("$e");
+      deleteManyFilesFromUrl(imagesUrls);
+      deleteManyFilesFromUrl(videosUrls);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> _upatePropertyAd() async {
+    isLoading(true);
+
+    List<String> imagesUrls = [];
+    List<String> videosUrls = [];
+    try {
+      final data = {
+        ...information,
+        "address": address,
+        "amenties": amenties,
+        "agentInfo": agentBrokerInformation,
+        "socialPreferences": socialPreferences,
+        "cameraPosition": cameraPosition?.toMap(),
+        "autoCompletePredicate": autoCompletePredicate?.toMap(),
       };
 
       if (data["deposit"] != true) data.remove("depositPrice");
@@ -245,64 +335,35 @@ class _PostPropertyAdController extends LoadingController {
       data["images"] = [...oldImages, ...imagesUrls];
       data["videos"] = [...oldVideos, ...videosUrls];
 
-      if (oldData == null) {
-        final res =
-            await ApiService.getDio.post("/ads/property-ad", data: data);
+      final res = await ApiService.getDio
+          .put("/ads/property-ad/${oldData?.id}", data: data);
 
-        if (res.statusCode != 200) {
-          deleteManyFilesFromUrl(imagesUrls);
-          deleteManyFilesFromUrl(videosUrls);
-        }
+      if (res.statusCode != 200) {
+        deleteManyFilesFromUrl(imagesUrls);
+        deleteManyFilesFromUrl(videosUrls);
+      }
 
-        switch (res.statusCode) {
-          case 200:
-            isLoading(false);
-            await showConfirmDialog(
-              "Ad posted successfully. "
-              "You just made another advertisement journey",
-              isAlert: true,
-            );
-            Get.offNamedUntil(
-              "/my-property-ads",
-              ModalRoute.withName('/home'),
-            );
-            break;
-          case 500:
-            showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
-            break;
-          default:
-        }
-      } else {
-        final res = await ApiService.getDio
-            .put("/ads/property-ad/${oldData?.id}", data: data);
+      switch (res.statusCode) {
+        case 200:
+          isLoading(false);
+          await showConfirmDialog("Ad updated successfully. ", isAlert: true);
 
-        if (res.statusCode != 200) {
-          deleteManyFilesFromUrl(imagesUrls);
-          deleteManyFilesFromUrl(videosUrls);
-        }
-
-        switch (res.statusCode) {
-          case 200:
-            isLoading(false);
-            await showConfirmDialog("Ad updated successfully. ", isAlert: true);
-
-            deleteManyFilesFromUrl(
-              oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
-            );
-            deleteManyFilesFromUrl(
-              oldData!.videos.where((e) => !oldVideos.contains(e)).toList(),
-            );
-            Get.offNamedUntil(
-              "/my-property-ads",
-              ModalRoute.withName('/home'),
-            );
-            break;
-          case 500:
-            showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
-            break;
-          default:
-            showToast("someThingWentWrong".tr);
-        }
+          deleteManyFilesFromUrl(
+            oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
+          );
+          deleteManyFilesFromUrl(
+            oldData!.videos.where((e) => !oldVideos.contains(e)).toList(),
+          );
+          Get.offNamedUntil(
+            "/my-property-ads",
+            ModalRoute.withName('/home'),
+          );
+          break;
+        case 500:
+          showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
+          break;
+        default:
+          showToast("someThingWentWrong".tr);
       }
     } catch (e) {
       Get.log("$e");
@@ -332,7 +393,9 @@ class PostPropertyAdScreen extends StatelessWidget {
       child: Obx(() {
         return Scaffold(
           appBar: AppBar(
-            title: Text("postPropertyAd".tr),
+            title: Text(
+              oldData != null ? "Update Property Ad" : "Post Property Ad",
+            ),
             backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
           ),
           body: Stack(
@@ -404,8 +467,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 if (numValue == null || numValue < 1) {
                                   return 'invalidPropertyAdQuantityMessage'.tr;
                                 }
-                                if (numValue > 50) {
-                                  return 'Quantity must be less than 50'.tr;
+                                if (numValue > 200) {
+                                  return 'Quantity must be less than 200'.tr;
                                 }
                                 return null;
                               },
@@ -505,7 +568,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             ],
 
                             // Deposit
-                            Text('deposit'.tr),
+                            // Text('deposit'.tr),
                             Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(5),
@@ -538,7 +601,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                             as String,
                                 enabled: controller.isLoading.isFalse,
                                 decoration: InputDecoration(
-                                  hintText: 'depositFee'.tr,
+                                  hintText: 'Example 100 AED'.tr,
                                   suffixText: 'AED',
                                 ),
                                 onChanged: (value) => controller
@@ -568,7 +631,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   .information["description"] as String,
                               enabled: controller.isLoading.isFalse,
                               decoration: InputDecoration(
-                                hintText: 'description'.tr,
+                                hintText: 'Add your ad description here'.tr,
                               ),
                               onChanged: (value) =>
                                   controller.information["description"] = value,
@@ -720,22 +783,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Alert(
-                              text: "We'll use this info to "
-                                      "show an approximate position"
-                                      " of your property on our maps , but we won't"
-                                      " disclose your full address on your ad"
-                                  .tr,
-                            ),
-
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
                             // City
                             Text('city'.tr),
                             TypeAheadFormField<String>(
                               textFieldConfiguration: TextFieldConfiguration(
                                 controller: controller._cityController,
-                                decoration: InputDecoration(
-                                  hintText: 'city'.tr,
+                                decoration: const InputDecoration(
+                                  hintText: 'Example : Dubai',
                                 ),
                               ),
                               itemBuilder: (context, itemData) {
@@ -750,10 +805,13 @@ class PostPropertyAdScreen extends StatelessWidget {
                               },
                               suggestionsCallback: (pattern) {
                                 return unitedArabEmiteCities.where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
+                                  (e) {
+                                    final lowerPattern =
+                                        pattern.toLowerCase().trim();
+                                    final lowerSearch = e.toLowerCase().trim();
+                                    return lowerSearch.contains(lowerPattern) ||
+                                        lowerSearch == lowerPattern;
+                                  },
                                 );
                               },
                               validator: (value) {
@@ -773,32 +831,23 @@ class PostPropertyAdScreen extends StatelessWidget {
                             const SizedBox(height: 20),
                             // Location
                             Text('location'.tr),
-                            TypeAheadFormField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._locationController,
-                                decoration: InputDecoration(
-                                  hintText: 'location'.tr,
+                            TextFormField(
+                              readOnly: true,
+                              controller: controller._locationController,
+                              decoration: InputDecoration(
+                                hintText: '20 Dhabyan Street - Abu Dhabi'.tr,
+                                suffixIcon: IconButton(
+                                  onPressed: controller
+                                          ._locationController.text.isEmpty
+                                      ? null
+                                      : () {
+                                          controller.address["location"] = "";
+                                          controller._locationController
+                                              .clear();
+                                        },
+                                  icon: const Icon(Icons.clear),
                                 ),
                               ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["location"] = suggestion;
-                                controller._locationController.text =
-                                    suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return controller._areasBasedOnCity.where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
-                                );
-                              },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'thisFieldIsRequired'.tr;
@@ -812,6 +861,23 @@ class PostPropertyAdScreen extends StatelessWidget {
                                       newValue;
                                 }
                               },
+                              onTap: () async {
+                                final result = await showSearch(
+                                  context: context,
+                                  delegate: PlaceSearchDelegate(
+                                    initialstring:
+                                        controller._locationController.text,
+                                  ),
+                                );
+
+                                if (result is PlaceAutoCompletePredicate) {
+                                  controller.address["location"] =
+                                      result.mainText;
+                                  controller._locationController.text =
+                                      result.mainText;
+                                  controller.autoCompletePredicate = result;
+                                }
+                              },
                             ),
 
                             const SizedBox(height: 10),
@@ -820,8 +886,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                             TextFormField(
                               initialValue: controller.address["buildingName"],
                               enabled: controller.isLoading.isFalse,
-                              decoration:
-                                  InputDecoration(hintText: 'buildingName'.tr),
+                              decoration: InputDecoration(
+                                  hintText: 'Your property building'.tr),
                               onChanged: (value) =>
                                   controller.address["buildingName"] = value,
                               validator: (value) {
@@ -838,7 +904,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               initialValue: controller.address["floorNumber"],
                               enabled: controller.isLoading.isFalse,
                               decoration:
-                                  InputDecoration(hintText: 'floorNumber'.tr),
+                                  InputDecoration(hintText: 'Examlple : 17'.tr),
                               onChanged: (value) =>
                                   controller.address["floorNumber"] = value,
                               validator: (value) {
@@ -853,107 +919,202 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     RegExp(r'^\d*'))
                               ],
                             ),
+                            const SizedBox(height: 10),
+
+                            GetBuilder<_PostPropertyAdController>(
+                                builder: (controller) {
+                              return Row(
+                                children: [
+                                  if (controller.cameraPosition == null)
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                          ),
+                                          onPressed: () async {
+                                            final pos = await Get.to(
+                                              () => FlutterGoogleMapScreen(
+                                                initialPosition:
+                                                    controller.cameraPosition,
+                                              ),
+                                            );
+
+                                            if (pos is CameraPosition) {
+                                              controller.cameraPosition = pos;
+                                              controller.update();
+                                            }
+                                          },
+                                          icon: const Icon(
+                                            Icons.map,
+                                            color: Colors.white,
+                                          ),
+                                          label: const Text('Add map location',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              )),
+                                        ),
+                                      ),
+                                    ),
+                                  if (controller.cameraPosition != null)
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                          ),
+                                          onPressed: () async {
+                                            controller.cameraPosition = null;
+                                            controller.update();
+                                          },
+                                          icon: const Icon(
+                                            Icons.map,
+                                            color: Colors.white,
+                                          ),
+                                          label: const Text(
+                                            "Remove map",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (controller.cameraPosition != null)
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                          ),
+                                          onPressed: () {
+                                            Get.to(() => FlutterGoogleMapScreen(
+                                                  initialPosition:
+                                                      controller.cameraPosition,
+                                                ));
+                                          },
+                                          icon: const Icon(
+                                            Icons.visibility,
+                                            color: Colors.white,
+                                          ),
+                                          label: GetBuilder<
+                                                  _PostPropertyAdController>(
+                                              builder: (controller) {
+                                            return const Text("View location",
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ));
+                                          }),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }),
+                            const SizedBox(height: 10),
                           ],
                         ),
                       ),
                     ),
 
                     // Images/Videos
+
                     SingleChildScrollView(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-                          Alert(
-                            text: "Help everyone imagine What it's like "
-                                    "to live at your property upload clear"
-                                    " photo and video of your property"
-                                .tr,
-                          ),
-                          const SizedBox(height: 10),
-                          if (controller.oldImages.isNotEmpty)
-                            Text("Old Images".tr),
-                          if (controller.oldImages.isNotEmpty)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: controller.oldImages
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                                width: 1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                            margin: const EdgeInsets.all(5),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              child: Image.network(
-                                                e,
-                                                height: 300,
-                                              ),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              controller.oldImages.remove(e);
-                                            },
-                                            child: const Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red,
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
+                          Center(
+                            child: Text(
+                              "Images and videos".tr,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
                             ),
-                          Text("images".tr),
-                          if (controller.images.isEmpty)
+                          ),
+                          if (controller.images.isEmpty &&
+                              controller.oldImages.isEmpty &&
+                              controller.videos.isEmpty &&
+                              controller.oldVideos.isEmpty)
                             Card(
                               child: Container(
+                                alignment: Alignment.center,
                                 padding: const EdgeInsets.all(10),
-                                height: 100,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(),
-                                      icon: const Icon(Icons.image),
-                                      label: Text("pictures".tr),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(
-                                              gallery: false),
-                                      icon: const Icon(Icons.camera),
-                                      label: Text("camera".tr),
-                                    ),
-                                  ],
+                                height: 150,
+                                child: const Text(
+                                  "Help everyone imagine What it's like "
+                                  "to live at your property upload clear"
+                                  " photo and video of your property",
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
-                            )
-                          else
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: controller.images
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          Container(
+                            ),
+                          if (controller.images.length +
+                                  controller.oldImages.length !=
+                              0)
+                            GridView.count(
+                              crossAxisCount: Get.width > 370 ? 4 : 2,
+                              crossAxisSpacing: 10,
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              children: [
+                                ...controller.oldImages.map((e) {
+                                  return {
+                                    "onTap": () =>
+                                        controller.oldImages.remove(e),
+                                    "imageUrl": e,
+                                    "isFile": false,
+                                    "onViewImage": () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: Get.context!,
+                                        builder: (context) {
+                                          return SafeArea(
+                                            child: CachedNetworkImage(
+                                              imageUrl: e,
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                  };
+                                }),
+                                ...controller.images.map((e) {
+                                  return {
+                                    "onTap": () => controller.images.remove(e),
+                                    "imageUrl": e.path,
+                                    "isFile": true,
+                                    "onViewImage": () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: Get.context!,
+                                        builder: (context) {
+                                          return SafeArea(
+                                            child: Image.file(File(e.path)),
+                                          );
+                                        },
+                                      );
+                                    }
+                                  };
+                                }),
+                              ]
+                                  .map(
+                                    (e) => Stack(
+                                      alignment: Alignment.topRight,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: e["onViewImage"] as void
+                                              Function()?,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: double.infinity,
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: Colors.grey,
@@ -966,47 +1127,168 @@ class PostPropertyAdScreen extends StatelessWidget {
                                             child: ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(5),
-                                              child: Image.file(
-                                                File(e.path),
-                                                height: 300,
-                                              ),
+                                              child:
+                                                  Builder(builder: (context) {
+                                                if (e["isFile"] == true) {
+                                                  return Image.file(
+                                                    File("${e["imageUrl"]}"),
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                }
+                                                return CachedNetworkImage(
+                                                  imageUrl: "${e["imageUrl"]}",
+                                                  fit: BoxFit.cover,
+                                                );
+                                              }),
                                             ),
                                           ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              controller.images.remove(e);
-                                            },
+                                        ),
+                                        GestureDetector(
+                                          onTap: e["onTap"] as void Function()?,
+                                          child: const Icon(
+                                            Icons.remove_circle,
+                                            color: Colors.red,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          if (controller.videos.length +
+                                  controller.oldVideos.length !=
+                              0)
+                            GridView.count(
+                              crossAxisCount: Get.width > 370 ? 4 : 2,
+                              crossAxisSpacing: 10,
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              children: [
+                                ...controller.oldVideos.map((e) {
+                                  return {
+                                    "onTap": () =>
+                                        controller.oldVideos.remove(e),
+                                    "onPlayVideo": () {
+                                      controller._playVideo(e, false);
+                                    },
+                                    "url": e,
+                                    "isFile": false,
+                                  };
+                                }),
+                                ...controller.videos.map((e) {
+                                  return {
+                                    "onTap": () => controller.videos.remove(e),
+                                    "onPlayVideo": () {
+                                      controller._playVideo(e.path, false);
+                                    },
+                                    "url": e.path,
+                                    "isFile": true,
+                                  };
+                                }),
+                              ]
+                                  .map(
+                                    (e) => Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                              width: 1,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          margin: const EdgeInsets.all(5),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            child: Builder(builder: (context) {
+                                              if (e["isFile"] == true) {
+                                                return FutureBuilder(
+                                                  builder: (ctx, asp) {
+                                                    if (asp.hasData) {
+                                                      return Image.memory(
+                                                        asp.data!,
+                                                        fit: BoxFit.cover,
+                                                        alignment:
+                                                            Alignment.center,
+                                                      );
+                                                    }
+                                                    return Container();
+                                                  },
+                                                  future: VideoThumbnail
+                                                      .thumbnailData(
+                                                    video: "${e["url"]}",
+                                                  ),
+                                                );
+                                              }
+                                              return FutureBuilder(
+                                                builder: (ctx, asp) {
+                                                  if (asp.hasData) {
+                                                    return Image.file(
+                                                      File("${asp.data}"),
+                                                      fit: BoxFit.cover,
+                                                      alignment:
+                                                          Alignment.center,
+                                                    );
+                                                  }
+                                                  return Container();
+                                                },
+                                                future: VideoThumbnail
+                                                    .thumbnailFile(
+                                                  video: "${e["url"]}",
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: e["onPlayVideo"] as void
+                                              Function()?,
+                                          child: const Icon(
+                                            Icons.play_arrow,
+                                            size: 40,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: GestureDetector(
+                                            onTap:
+                                                e["onTap"] as void Function()?,
                                             child: const Icon(
                                               Icons.remove_circle,
                                               color: Colors.red,
                                             ),
-                                          )
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
                             ),
-                          if (controller.images.isNotEmpty &&
-                              controller.images.length < 10)
-                            const SizedBox(height: 20),
-                          if (controller.images.isNotEmpty &&
-                              controller.images.length < 10)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                SizedBox(
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
                                   height: 35,
                                   child: ElevatedButton.icon(
                                     onPressed: controller.images.length >= 10
                                         ? null
                                         : () => controller._pickPicture(),
                                     icon: const Icon(Icons.image),
-                                    label: Text("pictures".tr),
+                                    label: Text("Images".tr),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                SizedBox(
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: SizedBox(
                                   height: 35,
                                   child: ElevatedButton.icon(
                                     onPressed: controller.images.length >= 10
@@ -1017,25 +1299,24 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     label: Text("camera".tr),
                                   ),
                                 ),
-                              ],
-                            ),
-                          const SizedBox(height: 30),
-                          const Text("Videos"),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              SizedBox(
-                                height: 35,
-                                child: ElevatedButton.icon(
-                                  onPressed: controller.images.length >= 10
-                                      ? null
-                                      : () {},
-                                  icon: const Icon(Icons.image),
-                                  label: Text("Viedos".tr),
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 35,
+                                  child: ElevatedButton.icon(
+                                    onPressed: controller.images.length >= 10
+                                        ? null
+                                        : controller._pickVideo,
+                                    icon: const Icon(Icons.video_camera_back),
+                                    label: Text("Videos".tr),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 20),
+                          const SizedBox(height: 50),
                         ],
                       ),
                     ),
@@ -1055,7 +1336,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'numberOfPeople'.tr,
-                              helperText: 'howManyPeopleInYourProperty'.tr,
                             ),
                             value: controller
                                 .socialPreferences["numberOfPeople"] as String,
@@ -1084,9 +1364,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'nationality'.tr,
-                              helperText:
-                                  'The nationality of the people who live on your property'
-                                      .tr,
                             ),
                             value: controller.socialPreferences["nationality"]
                                 as String,
@@ -1118,9 +1395,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'gender'.tr,
-                              helperText:
-                                  'Gender of people who live in your property'
-                                      .tr,
                             ),
                             value: controller.socialPreferences["gender"]
                                 as String,
@@ -1246,7 +1520,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                 children: [
                   LinearProgressIndicator(
                     color: const Color.fromRGBO(96, 15, 116, 1),
-                    value: (controller._pageIndex.value + 1) / 7,
+                    value: (controller._pageIndex.value + 1) /
+                        (oldData != null ? 7 : 10),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1277,73 +1552,69 @@ class PostPropertyAdScreen extends StatelessWidget {
                       // const Spacer(),
                       // Text('${controller._pageIndex.value + 1}/7'),
                       TextButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () {
-                                  switch (controller._pageIndex.value) {
-                                    case 0:
+                        onPressed: controller.isLoading.isTrue
+                            ? null
+                            : () {
+                                switch (controller._pageIndex.value) {
+                                  case 0:
+                                    controller._moveToNextPage();
+                                    break;
+                                  case 1:
+                                    if (controller
+                                            ._informationFormKey.currentState
+                                            ?.validate() ==
+                                        true) {
                                       controller._moveToNextPage();
-                                      break;
-                                    case 1:
+                                    }
+                                    break;
+                                  case 2:
+                                    if (controller.information['posterType'] ==
+                                        "Agent/Broker") {
                                       if (controller
-                                              ._informationFormKey.currentState
+                                              ._agentBrokerFormKey.currentState
                                               ?.validate() ==
                                           true) {
                                         controller._moveToNextPage();
                                       }
-                                      break;
-                                    case 2:
-                                      if (controller
-                                              .information['posterType'] ==
-                                          "Agent/Broker") {
-                                        if (controller._agentBrokerFormKey
-                                                .currentState
-                                                ?.validate() ==
-                                            true) {
-                                          controller._moveToNextPage();
-                                        }
-                                      } else {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
-                                    case 3:
-                                      if (controller
-                                              ._addressFormKey.currentState
-                                              ?.validate() ==
-                                          true) {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
-                                    case 4:
-                                      if (controller.images.isEmpty &&
-                                          controller.oldImages.isEmpty) {
-                                        showGetSnackbar(
-                                          "You need atleast one image",
-                                          severity: Severity.error,
-                                        );
-                                      } else {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
-                                    case 5:
+                                    } else {
                                       controller._moveToNextPage();
-                                      break;
-                                    case 6:
-                                      controller.saveAd();
-                                      break;
-
-                                    default:
-                                  }
-                                },
-                          child: Builder(
-                            builder: (ctx) {
-                              if (controller._pageIndex.value == 6) {
-                                return Text("save".tr);
-                              }
-
-                              return Text("next".tr);
-                            },
-                          )),
+                                    }
+                                    break;
+                                  case 3:
+                                    if (controller._addressFormKey.currentState
+                                            ?.validate() ==
+                                        true) {
+                                      controller._moveToNextPage();
+                                    }
+                                    break;
+                                  case 4:
+                                    if (controller.images.isEmpty &&
+                                        controller.oldImages.isEmpty) {
+                                      showGetSnackbar(
+                                        "You need atleast one image",
+                                        severity: Severity.error,
+                                      );
+                                    } else {
+                                      controller._moveToNextPage();
+                                    }
+                                    break;
+                                  case 5:
+                                    controller._moveToNextPage();
+                                    break;
+                                  case 6:
+                                    if (oldData != null) {
+                                      controller._upatePropertyAd();
+                                    } else {
+                                      controller._savePropertyAd();
+                                    }
+                                    break;
+                                  default:
+                                }
+                              },
+                        child: controller._pageIndex.value == 6
+                            ? Text("save".tr)
+                            : Text("next".tr),
+                      ),
                       // const Icon(Icons.arrow_right),
                     ],
                   ),
@@ -1361,7 +1632,7 @@ final allAmenties = <String>[
   "Close to metro",
   "Balcony",
   "Kitchen appliances",
-  "Barking",
+  "Parking",
   "WIFI",
   "TV",
   "Shared gym",

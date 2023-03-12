@@ -6,7 +6,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,7 +26,6 @@ import "package:path/path.dart" as path;
 
 class _RegistrationController extends LoadingController {
   final _formkeyCredentials = GlobalKey<FormState>();
-  final _cardFormKey = GlobalKey<FormState>();
 
   final _isVerifyingPhone = false.obs;
 
@@ -53,16 +51,8 @@ class _RegistrationController extends LoadingController {
     "lastName": "",
     "password": "",
     "confirmPassword": "",
-    "country": listOfCountries[0],
+    "country": allCountriesNames[0],
   };
-
-  final bankInfo = {
-    "name": "",
-    "accountNumber": "",
-    "accountHolderName": "",
-    "iban": "",
-    "swiftCode": "",
-  }.obs;
 
   String country = "United Arab Emirates";
   String _verificationId = "";
@@ -233,7 +223,9 @@ class _RegistrationController extends LoadingController {
           ...information,
           "type": accountType.value.name,
           "phone": phoneNumber.phoneNumber,
-          "fcmToken": await FirebaseMessaging.instance.getToken(),
+          "fcmToken": Platform.isIOS
+              ? await FirebaseMessaging.instance.getAPNSToken()
+              : await FirebaseMessaging.instance.getToken(),
           "profilePicture": imageUrl,
         },
       );
@@ -684,7 +676,7 @@ class RegistrationScreen extends StatelessWidget {
                                 hintText: 'country'.tr,
                               ),
                               value: controller.information["country"],
-                              items: listOfCountries
+                              items: allCountriesNames
                                   .map((e) => DropdownMenuItem<String>(
                                       value: e, child: Text(e)))
                                   .toList(),
@@ -731,117 +723,6 @@ class RegistrationScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    // Bank info
-                    if (controller.isLandlord)
-                      SingleChildScrollView(
-                        child: Form(
-                          key: controller._cardFormKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 10),
-                              const Text("Bank Name"),
-                              TextFormField(
-                                initialValue: controller.bankInfo["bankName"],
-                                enabled: controller.isLoading.isFalse,
-                                decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0)),
-                                onChanged: (value) =>
-                                    controller.bankInfo["bankName"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              const Text("Bank account number"),
-                              TextFormField(
-                                initialValue:
-                                    controller.bankInfo["accountNumber"],
-                                enabled: controller.isLoading.isFalse,
-                                decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0)),
-                                onChanged: (value) => controller
-                                    .bankInfo["accountNumber"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  return null;
-                                },
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d*'))
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              const Text("Account holder name"),
-                              TextFormField(
-                                initialValue:
-                                    controller.bankInfo["accountHolderName"],
-                                enabled: controller.isLoading.isFalse,
-                                decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0)),
-                                onChanged: (value) => controller
-                                    .bankInfo["accountHolderName"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              const Text("IBAN"),
-                              TextFormField(
-                                initialValue: controller.bankInfo["iban"],
-                                enabled: controller.isLoading.isFalse,
-                                decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0)),
-                                onChanged: (value) =>
-                                    controller.bankInfo["iban"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              const Text("Swift code"),
-                              TextFormField(
-                                initialValue: controller.bankInfo["swiftCode"],
-                                enabled: controller.isLoading.isFalse,
-                                decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0)),
-                                onChanged: (value) =>
-                                    controller.bankInfo["swiftCode"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 50),
-                            ],
-                          ),
-                        ),
-                      ),
 
                     // Verification
                     SingleChildScrollView(
@@ -938,23 +819,15 @@ class RegistrationScreen extends StatelessWidget {
                 return const SizedBox();
               }
 
-              if (controller.isLandlord) {
-                if (controller._pageIndex.value == 3) {
-                  return const SizedBox();
-                }
-              } else {
-                if (controller._pageIndex.value == 2) {
-                  return const SizedBox();
-                }
+              if (controller._pageIndex.value == 2) {
+                return const SizedBox();
               }
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   LinearProgressIndicator(
-                    color: const Color.fromRGBO(96, 15, 116, 1),
-                    value: (controller._pageIndex.value + 1) /
-                        (controller.isLandlord ? 4 : 3),
-                  ),
+                      color: const Color.fromRGBO(96, 15, 116, 1),
+                      value: (controller._pageIndex.value + 1) / 3),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -981,39 +854,17 @@ class RegistrationScreen extends StatelessWidget {
                                 controller._isVerifyingPhone.isTrue
                             ? null
                             : () async {
-                                if (controller.isLandlord) {
-                                  switch (controller._pageIndex.value) {
-                                    case 0:
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 1:
-                                      final isValid = await controller
-                                          .validateCredentials();
-                                      if (!isValid) return;
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 2:
-                                      final isValid = controller
-                                          ._cardFormKey.currentState
-                                          ?.validate();
-                                      if (isValid != true) return;
-                                      controller.sendSmsCode();
-                                      break;
-                                    default:
-                                  }
-                                } else {
-                                  switch (controller._pageIndex.value) {
-                                    case 0:
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 1:
-                                      final isValid = await controller
-                                          .validateCredentials();
-                                      if (!isValid) return;
-                                      controller.sendSmsCode();
-                                      break;
-                                    default:
-                                  }
+                                switch (controller._pageIndex.value) {
+                                  case 0:
+                                    controller._moveToNextPage();
+                                    break;
+                                  case 1:
+                                    final isValid =
+                                        await controller.validateCredentials();
+                                    if (!isValid) return;
+                                    controller.sendSmsCode();
+                                    break;
+                                  default:
                                 }
                               },
                         child: Text("next".tr),

@@ -1,5 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -7,8 +8,9 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
+import 'package:roomy_finder/screens/messages/view_notifications.dart';
 import 'package:roomy_finder/screens/user/about.dart';
-import 'package:roomy_finder/screens/user/view_user.dart';
+import 'package:roomy_finder/screens/user/profile/view_profile.dart';
 
 class _AccountTabController extends LoadingController {
   Future<void> _logout(BuildContext context) async {
@@ -17,7 +19,7 @@ class _AccountTabController extends LoadingController {
         builder: (context) {
           return CupertinoAlertDialog(
             title: const Text('Roomy Finder'),
-            content: const Text("Do you really want to logout?"),
+            content: const Text("Are you sure yo want to logout?"),
             actions: [
               CupertinoDialogAction(
                 child: Text("no".tr),
@@ -42,97 +44,178 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   Widget build(BuildContext context) {
+    final me = AppController.me;
+    Get.put(_AccountTabController());
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
+      padding: const EdgeInsets.symmetric(),
       child: SingleChildScrollView(
         child: Column(
           children: [
-            // const HomeUserInfo(),
             const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.person),
+            Obx(() {
+              return SizedBox(
+                width: Get.width - 20,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (context) => CachedNetworkImage(
+                            imageUrl: AppController.me.profilePicture,
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 60,
+                        foregroundImage: CachedNetworkImageProvider(
+                          AppController.instance.user.value.profilePicture,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: Get.width * 0.5,
+                          child: Text(
+                            me.fullName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(
+                          width: Get.width * 0.5,
+                          child: Text(
+                            me.type.replaceFirst(
+                              me.type[0],
+                              me.type[0].toUpperCase(),
+                            ),
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Get.theme.appBarTheme.backgroundColor,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Get.to(() => const ViewProfileScreen());
+                          },
+                          icon: Icon(me.gender == "Male"
+                              ? Icons.person
+                              : Icons.person_4),
+                          label: const Text("All details"),
+                        ),
+                      ],
+                    )
+                  ],
                 ),
-                title: const Text('My account'),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => ViewUser(user: AppController.me));
-                  },
-                  icon: const Icon(Icons.chevron_right),
-                ),
+              );
+            }),
+            const Divider(height: 20),
+            ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.notifications),
               ),
-            ),
-            if (AppController.me.isLandlord)
-              Card(
-                child: ListTile(
-                  onTap: () => Get.to(() => const MyPropertyAdsScreen()),
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.widgets),
-                  ),
-                  title: const Text('My Property Ads'),
-                  trailing: IconButton(
-                    onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ),
+              title: const Text('Notifications'),
+              subtitle: Text(
+                "${AppController.instance.unreadNotificationCount}"
+                " unread notifications",
               ),
-            Card(
-              child: ListTile(
-                onTap: () => Get.to(() => const MyRoommateAdsScreen()),
-                leading: const CircleAvatar(
-                  child: Icon(Icons.houseboat),
-                ),
-                title: const Text('My Premium Ads, Roommate match'),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => const MyRoommateAdsScreen());
-                  },
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ),
-            ),
-            Card(
-              child: ListTile(
-                onTap: () => Get.to(() => const MyBookingsCreen()),
-                leading: const CircleAvatar(
-                  child: Icon(Icons.book),
-                ),
-                title: const Text('My Bookings'),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => const MyBookingsCreen());
-                  },
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ),
-            ),
-            Card(
-              child: ListTile(
-                onTap: () {
-                  Get.to(() => const AboutScreeen());
+              trailing: IconButton(
+                onPressed: () {
+                  Get.to(() => const NotificationsScreen());
                 },
-                leading: const CircleAvatar(child: Icon(Icons.info_outlined)),
-                title: const Text('About'),
-                trailing: const IconButton(
-                  onPressed: null,
-                  icon: Icon(Icons.chevron_right),
-                ),
+                icon: const Icon(Icons.chevron_right),
               ),
             ),
-
-            // Card(
-            //   child: ListTile(
-            //     onTap: () => controller._logout(context),
-            //     leading: CircleAvatar(
-            //       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            //       child: const Icon(Icons.logout, color: Colors.red),
+            // if (me.isLandlord)
+            //   ListTile(
+            //     leading: const CircleAvatar(
+            //       child: Icon(CupertinoIcons.money_dollar_circle),
             //     ),
-            //     title: Text('logout'.tr),
-            //     textColor: Colors.red,
-            //     trailing: const Icon(Icons.chevron_right),
+            //     title: const Text('Accout balance'),
+            //     subtitle: Text(formatMoney(0)),
+            //     trailing: IconButton(
+            //       onPressed: () {},
+            //       icon: const Icon(Icons.chevron_right),
+            //     ),
+            //   ),
+            if (AppController.me.isLandlord)
+              ListTile(
+                onTap: () => Get.to(() => const MyPropertyAdsScreen()),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.widgets),
+                ),
+                title: const Text('My Property Ads'),
+                trailing: IconButton(
+                  onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ),
+            ListTile(
+              onTap: () => Get.to(() => const MyRoommateAdsScreen()),
+              leading: const CircleAvatar(
+                child: Icon(Icons.houseboat),
+              ),
+              title: const Text('My Premium Ads, Roommate match'),
+              trailing: IconButton(
+                onPressed: () {
+                  Get.to(() => const MyRoommateAdsScreen());
+                },
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ),
+            ListTile(
+              onTap: () => Get.to(() => const MyBookingsCreen()),
+              leading: const CircleAvatar(
+                child: Icon(Icons.book),
+              ),
+              title: const Text('My Bookings'),
+              trailing: IconButton(
+                onPressed: () {
+                  Get.to(() => const MyBookingsCreen());
+                },
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ),
+            ListTile(
+              onTap: () {
+                Get.to(() => const AboutScreeen());
+              },
+              leading: const CircleAvatar(child: Icon(Icons.info_outlined)),
+              title: const Text('About'),
+              trailing: const IconButton(
+                onPressed: null,
+                icon: Icon(Icons.chevron_right),
+              ),
+            ),
+            // ListTile(
+            //   onTap: () => controller._logout(context),
+            //   leading: const CircleAvatar(
+            //     child: Icon(Icons.logout, color: Colors.red),
+            //   ),
+            //   title: Text('Logout'.tr),
+            //   textColor: Colors.red,
+            //   trailing: const IconButton(
+            //     onPressed: null,
+            //     icon: Icon(Icons.chevron_right),
             //   ),
             // ),
+            // const Divider(),
+            Row(
+              children: const [],
+            )
           ],
         ),
       ),
@@ -145,13 +228,17 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
       automaticallyImplyLeading: false,
-      title: const Text('Accout'),
+      title: const Text('My Account'),
       centerTitle: false,
       elevation: 0,
       actions: [
-        IconButton(
-          onPressed: () => controller._logout(Get.context!),
-          icon: const Icon(Icons.logout, color: Colors.red),
+        SizedBox(
+          height: 35,
+          child: OutlinedButton.icon(
+            onPressed: () => controller._logout(Get.context!),
+            icon: const Icon(Icons.logout, color: Colors.red),
+            label: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
         )
       ],
     );
@@ -161,7 +248,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
       icon: const Icon(CupertinoIcons.person_alt_circle_fill),
-      label: 'account'.tr,
+      label: 'Account'.tr,
     );
   }
 

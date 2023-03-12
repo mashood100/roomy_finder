@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -79,7 +81,9 @@ class _ResetPasswordScreenController extends LoadingController {
         final mapData = {
           "email": AppController.me.email,
           "password": _passwordController.text.trim(),
-          "fcmToken": await FirebaseMessaging.instance.getToken(),
+          "fcmToken": Platform.isIOS
+              ? await FirebaseMessaging.instance.getAPNSToken()
+              : await FirebaseMessaging.instance.getToken(),
         };
 
         final res = await dio.post('/auth/reset-password', data: mapData);

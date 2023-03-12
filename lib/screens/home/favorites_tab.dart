@@ -38,8 +38,8 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      icon: const Icon(CupertinoIcons.star_fill),
-      label: 'favorites'.tr,
+      icon: const Icon(CupertinoIcons.heart_fill),
+      label: 'Favorites'.tr,
     );
   }
 
