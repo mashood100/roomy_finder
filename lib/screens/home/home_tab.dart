@@ -1,4 +1,3 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -122,7 +121,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                   onTap: () async {
                     await precacheImage(
                       const AssetImage(
-                          "assets/images/appartment-inner-view.jpg"),
+                          "assets/images/appartment-inner-view-2.jpg"),
                       Get.context!,
                     );
                     // ignore: unused_local_variable, use_build_context_synchronously
@@ -146,7 +145,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           child: Image.asset(
-                                            "assets/images/appartment-inner-view.jpg",
+                                            "assets/images/appartment-inner-view-2.jpg",
                                             fit: BoxFit.cover,
                                           ),
                                         ),

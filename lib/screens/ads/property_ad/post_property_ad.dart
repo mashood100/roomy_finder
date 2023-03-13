@@ -806,9 +806,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 controller._cityController.text = suggestion;
                               },
                               suggestionsCallback: (pattern) {
-                                return AppController
-                                    .instance.citiesFromCurrentCountry
-                                    .where(
+                                return citiesFromCurrentCountry.where(
                                   (e) {
                                     final lowerPattern =
                                         pattern.toLowerCase().trim();
@@ -854,7 +852,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     suggestion;
                               },
                               suggestionsCallback: (pattern) {
-                                return getLocations(
+                                return getLocationsFromCity(
                                         controller.address["city"].toString())
                                     .where(
                                   (e) => e

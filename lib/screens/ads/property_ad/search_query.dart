@@ -12,7 +12,7 @@ class _PropertyAdSearchQueryScreenController extends GetxController {
   _PropertyAdSearchQueryScreenController();
 
   final _minBudgetController = TextEditingController();
-  final _cityController = TextEditingController();
+  final _locationController = TextEditingController();
 
   final citySortKey = "".obs;
   final rentType = "Monthly".obs;
@@ -87,6 +87,8 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                     return GestureDetector(
                       onTap: () {
                         controller.city("${e['value']}");
+                        controller.location('');
+                        controller._locationController.clear();
                       },
                       child: Stack(
                         alignment: Alignment.bottomCenter,
@@ -133,7 +135,7 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                     ),
                     child: TypeAheadField<String>(
                       textFieldConfiguration: TextFieldConfiguration(
-                        controller: controller._cityController,
+                        controller: controller._locationController,
                         decoration: const InputDecoration(
                           hintText: "Search location",
                           border: InputBorder.none,
@@ -148,10 +150,11 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                       },
                       onSuggestionSelected: (suggestion) {
                         controller.location(suggestion);
-                        controller._cityController.text = suggestion;
+                        controller._locationController.text = suggestion;
                       },
                       suggestionsCallback: (pattern) {
-                        return getLocations(controller.city.value).where(
+                        return getLocationsFromCity(controller.city.value)
+                            .where(
                           (e) =>
                               e.toLowerCase().toLowerCase().contains(pattern),
                         );

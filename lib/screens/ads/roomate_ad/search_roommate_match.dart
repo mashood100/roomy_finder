@@ -616,9 +616,7 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             controller._cityController.text = suggestion;
                           },
                           suggestionsCallback: (pattern) {
-                            return AppController
-                                .instance.citiesFromCurrentCountry
-                                .where(
+                            return citiesFromCurrentCountry.where(
                               (e) {
                                 final lowerPattern =
                                     pattern.toLowerCase().trim();
@@ -662,7 +660,7 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             controller._locationController.text = suggestion;
                           },
                           suggestionsCallback: (pattern) {
-                            return getLocations(
+                            return getLocationsFromCity(
                                     controller.address["city"].toString())
                                 .where(
                               (e) => e

@@ -29,22 +29,6 @@ class AppController extends GetxController {
   final RxBool haveNewMessage = false.obs;
   final RxInt unreadNotificationCount = 0.obs;
   final country = Country.UAE.obs;
-  List<String> get citiesFromCurrentCountry {
-    if (country.value == Country.UAE) {
-      return [
-        "Dubai",
-        "Abu Dhabi",
-        "Sharjah",
-        "Umm al-Quwain",
-        "Fujairah",
-        "Ajman",
-      ];
-    } else if (country.value == Country.SAUDI_ARABIA) {
-      return ["Jeddah", "Mecca", "Riyadh"];
-    } else {
-      return [];
-    }
-  }
 
   static AppVersion? updateVersion;
 
@@ -59,11 +43,7 @@ class AppController extends GetxController {
 
       initialRoute = "/home";
     } else {
-      if (await getIsFirstStart()) {
-        initialRoute = "/welcome";
-      } else {
-        initialRoute = "/login";
-      }
+      initialRoute = "/welcome";
     }
 
     // Api token

@@ -123,26 +123,12 @@ class Country {
 
   @override
   bool operator ==(covariant Country other) {
-    if (identical(this, other)) return true;
-
-    return other.name == name &&
-        other.code == code &&
-        other.phone == phone &&
-        other.currencyCode == currencyCode &&
-        other.flag == flag &&
-        other.locale == locale &&
-        other.aedCurrencyConvertRate == aedCurrencyConvertRate;
+    return other.code == code;
   }
 
   @override
   int get hashCode {
-    return name.hashCode ^
-        code.hashCode ^
-        phone.hashCode ^
-        currencyCode.hashCode ^
-        flag.hashCode ^
-        locale.hashCode ^
-        aedCurrencyConvertRate.hashCode;
+    return code.hashCode;
   }
 
   static Country getCountryFromCode(String countryCode) {

@@ -1,15 +1,10 @@
 // ignore_for_file: constant_identifier_names
 
-const SERVER_URL = "http://192.168.43.128:39005";
+// const SERVER_URL = "http://192.168.43.128:39005";
 // const SERVER_URL = "http://192.168.43.34:39005";
-// const SERVER_URL = "http://roomyfinder.ap-1.evennode.com";
+const SERVER_URL = "http://roomyfinder.ap-1.evennode.com";
 
 const API_URL = "$SERVER_URL/api/v1";
-
-final passwordRegex =
-    RegExp(r"^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*~_ ]).{6,15}$");
-
-final userNameRegex = RegExp(r'^(?=[a-zA-Z_\- #\d]*[a-z]).{6,15}$');
 
 final priceRegex = RegExp(r'(^\d*\.?\d{0,2})');
 

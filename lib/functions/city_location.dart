@@ -2,8 +2,26 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/models/country.dart';
 
-List<String> getLocations(String city) {
-  if (AppController.instance.country.value == Country.UAE) {
+List<String> get citiesFromCurrentCountry {
+  if (AppController.instance.country.value.code == Country.UAE.code) {
+    return [
+      "Dubai",
+      "Abu Dhabi",
+      "Sharjah",
+      "Umm al-Quwain",
+      "Fujairah",
+      "Ajman",
+    ];
+  } else if (AppController.instance.country.value.code ==
+      Country.SAUDI_ARABIA.code) {
+    return ["Jeddah", "Mecca", "Riyadh"];
+  } else {
+    return [];
+  }
+}
+
+List<String> getLocationsFromCity(String city) {
+  if (AppController.instance.country.value.code == Country.UAE.code) {
     switch (city.trim()) {
       case "Dubai":
         return dubaiCities;
@@ -18,7 +36,8 @@ List<String> getLocations(String city) {
       case "Ajman":
         return ajmanCities;
     }
-  } else if (AppController.instance.country.value == Country.SAUDI_ARABIA) {
+  } else if (AppController.instance.country.value.code ==
+      Country.SAUDI_ARABIA.code) {
     switch (city.trim()) {
       case "Jeddah":
         return jeddahCities;

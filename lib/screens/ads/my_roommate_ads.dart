@@ -59,7 +59,6 @@ class MyRoommateAdsScreen extends StatelessWidget {
       onRefresh: controller._fetchData,
       child: Scaffold(
         appBar: AppBar(
-          leadingWidth: 25,
           title: Text("My Ads".tr),
           actions: [
             Obx(() {
