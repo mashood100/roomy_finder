@@ -41,6 +41,7 @@ class _FlyerChatScreenController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    conversation.updateChatInfo();
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
       final data = event.data;
       AppController.instance.haveNewMessage(false);

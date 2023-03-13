@@ -8,7 +8,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/user.dart';
@@ -187,9 +186,11 @@ class NotificationController {
         );
 
         break;
+      case "new-message":
+        messageHandler(msg);
+        break;
       case "plan-upgraded-successfully":
         final message = msg.data["message"] ?? "new notification";
-        AppController.instance.user.value.isPremium = true;
 
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);

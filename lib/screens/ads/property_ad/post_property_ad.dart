@@ -1214,7 +1214,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Text("Nedd photograph?".tr),
+                              Text("Nedd photographer?".tr),
                               const Spacer(),
                             ],
                           ),

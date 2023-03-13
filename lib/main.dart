@@ -50,14 +50,6 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen((msg) {
     NotificationController.firebaseMessagingHandler(msg);
-    if (msg.data["event"] == "new-message") {
-      NotificationController.messageHandler(msg);
-      AppController.instance.haveNewMessage(true);
-    } else {
-      AppController.instance.unreadNotificationCount(
-        AppController.instance.unreadNotificationCount.value + 1,
-      );
-    }
   });
 
   // Dynamic link
@@ -319,10 +311,6 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-
-  if (message.data["event"] == "new-message") {
-    NotificationController.messageHandler(message);
-  }
 
   NotificationController.firebaseMessagingHandler(message);
 }

@@ -2,6 +2,8 @@ library home_screen;
 
 import 'dart:async';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
@@ -22,6 +24,40 @@ class HomeController extends LoadingController {
   final currentTabIndex = 0.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
+
+  @override
+  void onInit() {
+    if (AppController.initialLink != null) {
+      dynamicLinkHandler(AppController.initialLink!);
+    }
+
+    Future(_runStartFutures);
+
+    super.onInit();
+
+    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+      final data = event.data;
+      // AppController.instance.haveNewMessage(false);
+      switch (data["event"]) {
+        case "plan-upgraded-successfully":
+          AppController.instance.user.update((val) {
+            if (val != null) {
+              val.isPremium = true;
+            }
+          });
+          showToast("Plan successfully upgraded to premium");
+
+          break;
+        case "new-message":
+          if (currentTabIndex.value != 2) {
+            AppController.instance.haveNewMessage(true);
+          }
+
+          break;
+        default:
+      }
+    });
+  }
 
   Future<void> _runStartFutures() async {
     await _promptUpdate();
@@ -52,17 +88,6 @@ class HomeController extends LoadingController {
     );
 
     if (shouldUpdate == true) downloadAppUpdate();
-  }
-
-  @override
-  void onInit() {
-    if (AppController.initialLink != null) {
-      dynamicLinkHandler(AppController.initialLink!);
-    }
-
-    Future(_runStartFutures);
-
-    super.onInit();
   }
 
   @override
@@ -103,6 +128,10 @@ class Home extends GetView<HomeController> {
                 final chatController = Get.put(ChatTabController());
                 chatController.update();
                 AppController.instance.haveNewMessage(false);
+                AwesomeNotifications()
+                    .cancelNotificationsByChannelKey("chat_channel_key");
+                AwesomeNotifications()
+                    .cancelNotificationsByGroupKey("chat_channel_group_key");
               }
             },
             items: tabs.map((e) => e.navigationBarItem).toList(),
