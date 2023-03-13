@@ -1,8 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_locale.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
+import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/app_version.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +35,12 @@ class AppController extends GetxController {
   final country = Country.UAE.obs;
 
   static AppVersion? updateVersion;
+
+  @override
+  void onInit() {
+    super.onInit();
+    setupToken();
+  }
 
   Future<void> initRequired() async {
     // User
@@ -243,7 +253,31 @@ class AppController extends GetxController {
     } catch (e, trace) {
       log(e);
       log(trace);
+      FirebaseAuth.instance.signOut();
     }
+  }
+
+  // FCM
+  Future<void> saveTokenToDatabase(String token) async {
+    try {
+      await ApiService.getDio.post(
+        "$API_URL/profile/credentials",
+        data: {"fcmToken": token},
+      );
+    } catch (e) {
+      log(e);
+    }
+  }
+
+  Future<void> setupToken() async {
+    // Get the token each time the application loads
+    String? token = await FirebaseMessaging.instance.getToken();
+
+    // Save the initial token to the database
+    await saveTokenToDatabase(token!);
+
+    // Any time the token refreshes, store this in the database too.
+    FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
   }
 }
 

@@ -34,9 +34,7 @@ class _LoginController extends LoadingController {
       final data = {
         'email': _emailController.text,
         "password": _passwordController.text,
-        "fcmToken": Platform.isIOS
-            ? await FirebaseMessaging.instance.getAPNSToken()
-            : await FirebaseMessaging.instance.getToken(),
+        "fcmToken": await FirebaseMessaging.instance.getToken(),
       };
 
       final res = await dio.post("/auth/login", data: data);

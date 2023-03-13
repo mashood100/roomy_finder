@@ -79,9 +79,7 @@ class _ResetPasswordScreenController extends LoadingController {
         final mapData = {
           "phone": _phoneNumber.phoneNumber,
           "password": _passwordController.text.trim(),
-          "fcmToken": Platform.isIOS
-              ? await FirebaseMessaging.instance.getAPNSToken()
-              : await FirebaseMessaging.instance.getToken(),
+          "fcmToken": await FirebaseMessaging.instance.getToken(),
         };
 
         final res =

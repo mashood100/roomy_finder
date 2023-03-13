@@ -223,9 +223,7 @@ class _RegistrationController extends LoadingController {
           ...information,
           "type": accountType.value.name,
           "phone": phoneNumber.phoneNumber,
-          "fcmToken": Platform.isIOS
-              ? await FirebaseMessaging.instance.getAPNSToken()
-              : await FirebaseMessaging.instance.getToken(),
+          "fcmToken": await FirebaseMessaging.instance.getToken(),
           "profilePicture": imageUrl,
         },
       );
