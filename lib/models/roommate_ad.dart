@@ -1,8 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/models/user.dart';
 
 class RoommateAd {
@@ -22,9 +20,6 @@ class RoommateAd {
   Map<String, Object> aboutYou;
   Map<String, Object> socialPreferences;
 
-  CameraPosition? cameraPosition;
-  PlaceAutoCompletePredicate? autoCompletePredicate;
-
   RoommateAd({
     required this.id,
     required this.poster,
@@ -41,8 +36,6 @@ class RoommateAd {
     required this.address,
     required this.aboutYou,
     required this.socialPreferences,
-    this.cameraPosition,
-    this.autoCompletePredicate,
   });
 
   bool get isMine => poster.isMe;
@@ -76,8 +69,6 @@ class RoommateAd {
       'address': address,
       'aboutYou': aboutYou,
       'socialPreferences': socialPreferences,
-      'cameraPosition': cameraPosition?.toMap(),
-      'autoCompletePredicate': autoCompletePredicate?.toMap(),
     };
   }
 
@@ -99,12 +90,6 @@ class RoommateAd {
       aboutYou: Map<String, Object>.from((map['aboutYou'] as Map)),
       socialPreferences:
           Map<String, Object>.from((map['socialPreferences'] as Map)),
-      cameraPosition: map["cameraPosition"] == null
-          ? null
-          : CameraPosition.fromMap(map["cameraPosition"]),
-      autoCompletePredicate: map["autoCompletePredicate"] == null
-          ? null
-          : PlaceAutoCompletePredicate.fromMap(map["autoCompletePredicate"]),
     );
   }
 

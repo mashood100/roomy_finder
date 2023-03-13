@@ -14,16 +14,15 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/components/alert.dart';
 import 'package:roomy_finder/components/phone_input.dart';
-import 'package:roomy_finder/components/place_seach_delagate.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
-import 'package:roomy_finder/screens/utility_screens/google_map.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
@@ -40,6 +39,7 @@ class _PostPropertyAdController extends LoadingController {
 
   late final PageController _pageController;
   final _pageIndex = 0.obs;
+  final needsPhotograph = false.obs;
 
   final PropertyAd? oldData;
   _PostPropertyAdController({this.oldData});
@@ -220,6 +220,7 @@ class _PostPropertyAdController extends LoadingController {
         "socialPreferences": socialPreferences,
         "cameraPosition": cameraPosition?.toMap(),
         "autoCompletePredicate": autoCompletePredicate?.toMap(),
+        "needsPhotograph": needsPhotograph.value,
       };
 
       if (data["deposit"] != true) data.remove("depositPrice");
@@ -602,7 +603,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 enabled: controller.isLoading.isFalse,
                                 decoration: InputDecoration(
                                   hintText: 'Example 100 AED'.tr,
-                                  suffixText: 'AED',
+                                  suffixText: AppController
+                                      .instance.country.value.currencyCode,
                                 ),
                                 onChanged: (value) => controller
                                     .information["depositFee"] = value,
@@ -804,7 +806,9 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 controller._cityController.text = suggestion;
                               },
                               suggestionsCallback: (pattern) {
-                                return unitedArabEmiteCities.where(
+                                return AppController
+                                    .instance.citiesFromCurrentCountry
+                                    .where(
                                   (e) {
                                     final lowerPattern =
                                         pattern.toLowerCase().trim();
@@ -831,55 +835,35 @@ class PostPropertyAdScreen extends StatelessWidget {
                             const SizedBox(height: 20),
                             // Location
                             Text('location'.tr),
-                            TextFormField(
-                              readOnly: true,
-                              controller: controller._locationController,
-                              decoration: InputDecoration(
-                                hintText: '20 Dhabyan Street - Abu Dhabi'.tr,
-                                suffixIcon: IconButton(
-                                  onPressed: controller
-                                          ._locationController.text.isEmpty
-                                      ? null
-                                      : () {
-                                          controller.address["location"] = "";
-                                          controller._locationController
-                                              .clear();
-                                        },
-                                  icon: const Icon(Icons.clear),
+                            TypeAheadField<String>(
+                              textFieldConfiguration: TextFieldConfiguration(
+                                controller: controller._locationController,
+                                decoration: const InputDecoration(
+                                  hintText: "Search for location",
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              onSaved: (newValue) {
-                                if (newValue != null) {
-                                  controller.address["location"] = newValue;
-                                  controller._locationController.text =
-                                      newValue;
-                                }
-                              },
-                              onTap: () async {
-                                final result = await showSearch(
-                                  context: context,
-                                  delegate: PlaceSearchDelegate(
-                                    initialstring:
-                                        controller._locationController.text,
-                                  ),
+                              itemBuilder: (context, itemData) {
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(itemData),
                                 );
-
-                                if (result is PlaceAutoCompletePredicate) {
-                                  controller.address["location"] =
-                                      result.mainText;
-                                  controller._locationController.text =
-                                      result.mainText;
-                                  controller.autoCompletePredicate = result;
-                                }
+                              },
+                              onSuggestionSelected: (suggestion) {
+                                controller.address["location"] = suggestion;
+                                controller._locationController.text =
+                                    suggestion;
+                              },
+                              suggestionsCallback: (pattern) {
+                                return getLocations(
+                                        controller.address["city"].toString())
+                                    .where(
+                                  (e) => e
+                                      .toLowerCase()
+                                      .toLowerCase()
+                                      .contains(pattern),
+                                );
                               },
                             ),
-
                             const SizedBox(height: 10),
                             // Building Name
                             Text('buildingName'.tr),
@@ -920,103 +904,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 10),
-
-                            GetBuilder<_PostPropertyAdController>(
-                                builder: (controller) {
-                              return Row(
-                                children: [
-                                  if (controller.cameraPosition == null)
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                          ),
-                                          onPressed: () async {
-                                            final pos = await Get.to(
-                                              () => FlutterGoogleMapScreen(
-                                                initialPosition:
-                                                    controller.cameraPosition,
-                                              ),
-                                            );
-
-                                            if (pos is CameraPosition) {
-                                              controller.cameraPosition = pos;
-                                              controller.update();
-                                            }
-                                          },
-                                          icon: const Icon(
-                                            Icons.map,
-                                            color: Colors.white,
-                                          ),
-                                          label: const Text('Add map location',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              )),
-                                        ),
-                                      ),
-                                    ),
-                                  if (controller.cameraPosition != null)
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                          ),
-                                          onPressed: () async {
-                                            controller.cameraPosition = null;
-                                            controller.update();
-                                          },
-                                          icon: const Icon(
-                                            Icons.map,
-                                            color: Colors.white,
-                                          ),
-                                          label: const Text(
-                                            "Remove map",
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (controller.cameraPosition != null)
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                          ),
-                                          onPressed: () {
-                                            Get.to(() => FlutterGoogleMapScreen(
-                                                  initialPosition:
-                                                      controller.cameraPosition,
-                                                ));
-                                          },
-                                          icon: const Icon(
-                                            Icons.visibility,
-                                            color: Colors.white,
-                                          ),
-                                          label: GetBuilder<
-                                                  _PostPropertyAdController>(
-                                              builder: (controller) {
-                                            return const Text("View location",
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                ));
-                                          }),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            }),
                             const SizedBox(height: 10),
                           ],
                         ),
@@ -1313,6 +1200,24 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                child: Checkbox(
+                                  value: controller.needsPhotograph.isTrue,
+                                  onChanged: controller.isLoading.isTrue
+                                      ? null
+                                      : (_) =>
+                                          controller.needsPhotograph.toggle(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text("Nedd photograph?".tr),
+                              const Spacer(),
                             ],
                           ),
                           const SizedBox(height: 20),

@@ -10,21 +10,9 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _UpgradePlanController extends LoadingController {
-  Future<void> upgradePlan() async {
-    try {
-      isLoading(true);
-      await Future.delayed(const Duration(seconds: 5));
-      showConfirmDialog(
-        "Service temporally unavailable. Please try again later",
-        isAlert: true,
-      );
-    } catch (e) {
-      Get.log("$e");
-      showConfirmDialog("someThingWentWrong".tr, isAlert: true);
-    } finally {
-      isLoading(false);
-    }
-  }
+  final void Function()? skipCallback;
+
+  _UpgradePlanController(this.skipCallback);
 
   Future<void> _payRent(String service) async {
     try {
@@ -32,10 +20,6 @@ class _UpgradePlanController extends LoadingController {
       switch (service) {
         case "STRIPE":
         case "PAYPAL":
-          await showConfirmDialog(
-            "You will need to logout and then login back after completing the payment",
-            isAlert: true,
-          );
           final String endPoint;
 
           if (service == "STRIPE") {
@@ -55,12 +39,13 @@ class _UpgradePlanController extends LoadingController {
             AppController.instance.user.update((val) {
               if (val != null) val.isPremium = true;
             });
-            Get.back();
+            Get.back(result: "ALREADY_PREMIUM");
           } else if (res.statusCode == 200) {
             showToast("Payment initiated. Redirecting....");
             isLoading(false);
 
             final uri = Uri.parse(res.data["paymentUrl"]);
+            Get.back();
 
             if (await canLaunchUrl(uri)) {
               launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -75,6 +60,10 @@ class _UpgradePlanController extends LoadingController {
 
         case "ROOMY_FINDER_CARD":
           showGetSnackbar("Payment with Roomy Finder can is comming soon!");
+          break;
+        case "SKIP":
+          Get.back(result: "SKIP");
+          if (skipCallback != null) skipCallback!();
           break;
         case "PAY_CASH":
           final result = await showConfirmDialog(
@@ -114,7 +103,7 @@ class UpgragePlanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_UpgradePlanController());
+    final controller = Get.put(_UpgradePlanController(skipCallback));
     return Scaffold(
       appBar: AppBar(title: const Text("Upgrade plan")),
       body: Obx(() {
@@ -181,12 +170,11 @@ class UpgragePlanScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: () {
-                              controller._payRent("PAY_CASH");
+                              controller._payRent("SKIP");
                             },
-                            icon: const Icon(Icons.payments_rounded),
-                            label: const Text("Pay Cash at property"),
+                            child: const Text("Skip Payment"),
                           ),
                         ),
                       ],

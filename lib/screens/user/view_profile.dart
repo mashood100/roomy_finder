@@ -25,7 +25,17 @@ class _ViewProfileController extends LoadingController {
   final _showPassword = false.obs;
   var newPassword = '';
 
+  final Rx<num> _accountBanlace = 0.obs;
+
+  final isFectchingBalance = false.obs;
+
   final _images = <CroppedFile>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _fetchBalance();
+  }
 
   Future<void> _pickProfilePicture({bool gallery = true}) async {
     try {
@@ -122,6 +132,25 @@ class _ViewProfileController extends LoadingController {
     }
   }
 
+  Future<void> _fetchBalance() async {
+    try {
+      isFectchingBalance(true);
+      update();
+
+      final res = await ApiService.getDio.get("/profile/account-balance");
+
+      if (res.statusCode == 200) {
+        _accountBanlace(res.data["accountBanlance"]);
+      }
+
+      update();
+    } catch (_) {
+    } finally {
+      isFectchingBalance(false);
+      update();
+    }
+  }
+
   Future<void> _toggleShowPassword(BuildContext context) async {
     if (_showPassword.isTrue) {
       _showPassword(false);
@@ -133,7 +162,7 @@ class _ViewProfileController extends LoadingController {
 
     if (password == null) return;
 
-    if (password == AppController.me.password) {
+    if (password == AppController.instance.user.value.password) {
       _showPassword(true);
     } else {
       showToast("Incorrect password".tr);
@@ -192,7 +221,8 @@ class _ViewProfileController extends LoadingController {
                       ),
                       keyboardType: TextInputType.visiblePassword,
                       validator: (value) {
-                        if (value != AppController.me.password) {
+                        if (value !=
+                            AppController.instance.user.value.password) {
                           return 'Incorrect password'.tr;
                         }
 
@@ -294,7 +324,7 @@ class _ViewProfileController extends LoadingController {
         isLoading(false);
         final res =
             await ApiService.getDio.put("$API_URL/profile/password", data: {
-          "oldPassword": AppController.me.password,
+          "oldPassword": AppController.instance.user.value.password,
           "newPassword": password,
         });
 
@@ -332,146 +362,153 @@ class ViewProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Get.put(_ViewProfileController());
-    final me = AppController.me;
+    final me = AppController.instance.user.value;
 
     return Scaffold(
       body: GetBuilder<_ViewProfileController>(
         builder: (controller) {
           final textTheme = Theme.of(context).textTheme;
-          return Obx(() {
-            return Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    SliverAppBar.large(
-                      actions: [
-                        IconButton(
-                            onPressed: () async {
-                              await Get.to(() => const UpdateUserProfile());
-                              controller.update();
-                            },
-                            icon: const Icon(Icons.edit))
-                      ],
-                      flexibleSpace: FlexibleSpaceBar(
-                        expandedTitleScale: 1.2,
-                        title: Text(me.fullName),
-                        centerTitle: true,
-                        background: Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            Hero(
-                              tag: "profile-picture-hero",
-                              child: Obx(() {
-                                return Image.network(
-                                  AppController
+          return Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverAppBar.large(
+                    actions: [
+                      IconButton(
+                          onPressed: () async {
+                            await Get.to(() => const UpdateUserProfile());
+                            controller.update();
+                          },
+                          icon: const Icon(Icons.edit))
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(
+                      expandedTitleScale: 1.2,
+                      title: Text(me.fullName),
+                      centerTitle: true,
+                      background: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Hero(
+                            tag: "profile-picture-hero",
+                            child: Obx(() {
+                              return Image.network(
+                                AppController
+                                    .instance.user.value.profilePicture,
+                                width: double.infinity,
+                                fit: BoxFit.fitWidth,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      CupertinoIcons.profile_circled,
+                                      size: 60,
+                                    ),
+                                  );
+                                },
+                              );
+                            }),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) => CachedNetworkImage(
+                                  imageUrl: AppController
                                       .instance.user.value.profilePicture,
-                                  width: double.infinity,
-                                  fit: BoxFit.fitWidth,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        CupertinoIcons.profile_circled,
-                                        size: 60,
-                                      ),
-                                    );
-                                  },
-                                );
-                              }),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  builder: (context) => CachedNetworkImage(
-                                    imageUrl: AppController.me.profilePicture,
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.fullscreen),
-                            )
-                          ],
-                        ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.fullscreen),
+                          )
+                        ],
                       ),
                     ),
-                    SliverList(
-                      delegate: SliverChildListDelegate(
-                        [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              TextButton.icon(
-                                onPressed: controller.isLoading.isTrue
-                                    ? null
-                                    : () => controller._pickProfilePicture(
-                                        gallery: false),
-                                icon: const Icon(Icons.camera),
-                                label: Text(
-                                  "camera".tr,
-                                  style: const TextStyle(),
+                  ),
+                  SliverList(
+                    delegate: SliverChildListDelegate(
+                      [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton.icon(
+                              onPressed: controller.isLoading.isTrue
+                                  ? null
+                                  : () => controller._pickProfilePicture(
+                                      gallery: false),
+                              icon: const Icon(Icons.camera),
+                              label: Text(
+                                "camera".tr,
+                                style: const TextStyle(),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: controller.isLoading.isTrue
+                                  ? null
+                                  : () => controller._pickProfilePicture(),
+                              icon: const Icon(Icons.image),
+                              label: Text(
+                                "pictures".tr,
+                                style: const TextStyle(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Card(
+                          child: ListTile(
+                            title: Text(
+                              "Full name".tr,
+                              style: textTheme.bodySmall!,
+                            ),
+                            subtitle: Text(me.fullName),
+                          ),
+                        ),
+                        Card(
+                          child: ListTile(
+                            title: Text("password".tr,
+                                style: textTheme.bodySmall!),
+                            subtitle: Text(
+                              controller._showPassword.isTrue
+                                  ? '${me.password}'
+                                  : "• " * 15,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    controller._toggleShowPassword(context);
+                                  },
+                                  icon: controller._showPassword.isTrue
+                                      ? const Icon(Icons.visibility_off)
+                                      : const Icon(Icons.visibility),
                                 ),
-                              ),
-                              TextButton.icon(
-                                onPressed: controller.isLoading.isTrue
-                                    ? null
-                                    : () => controller._pickProfilePicture(),
-                                icon: const Icon(Icons.image),
-                                label: Text(
-                                  "pictures".tr,
-                                  style: const TextStyle(),
+                                IconButton(
+                                  onPressed: () {
+                                    controller._changePassword(context);
+                                  },
+                                  icon: const Icon(Icons.settings),
                                 ),
-                              ),
-                            ],
-                          ),
-                          Card(
-                            child: ListTile(
-                              title: Text(
-                                "Full name".tr,
-                                style: textTheme.bodySmall!,
-                              ),
-                              subtitle: Text(me.fullName),
+                              ],
                             ),
                           ),
-                          Card(
-                            child: ListTile(
-                              title: Text("password".tr,
-                                  style: textTheme.bodySmall!),
-                              subtitle: Text(
-                                controller._showPassword.isTrue
-                                    ? '${me.password}'
-                                    : "• " * 15,
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      controller._toggleShowPassword(context);
-                                    },
-                                    icon: controller._showPassword.isTrue
-                                        ? const Icon(Icons.visibility_off)
-                                        : const Icon(Icons.visibility),
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      controller._changePassword(context);
-                                    },
-                                    icon: const Icon(Icons.settings),
-                                  ),
-                                ],
-                              ),
+                        ),
+                        Card(
+                          child: ListTile(
+                            title: Text(
+                              "Account balance".tr,
+                              style: textTheme.bodySmall!,
+                            ),
+                            subtitle: Text(formatMoney(0)),
+                            trailing: IconButton(
+                              onPressed: controller._fetchBalance,
+                              icon: controller.isFectchingBalance.isTrue
+                                  ? const CircularProgressIndicator()
+                                  : const Icon(Icons.refresh),
                             ),
                           ),
-                          Card(
-                            child: ListTile(
-                              title: Text(
-                                "Account balance".tr,
-                                style: textTheme.bodySmall!,
-                              ),
-                              subtitle: Text(formatMoney(0)),
-                            ),
-                          ),
-                          Container(
+                        ),
+                        Card(
+                          child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 10,
@@ -495,19 +532,18 @@ class ViewProfileScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                          )
-                        ],
-                      ),
+                          ),
+                        )
+                      ],
                     ),
-                    if (controller.isLoading.isTrue)
-                      const LinearProgressIndicator()
-                  ],
-                ),
-                if (controller.isLoading.isTrue)
-                  const LinearProgressIndicator(),
-              ],
-            );
-          });
+                  ),
+                  if (controller.isLoading.isTrue)
+                    const LinearProgressIndicator()
+                ],
+              ),
+              if (controller.isLoading.isTrue) const LinearProgressIndicator(),
+            ],
+          );
         },
       ),
     );

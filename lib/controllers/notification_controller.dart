@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -42,11 +45,23 @@ class NotificationController {
   @pragma("vm:entry-point")
   static Future<void> onActionReceivedMethod(ReceivedAction action) async {
     final payload = action.payload;
-    if (action.buttonKeyPressed == "COPY_ID") {
-      try {
-        Clipboard.setData(ClipboardData(text: payload!['fpID'].toString()));
-        showToast('ID ${"copied".tr}');
-      } catch (_) {}
+    if (payload == null) return;
+    try {
+      switch (payload["event"]) {
+        case "new-booking":
+        case "booking-offered":
+          final res =
+              await Dio().get("$API_URL/bookings/${payload["bookingId"]}");
+          if (res.statusCode == 200) {
+            final booking = PropertyBooking.fromMap(res.data);
+            Get.to(() => ViewPropertyBookingScreen(booking: booking));
+          }
+          break;
+        default:
+      }
+    } catch (e, trace) {
+      Get.log("NOTIFICATION : $e");
+      Get.log("NOTIFICATION : $trace");
     }
   }
 
@@ -125,8 +140,31 @@ class NotificationController {
   static Future<void> firebaseMessagingHandler(RemoteMessage msg) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
-      case "auto-reply":
       case "booking-offered":
+        final message = msg.data["message"] ?? "new notification";
+        final bookingId = "${msg.data["bookingId"]}";
+
+        if (msg.data["event"] != null) {
+          _saveNotification(msg.data["event"], message);
+        }
+
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking",
+            body: message,
+            notificationLayout: NotificationLayout.BigText,
+            payload: {
+              "bookingId": bookingId,
+              "event": msg.data["event"].toString(),
+            },
+          ),
+        );
+
+        break;
+      case "auto-reply":
       case "booking-declined":
       case "booking-cancelled":
       case "pay-property-rent-fee-completed-client":
@@ -151,6 +189,7 @@ class NotificationController {
         break;
       case "plan-upgraded-successfully":
         final message = msg.data["message"] ?? "new notification";
+        AppController.instance.user.value.isPremium = true;
 
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);

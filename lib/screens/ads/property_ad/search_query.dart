@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 // import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
-import 'package:roomy_finder/components/place_seach_delagate.dart';
-import 'package:roomy_finder/data/cities.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
 
 class _PropertyAdSearchQueryScreenController extends GetxController {
@@ -15,14 +16,8 @@ class _PropertyAdSearchQueryScreenController extends GetxController {
 
   final citySortKey = "".obs;
   final rentType = "Monthly".obs;
-  final city = _listOfUAECities[0]["value"]!.obs;
+  final city = "".obs;
   final location = "".obs;
-
-  @override
-  void onInit() {
-    unitedArabEmiteLocations.sort((a, b) => a.compareTo(b));
-    super.onInit();
-  }
 
   @override
   void onClose() {
@@ -45,6 +40,7 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
         ),
         body: Padding(
           padding: const EdgeInsets.only(
+            top: 10,
             left: 5,
             right: 5,
             bottom: 50,
@@ -53,37 +49,53 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  decoration: const InputDecoration(
-                    hintText: "Search for location",
-                    isDense: true,
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: "Search city",
+                        border: InputBorder.none,
+                        fillColor: Colors.transparent,
+                      ),
+                      onChanged: controller.citySortKey,
+                    ),
                   ),
-                  onChanged: controller.citySortKey,
                 ),
                 GridView.count(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
                   childAspectRatio: 1.3,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: _listOfUAECities.where((e) {
+                  children: (AppController.instance.country.value == Country.UAE
+                          ? _uAECities
+                          : _saudiArabiaCities)
+                      .where((e) {
                     if (controller.citySortKey.trim().isEmpty) {
                       return true;
                     } else {
-                      return "${e["value"]}"
+                      return "${e['value']}"
                           .toLowerCase()
                           .contains(controller.citySortKey.toLowerCase());
                     }
                   }).map((e) {
                     return GestureDetector(
                       onTap: () {
-                        controller.city(e["value"]);
+                        controller.city("${e['value']}");
                       },
                       child: Stack(
                         alignment: Alignment.bottomCenter,
                         children: [
                           Image.asset(
                             "${e["asset"]}",
+                            fit: BoxFit.fill,
+                            width: double.infinity,
+                            height: double.infinity,
                           ),
                           Container(
                             color: Colors.purple.withOpacity(0.5),
@@ -113,64 +125,40 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const Text("Area"),
-                TextFormField(
-                  readOnly: true,
-                  controller: controller._cityController,
-                  decoration: InputDecoration(
-                    hintText:
-                        '20 Dhabyan Street - Abu Dhabi -United Arab Emirate'.tr,
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        controller.location('');
-                        controller._cityController.clear();
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    child: TypeAheadField<String>(
+                      textFieldConfiguration: TextFieldConfiguration(
+                        controller: controller._cityController,
+                        decoration: const InputDecoration(
+                          hintText: "Search location",
+                          border: InputBorder.none,
+                          fillColor: Colors.transparent,
+                        ),
+                      ),
+                      itemBuilder: (context, itemData) {
+                        return ListTile(
+                          dense: true,
+                          title: Text(itemData),
+                        );
                       },
-                      icon: const Icon(Icons.clear),
+                      onSuggestionSelected: (suggestion) {
+                        controller.location(suggestion);
+                        controller._cityController.text = suggestion;
+                      },
+                      suggestionsCallback: (pattern) {
+                        return getLocations(controller.city.value).where(
+                          (e) =>
+                              e.toLowerCase().toLowerCase().contains(pattern),
+                        );
+                      },
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'thisFieldIsRequired'.tr;
-                    }
-                    return null;
-                  },
-                  onTap: () async {
-                    final result = await showSearch(
-                      context: context,
-                      delegate: PlaceSearchDelegate(
-                        initialstring: controller.location.value,
-                      ),
-                    );
-
-                    if (result is PlaceAutoCompletePredicate) {
-                      controller.location(result.mainText);
-                      controller._cityController.text = result.mainText;
-                    }
-                  },
                 ),
-
-                // TypeAheadField<String>(
-                //   textFieldConfiguration: TextFieldConfiguration(
-                //     controller: controller._cityController,
-                //     decoration: const InputDecoration(
-                //       hintText: "Search for area",
-                //     ),
-                //   ),
-                //   itemBuilder: (context, itemData) {
-                //     return ListTile(
-                //       dense: true,
-                //       title: Text(itemData),
-                //     );
-                //   },
-                //   onSuggestionSelected: (suggestion) {
-                //     controller.location(suggestion);
-                //     controller._cityController.text = suggestion;
-                //   },
-                //   suggestionsCallback: (pattern) {
-                //     return controller._areasBasedOnCity.where(
-                //       (e) => e.toLowerCase().toLowerCase().contains(pattern),
-                //     );
-                //   },
-                // ),
                 const SizedBox(height: 50),
               ],
             ),
@@ -196,10 +184,13 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                 // Text('${controller._pageIndex.value + 1}/2'),
                 TextButton(
                   onPressed: () {
+                    if (controller.city.isEmpty) {
+                      return showToast("please select a city");
+                    }
                     if (controller.location.isNotEmpty) {
                       Get.to(
                         () => FindPropertiesAdsScreen(
-                          city: "${controller.city.value}",
+                          city: controller.city.value,
                           location: controller.location.value,
                         ),
                       );
@@ -219,35 +210,43 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
   }
 }
 
-const _listOfUAECities = [
+const _uAECities = [
   {
     "value": "Dubai",
     "asset": "assets/images/dubai.png",
-    "cities": dubaiCities,
   },
   {
     "value": "Abu Dhabi",
     "asset": "assets/images/abu_dhabi.png",
-    "cities": abuDahbiCities,
   },
   {
     "value": "Sharjah",
     "asset": "assets/images/sharjah.png",
-    "cities": sharjahCities,
   },
   {
     "value": "Umm al-Quwain",
     "asset": "assets/images/umm_al_quwain.png",
-    "cities": "Umm al-Quwain",
   },
   {
     "value": "Fujairah",
     "asset": "assets/images/fujairah.png",
-    "cities": "Fujairah",
   },
   {
     "value": "Ajman",
     "asset": "assets/images/ajman.png",
-    "cities": "Ajman",
+  },
+];
+const _saudiArabiaCities = [
+  {
+    "value": "Jeddah",
+    "asset": "assets/images/jeddah.jpg",
+  },
+  {
+    "value": "Mecca",
+    "asset": "assets/images/mecca.jpg",
+  },
+  {
+    "value": "Riyadh",
+    "asset": "assets/images/riyadh.jpg",
   },
 ];

@@ -1,4 +1,6 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,19 +8,80 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/app_locale.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/screens/ads/post_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/search_query.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/premium_roommates_ads.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/search_roommate_match.dart';
-import 'package:roomy_finder/screens/user/upgrade_plan.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _HomeTabController extends LoadingController {
+  @override
+  void onInit() {
+    super.onInit();
+    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
+      final data = event.data;
+
+      switch (data["event"]) {
+        case "plan-upgraded-successfully":
+          AppController.instance.user.update((val) {
+            if (val == null) return;
+            val.isPremium = true;
+          });
+          final pref = await SharedPreferences.getInstance();
+          if (pref.get("user") != null) {
+            AppController.instance.saveUser();
+          }
+          showToast("Plan upgraded successfully");
+
+          break;
+        default:
+      }
+    });
+  }
+
   void _toggleThemeMode() {
     AppController.setThemeMode(
         Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
     Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
+  }
+
+  Future<void> changeAppCountry(BuildContext context) async {
+    final country = await showModalBottomSheet<Country?>(
+      context: context,
+      builder: (context) {
+        return CupertinoScrollbar(
+          child: ListView(
+            children: supporttedCountries
+                .map(
+                  (e) => ListTile(
+                    leading: CircleAvatar(child: Text(e.flag)),
+                    onTap: () => Get.back(result: e),
+                    title: Text(e.name),
+                    trailing: AppController.instance.country.value == e
+                        ? const Icon(
+                            Icons.check_circle_sharp,
+                            color: Colors.green,
+                          )
+                        : null,
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
+    );
+
+    if (country != null) {
+      if (country.code != Country.UAE.code &&
+          country.code != Country.SAUDI_ARABIA.code) {
+        showToast('Comming soon');
+        return;
+      }
+      AppController.instance.country(country);
+    }
   }
 }
 
@@ -40,73 +103,123 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
               [
                 const SizedBox(height: 10),
                 HomeCard(
-                  label: "lookingForProperties".tr,
+                  label: "FIND ROOM".tr,
                   assetImage: "assets/images/looking-roommate.png",
                   onTap: () {
                     Get.to(() => const PropertyAdSearchQueryScreen());
                   },
                 ),
                 HomeCard(
-                  label: "Premium Roommate Ad".tr,
+                  label: "POST AD".tr,
                   assetImage: "assets/images/premium_roommate.png",
                   onTap: () async {
-                    if (AppController.me.isPremium) {
-                      Get.to(() => const PremiumRoommatesAdsScreen());
-                    } else {
-                      Get.to(
-                        () => UpgragePlanScreen(
-                          skipCallback: () {
-                            Get.to(
-                              () {
-                                return const PremiumRoommatesAdsScreen();
-                              },
-                            );
-                          },
-                        ),
-                      );
-                    }
+                    Get.to(() => const PostAdScreen());
                   },
                 ),
                 HomeCard(
-                  label: "Looking for Roommate Match".tr,
+                  label: "FIND ROOMMATE".tr,
                   assetImage: "assets/images/premium_roommate.png",
-                  onTap: () {
-                    Get.to(() => const SearchRoommateMatchScreen());
+                  onTap: () async {
+                    await precacheImage(
+                      const AssetImage(
+                          "assets/images/appartment-inner-view.jpg"),
+                      Get.context!,
+                    );
+                    // ignore: unused_local_variable, use_build_context_synchronously
+                    final res = await showModalBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Get.back(result: "PREMIUM");
+                                },
+                                child: Card(
+                                  child: Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      SizedBox(
+                                        width: Get.width - 10,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Image.asset(
+                                            "assets/images/appartment-inner-view.jpg",
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      const Text(
+                                        "Premium Roommate",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Get.back(result: "ROOMMATE_MATCH");
+                                },
+                                child: Card(
+                                  child: Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      SizedBox(
+                                        width: Get.width - 10,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Image.asset(
+                                            "assets/images/premium_roommate.png",
+                                            fit: BoxFit.cover,
+                                            height: 200,
+                                          ),
+                                        ),
+                                      ),
+                                      const Text(
+                                        "Roommate Match",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              "All for you. Make your choice",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                    switch (res) {
+                      case "PREMIUM":
+                        Get.to(() => const PremiumRoommatesAdsScreen());
+                        break;
+                      case "ROOMMATE_MATCH":
+                        Get.to(() => const SearchRoommateMatchScreen());
+                        break;
+                      default:
+                    }
                   },
                 ),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 10)),
-          SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Post your properties for fast advertisation'.tr,
-                    style: const TextStyle(),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-                    ),
-                    onPressed: () {
-                      Get.to(() => const PostAdScreen());
-                    },
-                    child: Text(
-                      'postAd'.tr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                )
               ],
             ),
           ),
@@ -157,20 +270,31 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
+
               IconButton(
                 onPressed: controller._toggleThemeMode,
                 icon: Theme.of(context).brightness == Brightness.light
                     ? const Icon(Icons.dark_mode, color: Colors.white)
                     : const Icon(Icons.light_mode, color: Colors.white),
               ),
-              TextButton.icon(
-                onPressed: () => changeAppLocale(context),
-                label: Text(
-                  AppController.locale.languageName,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                icon: Icon(Icons.language, color: Colors.grey.shade300),
-              ),
+              Obx(() {
+                return TextButton.icon(
+                  onPressed: () => controller.changeAppCountry(context),
+                  icon: const Icon(Icons.arrow_drop_down, size: 40),
+                  label: Text(
+                    AppController.instance.country.value.flag,
+                    style: const TextStyle(fontSize: 25),
+                  ),
+                );
+              }),
+              // TextButton.icon(
+              //   onPressed: () => changeAppLocale(context),
+              //   label: Text(
+              //     AppController.locale.languageName,
+              //     style: const TextStyle(color: Colors.white),
+              //   ),
+              //   icon: Icon(Icons.language, color: Colors.grey.shade300),
+              // ),
             ],
           );
         }),

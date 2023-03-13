@@ -10,7 +10,7 @@ import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
 import 'package:roomy_finder/screens/user/about.dart';
-import 'package:roomy_finder/screens/user/profile/view_profile.dart';
+import 'package:roomy_finder/screens/user/view_profile.dart';
 
 class _AccountTabController extends LoadingController {
   Future<void> _logout(BuildContext context) async {
@@ -123,20 +123,22 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               );
             }),
             const Divider(height: 20),
-            ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.notifications),
-              ),
-              title: const Text('Notifications'),
-              subtitle: Text(
-                "${AppController.instance.unreadNotificationCount}"
-                " unread notifications",
-              ),
-              trailing: IconButton(
-                onPressed: () {
-                  Get.to(() => const NotificationsScreen());
-                },
-                icon: const Icon(Icons.chevron_right),
+            Card(
+              child: ListTile(
+                leading: const CircleAvatar(
+                  child: Icon(Icons.notifications),
+                ),
+                title: const Text('Notifications'),
+                subtitle: Text(
+                  "${AppController.instance.unreadNotificationCount}"
+                  " unread notifications",
+                ),
+                trailing: IconButton(
+                  onPressed: () {
+                    Get.to(() => const NotificationsScreen());
+                  },
+                  icon: const Icon(Icons.chevron_right),
+                ),
               ),
             ),
             // if (me.isLandlord)
@@ -152,52 +154,60 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             //     ),
             //   ),
             if (AppController.me.isLandlord)
-              ListTile(
-                onTap: () => Get.to(() => const MyPropertyAdsScreen()),
-                leading: const CircleAvatar(
-                  child: Icon(Icons.widgets),
+              Card(
+                child: ListTile(
+                  onTap: () => Get.to(() => const MyPropertyAdsScreen()),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.widgets),
+                  ),
+                  title: const Text('My Property Ads'),
+                  trailing: IconButton(
+                    onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
+                    icon: const Icon(Icons.chevron_right),
+                  ),
                 ),
-                title: const Text('My Property Ads'),
+              ),
+            Card(
+              child: ListTile(
+                onTap: () => Get.to(() => const MyRoommateAdsScreen()),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.houseboat),
+                ),
+                title: const Text('My Premium Ads, Roommate match'),
                 trailing: IconButton(
-                  onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
+                  onPressed: () {
+                    Get.to(() => const MyRoommateAdsScreen());
+                  },
                   icon: const Icon(Icons.chevron_right),
                 ),
               ),
-            ListTile(
-              onTap: () => Get.to(() => const MyRoommateAdsScreen()),
-              leading: const CircleAvatar(
-                child: Icon(Icons.houseboat),
-              ),
-              title: const Text('My Premium Ads, Roommate match'),
-              trailing: IconButton(
-                onPressed: () {
-                  Get.to(() => const MyRoommateAdsScreen());
-                },
-                icon: const Icon(Icons.chevron_right),
+            ),
+            Card(
+              child: ListTile(
+                onTap: () => Get.to(() => const MyBookingsCreen()),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.book),
+                ),
+                title: const Text('My Bookings'),
+                trailing: IconButton(
+                  onPressed: () {
+                    Get.to(() => const MyBookingsCreen());
+                  },
+                  icon: const Icon(Icons.chevron_right),
+                ),
               ),
             ),
-            ListTile(
-              onTap: () => Get.to(() => const MyBookingsCreen()),
-              leading: const CircleAvatar(
-                child: Icon(Icons.book),
-              ),
-              title: const Text('My Bookings'),
-              trailing: IconButton(
-                onPressed: () {
-                  Get.to(() => const MyBookingsCreen());
+            Card(
+              child: ListTile(
+                onTap: () {
+                  Get.to(() => const AboutScreeen());
                 },
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ),
-            ListTile(
-              onTap: () {
-                Get.to(() => const AboutScreeen());
-              },
-              leading: const CircleAvatar(child: Icon(Icons.info_outlined)),
-              title: const Text('About'),
-              trailing: const IconButton(
-                onPressed: null,
-                icon: Icon(Icons.chevron_right),
+                leading: const CircleAvatar(child: Icon(Icons.info_outlined)),
+                title: const Text('About'),
+                trailing: const IconButton(
+                  onPressed: null,
+                  icon: Icon(Icons.chevron_right),
+                ),
               ),
             ),
             // ListTile(

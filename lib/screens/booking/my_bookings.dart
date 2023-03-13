@@ -6,6 +6,7 @@ import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 
@@ -26,13 +27,16 @@ class _MyBookingsController extends LoadingController {
 
       final res = await ApiService.getDio
           .get("/bookings/my-bookings", queryParameters: query);
+      if (res.statusCode == 200) {
+        final data = (res.data as List).map((e) => PropertyBooking.fromMap(e));
 
-      final data = (res.data as List).map((e) => PropertyBooking.fromMap(e));
-
-      if (isReFresh) {
-        propertyBookings.clear();
+        if (isReFresh) {
+          propertyBookings.clear();
+        }
+        propertyBookings.addAll(data);
+      } else {
+        showToast("Failed to load data");
       }
-      propertyBookings.addAll(data);
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");

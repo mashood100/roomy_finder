@@ -10,11 +10,12 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/place_autocomplete.dart';
-import 'package:roomy_finder/components/place_seach_delagate.dart';
-import 'package:roomy_finder/data/cities.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/functions/city_location.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/find_roommate_match.dart';
 
 class _SearchRoommateMatchController extends LoadingController {
@@ -42,7 +43,7 @@ class _SearchRoommateMatchController extends LoadingController {
   final images = <XFile>[].obs;
   final videos = <XFile>[].obs;
   final interests = <String>[].obs;
-  final languages = <String>[].obs;
+  final languages = <String>["English"].obs;
 
 // Google place search tools
   CameraPosition? cameraPosition;
@@ -96,30 +97,6 @@ class _SearchRoommateMatchController extends LoadingController {
 
   String country = "United Arab Emirates";
 
-  List<String> get _areasBasedOnCity {
-    switch (address["city"]) {
-      case "Dubai":
-        return dubaiCities;
-      case "Abu Dhabi":
-        return abuDahbiCities;
-      case "Sharjah":
-        return sharjahCities;
-      case "Umm al-Quwain":
-      case "Fujairah":
-      case "Ajman":
-        return [...jeddahCities, ...meccaCities, ...riyadhCities];
-      default:
-        return [
-          ...jeddahCities,
-          ...meccaCities,
-          ...riyadhCities,
-          ...dubaiCities,
-          ...abuDahbiCities,
-          ...sharjahCities,
-        ];
-    }
-  }
-
   @override
   void onInit() {
     _pageController = PageController();
@@ -150,52 +127,6 @@ class _SearchRoommateMatchController extends LoadingController {
       duration: const Duration(milliseconds: 200),
       curve: Curves.linear,
     );
-  }
-
-  Future<void> addLangues() async {
-    final lang = await showModalBottomSheet<String>(
-      context: Get.context!,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 2,
-            childAspectRatio: 2.5,
-            children: allLanguages
-                .where((e) => !languages.contains(e))
-                .map(
-                  (e) => GestureDetector(
-                    onTap: () {
-                      Get.back(result: e);
-                    },
-                    child: Card(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade900,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        height: 100,
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(5),
-                        child: Text(
-                          e,
-                          style: const TextStyle(fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      },
-    );
-
-    if (lang == null) return;
-
-    languages.add(lang);
   }
 
   Future<void> pickMovingDate() async {
@@ -331,12 +262,59 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                         const SizedBox(height: 20),
 
                         Text('Languages you speak'.tr),
-                        TextFormField(
-                          enabled: controller.isLoading.isFalse,
-                          decoration: InputDecoration(
-                            hintText: 'Language'.tr,
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          // padding: const EdgeInsets.all(10),
+                          child: Wrap(
+                            children: [
+                              ...controller.languages.map((e) {
+                                return Container(
+                                    margin: const EdgeInsets.all(5),
+                                    padding: const EdgeInsets.only(left: 15),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(e),
+                                        SizedBox(
+                                          height: 35,
+                                          child: IconButton(
+                                            onPressed: () {
+                                              controller.languages.remove(e);
+                                            },
+                                            icon: const Icon(
+                                              Icons.cancel,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ));
+                              }).toList(),
+                              IconButton(
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+                                  final result = await filterListData(
+                                    allLanguages,
+                                    excluded: controller.languages,
+                                  );
+                                  controller.languages.addAll(result);
+                                },
+                                icon: const Icon(Icons.add_circle),
+                              )
+                            ],
                           ),
                         ),
+
+                        // TextFormField(
+                        //   enabled: controller.isLoading.isFalse,
+                        //   decoration: InputDecoration(
+                        //     hintText: 'Language'.tr,
+                        //   ),
+                        // ),
                         const SizedBox(height: 10),
                         // Container(
                         //   margin: const EdgeInsets.symmetric(vertical: 5),
@@ -403,7 +381,8 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                                 controller: controller._minBudgetController,
                                 decoration: InputDecoration(
                                   labelText: 'Min'.tr,
-                                  suffixText: 'AED',
+                                  suffixText: AppController
+                                      .instance.country.value.currencyCode,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -428,7 +407,8 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                                 controller: controller._maxBudgetController,
                                 decoration: InputDecoration(
                                   labelText: 'Max'.tr,
-                                  suffixText: 'AED',
+                                  suffixText: AppController
+                                      .instance.country.value.currencyCode,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -456,7 +436,7 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                         //   enabled: controller.isLoading.isFalse,
                         //   decoration: InputDecoration(
                         //     hintText: 'budget'.tr,
-                        //     suffixText: 'AED',
+                        //     suffixText : AppController.instance.country.value.currencyCode,
                         //   ),
                         //   onChanged: (value) =>
                         //       controller.information["budget"] = value,
@@ -507,15 +487,15 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                           onChanged: (_) {},
                           enabled: controller.isLoading.isFalse,
                           decoration: InputDecoration(
-                            hintText: 'Moving date'.tr,
+                            hintText: 'Please choose moving a date'.tr,
                             suffixIcon: const Icon(Icons.calendar_month),
                           ),
                           validator: (value) {
-                            if (value == null ||
-                                value == "Please choose choose a date") {
+                            final date = DateTime.tryParse(
+                                "${controller.information["movingDate"]}");
+                            if (date == null) {
                               return 'thisFieldIsRequired'.tr;
                             }
-
                             return null;
                           },
                           onTap: controller.pickMovingDate,
@@ -552,6 +532,56 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                                   }
                                 },
                         ),
+                        const SizedBox(height: 10),
+
+                        Text('Interest'.tr),
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          // padding: const EdgeInsets.all(10),
+                          child: Wrap(
+                            children: [
+                              ...controller.interests.map((e) {
+                                return Container(
+                                    margin: const EdgeInsets.all(5),
+                                    padding: const EdgeInsets.only(left: 15),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(e),
+                                        SizedBox(
+                                          height: 35,
+                                          child: IconButton(
+                                            onPressed: () {
+                                              controller.interests.remove(e);
+                                            },
+                                            icon: const Icon(
+                                              Icons.cancel,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ));
+                              }).toList(),
+                              IconButton(
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+                                  final result = await filterListData(
+                                    allInterests,
+                                    excluded: controller.interests,
+                                  );
+                                  controller.interests.addAll(result);
+                                },
+                                icon: const Icon(Icons.add_circle),
+                              )
+                            ],
+                          ),
+                        ),
+
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -586,7 +616,9 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             controller._cityController.text = suggestion;
                           },
                           suggestionsCallback: (pattern) {
-                            return unitedArabEmiteCities.where(
+                            return AppController
+                                .instance.citiesFromCurrentCountry
+                                .where(
                               (e) {
                                 final lowerPattern =
                                     pattern.toLowerCase().trim();
@@ -612,49 +644,32 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         // Location
                         Text('location'.tr),
-                        TextFormField(
-                          readOnly: true,
-                          controller: controller._locationController,
-                          decoration: InputDecoration(
-                            hintText: '20 Dhabyan Street - Abu Dhabi'.tr,
-                            suffixIcon: IconButton(
-                              onPressed: controller
-                                      ._locationController.text.isEmpty
-                                  ? null
-                                  : () {
-                                      controller.address["location"] = "";
-                                      controller._locationController.clear();
-                                    },
-                              icon: const Icon(Icons.clear),
+                        TypeAheadField<String>(
+                          textFieldConfiguration: TextFieldConfiguration(
+                            controller: controller._locationController,
+                            decoration: const InputDecoration(
+                              hintText: "Search for area",
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'thisFieldIsRequired'.tr;
-                            }
-                            return null;
-                          },
-                          onSaved: (newValue) {
-                            if (newValue != null) {
-                              controller.address["location"] = newValue;
-                              controller._locationController.text = newValue;
-                            }
-                          },
-                          onTap: () async {
-                            final result = await showSearch(
-                              context: context,
-                              delegate: PlaceSearchDelegate(
-                                initialstring:
-                                    controller._locationController.text,
-                              ),
+                          itemBuilder: (context, itemData) {
+                            return ListTile(
+                              dense: true,
+                              title: Text(itemData),
                             );
-
-                            if (result is PlaceAutoCompletePredicate) {
-                              controller.address["location"] = result.mainText;
-                              controller._locationController.text =
-                                  result.mainText;
-                              controller.autoCompletePredicate = result;
-                            }
+                          },
+                          onSuggestionSelected: (suggestion) {
+                            controller.address["location"] = suggestion;
+                            controller._locationController.text = suggestion;
+                          },
+                          suggestionsCallback: (pattern) {
+                            return getLocations(
+                                    controller.address["city"].toString())
+                                .where(
+                              (e) => e
+                                  .toLowerCase()
+                                  .toLowerCase()
+                                  .contains(pattern),
+                            );
                           },
                         ),
 

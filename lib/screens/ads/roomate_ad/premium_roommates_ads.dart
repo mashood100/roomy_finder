@@ -4,9 +4,13 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
+import 'package:roomy_finder/screens/user/upgrade_plan.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _PremiumRoommatesController extends LoadingController {
   final RxList<String> interest = <String>[].obs;
@@ -14,6 +18,32 @@ class _PremiumRoommatesController extends LoadingController {
   final RxString gender = "Mix".obs;
 
   final showFilter = false.obs;
+
+  final canSeeDetails = AppController.me.isPremium.obs;
+  Future<void> changeCanSeeAds() async {
+    final result = await Get.to(
+      () => UpgragePlanScreen(
+        skipCallback: () {
+          canSeeDetails(true);
+          showToast("You can now see ad details");
+        },
+      ),
+    );
+    switch (result) {
+      case "ALREADY_PREMIUM":
+        canSeeDetails(true);
+        AppController.instance.user.update((val) {
+          if (val == null) return;
+          val.isPremium = true;
+        });
+        final pref = await SharedPreferences.getInstance();
+        if (pref.get("user") != null) {
+          AppController.instance.saveUser();
+        }
+        break;
+      default:
+    }
+  }
 
   final RxList<RoommateAd> ads = <RoommateAd>[].obs;
   @override
@@ -131,7 +161,13 @@ class PremiumRoommatesAdsScreen extends StatelessWidget {
                   final ad = controller.ads[index];
                   return RoommateAdWidget(
                     ad: ad,
-                    onTap: () => Get.to(() => ViewRoommateAdScreen(ad: ad)),
+                    onTap: () {
+                      if (controller.canSeeDetails.isFalse) {
+                        controller.changeCanSeeAds();
+                      } else {
+                        Get.to(() => ViewRoommateAdScreen(ad: ad));
+                      }
+                    },
                   );
                 },
                 itemCount: controller.ads.length + 1,
@@ -167,13 +203,13 @@ class PremiumRommateAdFilter extends StatelessWidget {
                   icon: const Icon(
                     Icons.chevron_left,
                     size: 40,
-                    color: Colors.blue,
+                    color: _defaultColor,
                   ),
                 ),
                 const Text(
                   "Find roommates",
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: _defaultColor,
                     fontSize: 25,
                   ),
                 )
@@ -193,7 +229,7 @@ class PremiumRommateAdFilter extends StatelessWidget {
                         suffixIcon: Icon(
                           Icons.search,
                           size: 25,
-                          color: Colors.blue,
+                          color: _defaultColor,
                         ),
                       ),
                       onChanged: (val) {},
@@ -205,7 +241,7 @@ class PremiumRommateAdFilter extends StatelessWidget {
                     onPressed: () {},
                     icon: const Icon(
                       Icons.room_outlined,
-                      color: Colors.blue,
+                      color: _defaultColor,
                     ),
                   ),
                 ),
@@ -324,7 +360,7 @@ class PremiumRommateAdFilter extends StatelessWidget {
                   controller._fetchData();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: _defaultColor,
                 ),
                 child: const Text(
                   "Search",

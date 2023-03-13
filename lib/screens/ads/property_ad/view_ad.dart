@@ -591,7 +591,7 @@ class ViewPropertyAd extends StatelessWidget {
                           )
                           .toList(),
                     ),
-                  const Divider(height: 20),
+                  const SizedBox(height: 20),
                   if (!ad.isMine && controller.bookingId == null) ...[
                     const Text(
                       "Booking",
@@ -721,7 +721,7 @@ class ViewPropertyAd extends StatelessWidget {
                       );
                     }),
                   ],
-                  const Divider(height: 20),
+                  const SizedBox(height: 20),
                   if (!ad.isMine)
                     GetBuilder<_VewPropertyController>(builder: (controller) {
                       return SizedBox(

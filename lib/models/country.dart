@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: constant_identifier_names
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -54,9 +57,9 @@ class Country {
       localeCode = '';
     }
 
-    return allCountries.firstWhere(
+    return supporttedCountries.firstWhere(
       (e) => e.code == localeCode,
-      orElse: () => defaultCountry,
+      orElse: () => UAE,
     );
   }
 
@@ -122,20 +125,33 @@ class Country {
   bool operator ==(covariant Country other) {
     if (identical(this, other)) return true;
 
-    return other.code == code;
+    return other.name == name &&
+        other.code == code &&
+        other.phone == phone &&
+        other.currencyCode == currencyCode &&
+        other.flag == flag &&
+        other.locale == locale &&
+        other.aedCurrencyConvertRate == aedCurrencyConvertRate;
   }
 
   @override
-  int get hashCode => code.hashCode;
+  int get hashCode {
+    return name.hashCode ^
+        code.hashCode ^
+        phone.hashCode ^
+        currencyCode.hashCode ^
+        flag.hashCode ^
+        locale.hashCode ^
+        aedCurrencyConvertRate.hashCode;
+  }
 
   static Country getCountryFromCode(String countryCode) {
-    return allCountries.firstWhere(
+    return supporttedCountries.firstWhere(
       (e) => e.code == countryCode,
       orElse: () => Country.NULL_COUNTRY,
     );
   }
 
-  // ignore: constant_identifier_names
   static const Country NULL_COUNTRY = Country(
     name: 'Null',
     code: "NULL",
@@ -145,20 +161,38 @@ class Country {
     locale: '',
     aedCurrencyConvertRate: 0,
   );
+
+  static const UAE = Country(
+    name: 'United Arab Emirates',
+    code: "AE",
+    phone: '966',
+    currencyCode: "AED",
+    flag: "🇦🇪",
+    locale: 'ar',
+    aedCurrencyConvertRate: 1,
+  );
+  static const SAUDI_ARABIA = Country(
+    name: 'Saudi Arabia',
+    code: "SA",
+    phone: '971',
+    currencyCode: "SAR",
+    flag: "🇸🇦",
+    locale: 'ar',
+    aedCurrencyConvertRate: 1.0211028,
+  );
+  static const USA = Country(
+    name: 'Saudi Arabia',
+    code: "SA",
+    phone: '971',
+    currencyCode: "SAR",
+    flag: "🇸🇦",
+    locale: 'ar',
+    aedCurrencyConvertRate: 1.0211028,
+  );
 }
 
-const defaultCountry = Country(
-  name: 'United Arab Emirates',
-  code: "AE",
-  phone: '971',
-  currencyCode: "AED",
-  flag: "🇦🇪",
-  locale: 'ar',
-  aedCurrencyConvertRate: 1,
-);
-
 // data
-final allCountries = _countriesMap.map((e) => Country.fromMap(e));
+final supporttedCountries = _countriesMap.map((e) => Country.fromMap(e));
 
 const _countriesMap = [
   {
@@ -263,4 +297,4 @@ const _countriesMap = [
   },
 ];
 
-final allCountriesNames = allCountries.map((e) => e.name).toList();
+final allCountriesNames = supporttedCountries.map((e) => e.name).toList();

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/screens/user/contact_us.dart';
 import 'package:roomy_finder/screens/user/view_pdf.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -131,7 +132,9 @@ class AboutScreeen extends StatelessWidget {
                   leading: const Icon(Icons.support_agent),
                   title: const Text('Contact us'),
                   trailing: IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Get.to(() => const ContactUsScreen());
+                    },
                     icon: const Icon(Icons.chevron_right),
                   ),
                 ),

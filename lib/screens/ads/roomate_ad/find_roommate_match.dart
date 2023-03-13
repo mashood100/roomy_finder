@@ -7,9 +7,10 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/screens/ads/roomate_ad/deposit_screen.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
+import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 
 const _defaultColor = Color.fromRGBO(255, 123, 77, 1);
 
@@ -26,13 +27,14 @@ class _FindRoommateMatchController extends LoadingController {
 
   final showFilter = false.obs;
 
-  Future<void> upGradePlan() async {
-    final result = await Get.to(() => const DepositScreen());
+  Future<void> changeCanSeeAds() async {
+    Get.to(() => UpgragePlanScreen(
+          skipCallback: () {
+            canSeeDetails(true);
+            showToast("You can now see ad details");
+          },
+        ));
     update();
-
-    if (result == true) {
-      canSeeDetails(true);
-    }
   }
 
   _FindRoommateMatchController({
@@ -177,7 +179,7 @@ class FindRoommateMatchsScreen extends StatelessWidget {
                     onSeeDetails: () =>
                         Get.to(() => ViewRoommateAdScreen(ad: ad)),
                     canSeeDetails: controller.canSeeDetails.value,
-                    onUpgrade: controller.upGradePlan,
+                    onUpgrade: controller.changeCanSeeAds,
                   );
                 },
                 itemCount: controller.ads.length + 1,
@@ -213,13 +215,13 @@ class RommateAdFilter extends StatelessWidget {
                   icon: const Icon(
                     Icons.chevron_left,
                     size: 40,
-                    color: Colors.blue,
+                    color: _defaultColor,
                   ),
                 ),
                 const Text(
                   "Find roommates",
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: _defaultColor,
                     fontSize: 25,
                   ),
                 )
@@ -231,18 +233,21 @@ class RommateAdFilter extends StatelessWidget {
               children: [
                 Expanded(
                   child: Card(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        hintText: "Search location",
-                        border: InputBorder.none,
-                        fillColor: Colors.transparent,
-                        suffixIcon: Icon(
-                          Icons.search,
-                          size: 25,
-                          color: Colors.blue,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: "Search location",
+                          border: InputBorder.none,
+                          fillColor: Colors.transparent,
+                          suffixIcon: Icon(
+                            Icons.search,
+                            size: 25,
+                            color: _defaultColor,
+                          ),
                         ),
+                        onChanged: (val) {},
                       ),
-                      onChanged: (val) {},
                     ),
                   ),
                 ),
@@ -251,7 +256,7 @@ class RommateAdFilter extends StatelessWidget {
                     onPressed: () {},
                     icon: const Icon(
                       Icons.room_outlined,
-                      color: Colors.blue,
+                      color: _defaultColor,
                     ),
                   ),
                 ),
@@ -370,7 +375,7 @@ class RommateAdFilter extends StatelessWidget {
                   controller._fetchData();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: _defaultColor,
                 ),
                 child: const Text(
                   "Search",

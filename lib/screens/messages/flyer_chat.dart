@@ -654,14 +654,14 @@ class FlyerChatScreen extends StatelessWidget {
                               ),
                             );
                           }
-                          if (controller._canMakeVoice.isTrue) {
-                            return IconButton(
-                              onPressed: () {
-                                FocusScope.of(context).unfocus();
-                              },
-                              icon: const Icon(Icons.mic_sharp),
-                            );
-                          }
+                          // if (controller._canMakeVoice.isTrue) {
+                          //   return IconButton(
+                          //     onPressed: () {
+                          //       FocusScope.of(context).unfocus();
+                          //     },
+                          //     icon: const Icon(Icons.mic_sharp),
+                          //   );
+                          // }
                           return IconButton(
                             onPressed: () {
                               controller._handleSendPressed(

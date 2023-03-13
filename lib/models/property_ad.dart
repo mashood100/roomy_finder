@@ -28,6 +28,7 @@ class PropertyAd {
   DateTime createdAt;
   Map<String, Object> address;
   Map<String, Object> socialPreferences;
+  bool? needsPhotograph;
 
   CameraPosition? cameraPosition;
   PlaceAutoCompletePredicate? autoCompletePredicate;
@@ -78,6 +79,7 @@ class PropertyAd {
     required this.socialPreferences,
     this.cameraPosition,
     this.autoCompletePredicate,
+    this.needsPhotograph,
   }) : assert(images.isNotEmpty);
 
   Map<String, dynamic> toMap() {
@@ -104,6 +106,7 @@ class PropertyAd {
       'socialPreferences': socialPreferences,
       'cameraPosition': cameraPosition?.toMap(),
       'autoCompletePredicate': autoCompletePredicate?.toMap(),
+      'needsPhotograph': needsPhotograph,
     };
   }
 
@@ -139,6 +142,7 @@ class PropertyAd {
       autoCompletePredicate: map["autoCompletePredicate"] == null
           ? null
           : PlaceAutoCompletePredicate.fromMap(map["autoCompletePredicate"]),
+      needsPhotograph: map["needsPhotograph"] == true,
     );
   }
 

@@ -1,3 +1,4 @@
+// Saudi Arabia cities
 const jeddahCities = [
   "Al-Murjan",
   "Al-Basateen",
@@ -238,6 +239,7 @@ const riyadhCities = [
   "Al-Shemaysi",
 ];
 
+// UAE cities
 const dubaiCities = [
   "Dubai Marina",
   "Jumeirah Beach Residence",
@@ -282,16 +284,6 @@ const sharjahCities = [
   "Al Layyeh",
 ];
 
-const unitedArabEmiteCities = [
-  "Dubai",
-  "Abu Dhabi",
-  "Sharjah",
-  "Umm al-Quwain",
-  "Fujairah",
-  "Ajman",
-];
-var unitedArabEmiteLocations = [
-  ...dubaiCities,
-  ...abuDahbiCities,
-  ...sharjahCities,
-];
+const ummAlQuwainCities = <String>[];
+const fujairahCities = <String>[];
+const ajmanCities = <String>[];

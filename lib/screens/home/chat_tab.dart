@@ -1,3 +1,4 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:badges/badges.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -70,6 +71,8 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                       conversation: conv,
                     ));
                 controller._getNotifications();
+                AwesomeNotifications()
+                    .cancelNotificationsByChannelKey("chat_channel_group_key");
               },
               leading: conv.friend.ppWidget(size: 20, borderColor: false),
               title: Row(

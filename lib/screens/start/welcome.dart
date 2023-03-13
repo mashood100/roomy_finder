@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-// import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/functions/app_locale.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
 
@@ -28,10 +26,6 @@ class _WelcomeScreenController extends GetxController {
 
   @override
   void onReady() {
-    precacheImage(
-      const AssetImage("assets/images/welcome.png"),
-      Get.context!,
-    );
     precacheImage(
       const AssetImage("assets/images/dubai-city.jpg"),
       Get.context!,
@@ -60,12 +54,6 @@ class WelcomeScreen extends StatelessWidget {
         onPageChanged: controller._pageIndex,
         // physics: const NeverScrollableScrollPhysics(),
         children: [
-          Image.asset(
-            "assets/images/flyer_roomy_finder.jpeg",
-            width: Get.width,
-            fit: BoxFit.fitWidth,
-            alignment: Alignment.topCenter,
-          ),
           Stack(
             alignment: Alignment.bottomCenter,
             children: [
@@ -191,51 +179,6 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: Obx(() {
-        if (controller._pageIndex.value == 1) {
-          return const SizedBox();
-        }
-        return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              key: const Key("start-key"),
-              children: [
-                // CircleAvatar(
-                //   backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-                //   child: IconButton(
-                //     onPressed: controller._toggleThemeMode,
-                //     icon: Theme.of(context).brightness == Brightness.light
-                //         ? const Icon(Icons.dark_mode)
-                //         : const Icon(Icons.light_mode),
-                //   ),
-                // ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () => changeAppLocale(context),
-                  label: Text('language'.tr),
-                  icon: const Icon(Icons.language),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-                  ),
-                  onPressed: () {
-                    controller._pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.linear,
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                  label: Text(
-                    'letGo'.tr,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ));
-      }),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

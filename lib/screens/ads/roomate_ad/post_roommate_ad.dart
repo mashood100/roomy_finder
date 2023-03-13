@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import "package:path/path.dart" as path;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -14,18 +13,15 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:roomy_finder/screens/utility_screens/google_map.dart';
-// import 'package:roomy_finder/screens/utility_screens/google_map.dart';
+import 'package:roomy_finder/functions/city_location.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/components/label.dart';
-import 'package:roomy_finder/components/place_seach_delagate.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
@@ -37,9 +33,6 @@ import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 class _PostRoommateAdController extends LoadingController {
   final bool isPremium;
   final RoommateAd? oldData;
-
-  CameraPosition? cameraPosition;
-  PlaceAutoCompletePredicate? autoCompletePredicate;
 
   _PostRoommateAdController({required this.isPremium, this.oldData});
 
@@ -141,9 +134,6 @@ class _PostRoommateAdController extends LoadingController {
       interests.value =
           List<String>.from(oldData!.aboutYou["interests"] as List);
 
-      cameraPosition = oldData?.cameraPosition;
-      autoCompletePredicate = oldData?.autoCompletePredicate;
-
       socialPreferences.value = oldData!.socialPreferences;
     }
     super.onInit();
@@ -237,8 +227,6 @@ class _PostRoommateAdController extends LoadingController {
         "address": address,
         "aboutYou": aboutYou,
         "socialPreferences": socialPreferences,
-        "cameraPosition": cameraPosition?.toMap(),
-        "autoCompletePredicate": autoCompletePredicate?.toMap(),
       };
 
       final imagesTaskFuture = images.map((e) async {
@@ -509,7 +497,8 @@ class PostRoomateAdScreen extends StatelessWidget {
                               enabled: controller.isLoading.isFalse,
                               decoration: InputDecoration(
                                 hintText: 'budget'.tr,
-                                suffixText: 'AED',
+                                suffixText: AppController
+                                    .instance.country.value.currencyCode,
                               ),
                               onChanged: (value) =>
                                   controller.information["budget"] = value,
@@ -538,12 +527,13 @@ class PostRoomateAdScreen extends StatelessWidget {
                               onChanged: (_) {},
                               enabled: controller.isLoading.isFalse,
                               decoration: InputDecoration(
-                                hintText: 'Moving date'.tr,
+                                hintText: 'Please choose a moving date'.tr,
                                 suffixIcon: const Icon(Icons.calendar_month),
                               ),
                               validator: (value) {
-                                if (value == null ||
-                                    value == "Please choose a date") {
+                                final date = DateTime.tryParse(
+                                    "${controller.information["movingDate"]}");
+                                if (date == null) {
                                   return 'thisFieldIsRequired'.tr;
                                 }
 
@@ -572,7 +562,9 @@ class PostRoomateAdScreen extends StatelessWidget {
                                 controller._cityController.text = suggestion;
                               },
                               suggestionsCallback: (pattern) {
-                                return unitedArabEmiteCities.where(
+                                return AppController
+                                    .instance.citiesFromCurrentCountry
+                                    .where(
                                   (e) {
                                     final lowerPattern =
                                         pattern.toLowerCase().trim();
@@ -599,85 +591,34 @@ class PostRoomateAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             // Location
                             Text('location'.tr),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Card(
-                                    child: TextFormField(
-                                      readOnly: true,
-                                      controller:
-                                          controller._locationController,
-                                      decoration: InputDecoration(
-                                        hintText:
-                                            '20 Dhabyan Street - Abu Dhabi',
-                                        suffixIcon: IconButton(
-                                          onPressed: controller
-                                                  ._locationController
-                                                  .text
-                                                  .isEmpty
-                                              ? null
-                                              : () {
-                                                  controller
-                                                      .address["location"] = "";
-                                                  controller._locationController
-                                                      .clear();
-                                                },
-                                          icon: const Icon(Icons.clear),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'thisFieldIsRequired'.tr;
-                                        }
-                                        return null;
-                                      },
-                                      onSaved: (newValue) {
-                                        if (newValue != null) {
-                                          controller.address["location"] =
-                                              newValue;
-                                          controller._locationController.text =
-                                              newValue;
-                                        }
-                                      },
-                                      onTap: () async {
-                                        final result = await showSearch(
-                                          context: context,
-                                          delegate: PlaceSearchDelegate(
-                                            initialstring: controller
-                                                ._locationController.text,
-                                          ),
-                                        );
-
-                                        if (result
-                                            is PlaceAutoCompletePredicate) {
-                                          controller.address["location"] =
-                                              result.mainText;
-                                          controller._locationController.text =
-                                              result.mainText;
-                                          controller.autoCompletePredicate =
-                                              result;
-                                        }
-                                      },
-                                    ),
-                                  ),
+                            TypeAheadField<String>(
+                              textFieldConfiguration: TextFieldConfiguration(
+                                controller: controller._locationController,
+                                decoration: const InputDecoration(
+                                  hintText: "Search for area",
                                 ),
-                                // Card(
-                                //   child: Padding(
-                                //     padding: const EdgeInsets.all(2),
-                                //     child: IconButton(
-                                //       onPressed: () async {
-                                //         final res = await Get.to(() =>
-                                //             const FlutterGoogleMapScreen());
-                                //         Get.log("$res");
-                                //       },
-                                //       icon: const Icon(
-                                //         Icons.room_outlined,
-                                //         color: Colors.blue,
-                                //       ),
-                                //     ),
-                                //   ),
-                                // ),
-                              ],
+                              ),
+                              itemBuilder: (context, itemData) {
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(itemData),
+                                );
+                              },
+                              onSuggestionSelected: (suggestion) {
+                                controller.address["location"] = suggestion;
+                                controller._locationController.text =
+                                    suggestion;
+                              },
+                              suggestionsCallback: (pattern) {
+                                return getLocations(
+                                        controller.address["city"].toString())
+                                    .where(
+                                  (e) => e
+                                      .toLowerCase()
+                                      .toLowerCase()
+                                      .contains(pattern),
+                                );
+                              },
                             ),
 
                             const SizedBox(height: 10),
@@ -927,23 +868,30 @@ class PostRoomateAdScreen extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(e),
-                                              IconButton(
-                                                onPressed: () {
-                                                  controller.languages
-                                                      .remove(e);
-                                                },
-                                                icon: const Icon(
-                                                  Icons.cancel,
-                                                  color: Colors.red,
+                                              SizedBox(
+                                                height: 35,
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    controller.languages
+                                                        .remove(e);
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.cancel,
+                                                    color: Colors.red,
+                                                  ),
                                                 ),
                                               )
                                             ],
                                           ));
                                     }).toList(),
                                     IconButton(
-                                      onPressed: () {
+                                      onPressed: () async {
                                         FocusScope.of(context).unfocus();
-                                        controller.addLangues();
+                                        final result = await filterListData(
+                                          allLanguages,
+                                          excluded: controller.languages,
+                                        );
+                                        controller.languages.addAll(result);
                                       },
                                       icon: const Icon(Icons.add_circle),
                                     )

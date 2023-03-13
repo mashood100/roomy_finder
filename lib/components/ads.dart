@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
@@ -48,14 +50,19 @@ class PropertyAdWidget extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    formatMoney(ad.prefferedRentDisplayPrice,
-                        currencyCode: "AED"),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Obx(() {
+                    return Text(
+                      formatMoney(
+                        ad.prefferedRentDisplayPrice *
+                            AppController
+                                .instance.country.value.aedCurrencyConvertRate,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  }),
                   Text(
                     "Posted ${relativeTimeText(ad.createdAt)}",
                     style: Theme.of(context).textTheme.bodySmall,
@@ -94,14 +101,11 @@ class PropertyAdWidget extends StatelessWidget {
                     children: [
                       const Icon(CupertinoIcons.location_solid),
                       const SizedBox(width: 5),
-                      SizedBox(
-                        width: Get.width * 0.7,
-                        child: Text(
-                          "${ad.address["location"]}",
-                          style: const TextStyle(fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(
+                        "${ad.address["location"]}",
+                        style: const TextStyle(fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -226,14 +230,23 @@ class RoommateAdWidget extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.favorite),
+                  SizedBox(
+                    height: 35,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Get.theme.appBarTheme.backgroundColor,
+                      ),
+                      onPressed: onTap,
+                      child: const Text(
+                        "See Information",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   )
                 ],
               ),
             ),
-            const Divider(),
+            const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.only(
                 left: 5,
@@ -243,23 +256,39 @@ class RoommateAdWidget extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(CupertinoIcons.location_solid),
-                      const SizedBox(width: 5),
+                      const Text(
+                        "Budget",
+                        style: TextStyle(fontSize: 14),
+                      ),
                       Text(
-                        "${ad.address['country']}, ${ad.address['location']}",
-                        style: const TextStyle(fontSize: 14),
+                        formatMoney(ad.budget),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
-                  Text(
-                    "${ad.budget} AED",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Moving date",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      Text(
+                        Jiffy(ad.createdAt).yMEd,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
