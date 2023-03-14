@@ -9,7 +9,6 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/screens/ads/post_ad.dart';
