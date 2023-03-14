@@ -4,22 +4,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/screens/ads/post_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/search_query.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/premium_roommates_ads.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/search_roommate_match.dart';
+import 'package:roomy_finder/screens/blog_post/view_post.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _HomeTabController extends LoadingController {
+  final List<BlogPost> _blogPosts = [];
+
   @override
   void onInit() {
     super.onInit();
+
+    _fetBlogPost();
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
@@ -39,6 +46,17 @@ class _HomeTabController extends LoadingController {
         default:
       }
     });
+  }
+
+  Future<void> _fetBlogPost() async {
+    try {
+      final posts = await BlogPost.getBlogPost();
+
+      _blogPosts.addAll(posts);
+      update(["blogposts-get-builder"]);
+    } catch (e) {
+      Get.log('$e');
+    }
   }
 
   void _toggleThemeMode() {
@@ -121,7 +139,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                   onTap: () async {
                     await precacheImage(
                       const AssetImage(
-                          "assets/images/appartment-inner-view-2.jpg"),
+                          "assets/images/premium_background_people.jpeg"),
                       Get.context!,
                     );
                     // ignore: unused_local_variable, use_build_context_synchronously
@@ -145,7 +163,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           child: Image.asset(
-                                            "assets/images/appartment-inner-view-2.jpg",
+                                            "assets/images/premium_background_people.jpeg",
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -178,7 +196,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           child: Image.asset(
-                                            "assets/images/premium_roommate.png",
+                                            "assets/images/roommatch_background_people.jpeg",
                                             fit: BoxFit.cover,
                                             height: 200,
                                           ),
@@ -224,18 +242,23 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 10)),
           SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (int i = 0; i < 5; i++)
-                    const HomeBlogPost(
-                      content: _bolgPostContent,
-                      imageUrl: _blogPostImageUrl,
+            child: GetBuilder<_HomeTabController>(
+                id: "blogposts-get-builder",
+                builder: (controller) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: controller._blogPosts
+                          .map((e) => BlogPostWidget(
+                                post: e,
+                                onTap: () {
+                                  Get.to(() => ViewBlogPostScreen(post: e));
+                                },
+                              ))
+                          .toList(),
                     ),
-                ],
-              ),
-            ),
+                  );
+                }),
           ),
         ],
       ),
@@ -497,15 +520,13 @@ class HomeCard extends StatelessWidget {
   }
 }
 
-class HomeBlogPost extends StatelessWidget {
-  final String content;
-  final String imageUrl;
+class BlogPostWidget extends StatelessWidget {
+  final BlogPost post;
   final void Function()? onTap;
 
-  const HomeBlogPost({
+  const BlogPostWidget({
     super.key,
-    required this.content,
-    required this.imageUrl,
+    required this.post,
     this.onTap,
   });
 
@@ -517,7 +538,7 @@ class HomeBlogPost extends StatelessWidget {
         elevation: 3,
         child: Container(
           width: 200,
-          height: 220,
+          height: 240,
           decoration: const BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(10)),
           ),
@@ -527,15 +548,13 @@ class HomeBlogPost extends StatelessWidget {
               ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(10)),
-                // ignore: todo
-                // TODO : chang to network image
-                child: Image.asset(
-                  "assets/images/dubai.png",
-                  height: 100,
-                  width: 200,
+                child: CachedNetworkImage(
+                  imageUrl: post.imageUrl ?? "",
+                  height: 120,
+                  width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (ctx, e, trace) {
-                    return const Center(child: Icon(Icons.info));
+                  errorWidget: (ctx, e, trace) {
+                    return const Center();
                   },
                 ),
               ),
@@ -543,24 +562,25 @@ class HomeBlogPost extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Text(
-                    content,
+                    post.content,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
               const Divider(height: 1),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(
-                    relativeTimeText(DateTime(2022, 9, 7, 17, 30)),
-                    textAlign: TextAlign.right,
-                    style: Theme.of(context).textTheme.bodySmall,
+              if (post.createdAt != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      Jiffy(post.createdAt!).yMEd,
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -568,10 +588,3 @@ class HomeBlogPost extends StatelessWidget {
     );
   }
 }
-
-const _blogPostImageUrl = "https://pixabay.com/images/id-5219567";
-const _bolgPostContent =
-    "Lorem ipsum dolor sit amet consectetur adipisicing elit. Omnis, amet iure? itatis "
-    "ad impedit quae reiciendis in? Fugit, dicta nulla earum fuga quibusdam "
-    "sunt, molestias ex tenetur molestiae numquam esse est! Magni dolores sequi "
-    " upiditate perspiciatis dolor. Quia doloremque totam laudantium praesentium fuga";

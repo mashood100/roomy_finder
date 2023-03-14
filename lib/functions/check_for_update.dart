@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
@@ -16,6 +17,7 @@ Future<bool> checkForAppUpdate() async {
     final res = await ApiService.getDio.get(
       "$API_URL/utils/app-update",
       queryParameters: {"currentVersion": currentVersion, "platform": platform},
+      options: Options(sendTimeout: 1000 * 5, receiveTimeout: 1000 * 5),
     );
 
     if (res.statusCode != 200) return false;

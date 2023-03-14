@@ -391,12 +391,12 @@ class ViewProfileScreen extends StatelessWidget {
                           Hero(
                             tag: "profile-picture-hero",
                             child: Obx(() {
-                              return Image.network(
-                                AppController
+                              return CachedNetworkImage(
+                                imageUrl: AppController
                                     .instance.user.value.profilePicture,
                                 width: double.infinity,
                                 fit: BoxFit.fitWidth,
-                                errorBuilder: (context, error, stackTrace) {
+                                errorWidget: (context, error, stackTrace) {
                                   return Container(
                                     alignment: Alignment.center,
                                     child: const Icon(

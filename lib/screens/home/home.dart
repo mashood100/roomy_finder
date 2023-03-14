@@ -19,6 +19,7 @@ import 'package:roomy_finder/screens/home/account_tab.dart';
 import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/home/chat_tab.dart';
+import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 
 class HomeController extends LoadingController {
   final currentTabIndex = 0.obs;
@@ -32,6 +33,13 @@ class HomeController extends LoadingController {
     }
 
     Future(_runStartFutures);
+    Future(_handleInitialMessage);
+
+    if (NotificationController.initialAction != null) {
+      NotificationController.onActionReceivedMethod(
+        NotificationController.initialAction!,
+      );
+    }
 
     super.onInit();
 
@@ -59,9 +67,19 @@ class HomeController extends LoadingController {
     });
   }
 
+  // Initial Remote message handler
+  Future<void> _handleInitialMessage() async {
+    final message = await FirebaseMessaging.instance.getInitialMessage();
+    if (message != null) {
+      NotificationController.onFCMMessageOpenedAppHandler(message);
+    }
+    await NotificationController.requestNotificationPermission(Get.context);
+  }
+
   Future<void> _runStartFutures() async {
     await _promptUpdate();
     await NotificationController.requestNotificationPermission(Get.context);
+    await FirebaseMessaging.instance.requestPermission();
   }
 
   Future<bool> _onWillPop() async {
@@ -81,13 +99,9 @@ class HomeController extends LoadingController {
 
     final updateIsAvailable = await checkForAppUpdate();
 
-    if (!updateIsAvailable) return;
-
-    final shouldUpdate = await showConfirmDialog(
-      "An update is available. Do you want to download the update?",
-    );
-
-    if (shouldUpdate == true) downloadAppUpdate();
+    if (updateIsAvailable) {
+      Get.offAll(() => const UpdateAppScreen());
+    }
   }
 
   @override

@@ -220,7 +220,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             ad.socialPreferences["tv"] == true ? "Yes" : "No",
                       ),
                       DataLabel(
-                        icon: Icons.tv,
+                        icon: Icons.money,
                         label: "Budget",
                         value: "${ad.budget} AED",
                       ),

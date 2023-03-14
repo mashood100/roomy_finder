@@ -636,17 +636,14 @@ class FlyerChatScreen extends StatelessWidget {
                             minLines: 1,
                             maxLines: 10,
                             onChanged: (value) {
-                              if (value.isEmpty) {
-                                controller._canMakeVoice(true);
-                              } else {
-                                controller._canMakeVoice(false);
-                              }
+                              controller.update(["send-button-get-builder"]);
                             },
                           ),
                         ),
                       ),
-                      Obx(
-                        () {
+                      GetBuilder<_FlyerChatScreenController>(
+                        id: "send-button-get-builder",
+                        builder: (controller) {
                           if (controller._isSendingMessage.isTrue) {
                             return const Padding(
                               padding: EdgeInsets.all(15),
@@ -655,14 +652,9 @@ class FlyerChatScreen extends StatelessWidget {
                               ),
                             );
                           }
-                          // if (controller._canMakeVoice.isTrue) {
-                          //   return IconButton(
-                          //     onPressed: () {
-                          //       FocusScope.of(context).unfocus();
-                          //     },
-                          //     icon: const Icon(Icons.mic_sharp),
-                          //   );
-                          // }
+                          if (controller._newMessageController.text.isEmpty) {
+                            return const SizedBox();
+                          }
                           return IconButton(
                             onPressed: () {
                               controller._handleSendPressed(

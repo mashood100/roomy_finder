@@ -41,6 +41,14 @@ class _RegistrationController extends LoadingController {
 
   bool get isLandlord => accountType.value == UserAccountType.landlord;
 
+  // Verification
+  final RxMap<String, Object?> _emailVerificationData = {
+    "email": null,
+    "code": null,
+    "codeIsVerified": false,
+    "canResend": false,
+  }.obs;
+
   // Information
   final accountType = UserAccountType.landlord.obs;
   final _images = <CroppedFile>[].obs;
@@ -68,6 +76,10 @@ class _RegistrationController extends LoadingController {
     } on Exception catch (_) {
       return phoneNumber.phoneNumber ?? "";
     }
+  }
+
+  Future<void> _resendEmailverificationCode() async {
+    try {} catch (e) {}
   }
 
   @override
@@ -310,11 +322,12 @@ class _RegistrationController extends LoadingController {
       }
       isLoading(true);
 
-      final exist = await ApiService.checkIfUserExist(information['email']!);
+      final exist =
+          await ApiService.checkIfUserExist('${phoneNumber.phoneNumber}');
 
       if (exist) {
         showGetSnackbar(
-          "emailIsAlreadyUsed".tr,
+          "This phone number already have an account. Please login".tr,
           title: "registration".tr,
           severity: Severity.warning,
         );
@@ -725,8 +738,80 @@ class RegistrationScreen extends StatelessWidget {
                     // Verification
                     SingleChildScrollView(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            "Verification",
+                            style: TextStyle(fontSize: 20),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            "Enter the code sent to ${controller.information['email']}",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Pinput(
+                                length: 6,
+                                onCompleted: (val) {
+                                  if (val ==
+                                      controller
+                                          ._emailVerificationData["code"]) {
+                                    controller._emailVerificationData[
+                                        "codeIsVerified"] = true;
+                                  }
+                                  if (controller.secondsLeft.value <= 0) {
+                                    showToast("Verification time out");
+                                  } else {
+                                    controller.saveCredentials(val);
+                                  }
+                                },
+                                controller: controller._piniputController,
+                                defaultPinTheme: PinTheme(
+                                  height: 40,
+                                  width: 35,
+                                  textStyle: const TextStyle(
+                                    fontSize: 20,
+                                    color: Color.fromARGB(255, 56, 94, 128),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color.fromARGB(
+                                          255, 161, 163, 165),
+                                    ),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Builder(builder: (context) {
+                                if (controller
+                                            ._emailVerificationData["email"] ==
+                                        controller.information["email"] &&
+                                    controller._emailVerificationData[
+                                            "codeIsVerified"] ==
+                                        true) {
+                                  return TextButton(
+                                    onPressed:
+                                        controller._emailVerificationData[
+                                                    'canResend'] ==
+                                                true
+                                            ? controller
+                                                ._resendEmailverificationCode
+                                            : null,
+                                    child: const Text('Verified'),
+                                  );
+                                }
+
+                                return TextButton(
+                                  onPressed: () {},
+                                  child: const Text('Resend'),
+                                );
+                              })
+                            ],
+                          ),
                           const SizedBox(height: 20),
                           if (controller._pageIndex.value == 2)
                             FutureBuilder(
@@ -817,14 +902,11 @@ class RegistrationScreen extends StatelessWidget {
                 return const SizedBox();
               }
 
-              if (controller._pageIndex.value == 2) {
-                return const SizedBox();
-              }
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   LinearProgressIndicator(
-                      color: const Color.fromRGBO(96, 15, 116, 1),
+                      color: const Color.fromRGBO(255, 123, 77, 1),
                       value: (controller._pageIndex.value + 1) / 3),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -852,18 +934,19 @@ class RegistrationScreen extends StatelessWidget {
                                 controller._isVerifyingPhone.isTrue
                             ? null
                             : () async {
-                                switch (controller._pageIndex.value) {
-                                  case 0:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 1:
-                                    final isValid =
-                                        await controller.validateCredentials();
-                                    if (!isValid) return;
-                                    controller.sendSmsCode();
-                                    break;
-                                  default:
-                                }
+                                controller._moveToNextPage();
+                                // switch (controller._pageIndex.value) {
+                                //   case 0:
+                                //     controller._moveToNextPage();
+                                //     break;
+                                //   case 1:
+                                //     final isValid =
+                                //         await controller.validateCredentials();
+                                //     if (!isValid) return;
+                                //     controller.sendSmsCode();
+                                //     break;
+                                //   default:
+                                // }
                               },
                         child: Text("next".tr),
                       ),

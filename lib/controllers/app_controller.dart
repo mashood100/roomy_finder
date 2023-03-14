@@ -260,8 +260,8 @@ class AppController extends GetxController {
   // FCM
   Future<void> saveTokenToDatabase(String token) async {
     try {
-      await ApiService.getDio.post(
-        "$API_URL/profile/credentials",
+      await ApiService.getDio.put(
+        "$API_URL/auth//update-fcm-token",
         data: {"fcmToken": token},
       );
     } catch (e) {

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,6 +20,7 @@ import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
+import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,7 +49,10 @@ void main() async {
   FirebaseMessaging.instance.getToken();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen((msg) {
-    NotificationController.firebaseMessagingHandler(msg);
+    NotificationController.firebaseMessagingHandler(msg, true);
+  });
+  FirebaseMessaging.onMessageOpenedApp.listen((msg) {
+    NotificationController.onFCMMessageOpenedAppHandler(msg);
   });
 
   // Dynamic link
@@ -67,44 +70,8 @@ void main() async {
   });
 
   // Awesome notifications initialized
-  AwesomeNotifications().initialize(
-    // null,
-    'resource://drawable/launcher_icon',
-    [
-      NotificationChannel(
-        channelGroupKey: 'notification_channel_group',
-        channelKey: 'notification_channel',
-        channelName: 'Basic notifications',
-        channelDescription: 'Room Finder default notification channel',
-        defaultColor: Colors.purple,
-        importance: NotificationImportance.High,
-        channelShowBadge: true,
-        ledColor: Colors.purple,
-      ),
-      NotificationChannel(
-        channelGroupKey: 'chat_channel_group_key',
-        channelKey: 'chat_channel_key',
-        channelName: 'Chat nottifications channel',
-        channelDescription:
-            'Room Finder chat notifications notification channel',
-        defaultColor: Colors.purple,
-        channelShowBadge: true,
-        ledColor: Colors.purple,
-      ),
-    ],
-    channelGroups: [
-      NotificationChannelGroup(
-        channelGroupKey: 'notification_channel_group',
-        channelGroupName: 'Notification Group',
-      ),
-      NotificationChannelGroup(
-        channelGroupKey: 'chat_channel_group_key',
-        channelGroupName: 'Chat group notification',
-      ),
-    ],
-    debug: true,
-  );
-  AwesomeNotifications().resetGlobalBadge();
+  NotificationController.initializeLocalNotifications();
+  NotificationController.startListeningNotificationEvents();
 
   // instantiating app contolller
   Get.put(AppController(), tag: "appController", permanent: true);
@@ -133,7 +100,7 @@ class MyApp extends StatelessWidget {
         ),
         // fillColor: const Color.fromARGB(255, 228, 225, 225),
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: Colors.white,
         // prefixIconColor: Colors.grey,
         // constraints: const BoxConstraints(maxHeight: 65),
         // labelStyle: const TextStyle(color: Colors.grey),
@@ -303,6 +270,10 @@ class MyApp extends StatelessWidget {
           name: "/my-roommate-ads",
           page: () => const MyRoommateAdsScreen(),
         ),
+        GetPage(
+          name: "/update-app",
+          page: () => const UpdateAppScreen(),
+        ),
       ],
     );
   }
@@ -312,5 +283,5 @@ class MyApp extends StatelessWidget {
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
-  NotificationController.firebaseMessagingHandler(message);
+  NotificationController.firebaseMessagingHandler(message, false);
 }
