@@ -179,10 +179,7 @@ class NotificationController {
   ///
 
   @pragma("vm:entry-point")
-  static Future<void> firebaseMessagingHandler(
-    RemoteMessage msg,
-    bool isForeground,
-  ) async {
+  static Future<void> firebaseMessagingHandler(RemoteMessage msg) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
       case "booking-offered":
@@ -192,22 +189,20 @@ class NotificationController {
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
         }
-        if (isForeground) {
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: Random().nextInt(1000),
-              channelKey: "notification_channel",
-              groupKey: "notification_channel_group",
-              title: "Booking",
-              body: message,
-              notificationLayout: NotificationLayout.BigText,
-              payload: {
-                "bookingId": bookingId,
-                "event": msg.data["event"].toString(),
-              },
-            ),
-          );
-        }
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking",
+            body: message,
+            notificationLayout: NotificationLayout.BigText,
+            payload: {
+              "bookingId": bookingId,
+              "event": msg.data["event"].toString(),
+            },
+          ),
+        );
 
         break;
       case "auto-reply":
@@ -221,18 +216,16 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: Random().nextInt(1000),
-              channelKey: "notification_channel",
-              groupKey: "notification_channel_group",
-              title: "Booking",
-              body: message,
-              notificationLayout: NotificationLayout.BigText,
-            ),
-          );
-        }
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking",
+            body: message,
+            notificationLayout: NotificationLayout.BigText,
+          ),
+        );
 
         break;
       case "new-message":
@@ -245,18 +238,16 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: Random().nextInt(1000),
-              channelKey: "notification_channel",
-              groupKey: "notification_channel_group",
-              title: "Premium",
-              body: message,
-              notificationLayout: NotificationLayout.BigText,
-            ),
-          );
-        }
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Premium",
+            body: message,
+            notificationLayout: NotificationLayout.BigText,
+          ),
+        );
         break;
 
       default:

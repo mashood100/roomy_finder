@@ -42,7 +42,7 @@ class _FlyerChatScreenController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // conversation.loadMessages().then((_) => update());
+    conversation.loadMessages().then((_) => update());
     conversation.updateChatInfo().then((_) => update());
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
       final data = event.data;
@@ -497,7 +497,7 @@ class _FlyerChatScreenController extends GetxController {
         final shouldClear =
             await showConfirmDialog("This conversation will be deleted");
         if (shouldClear == true) {
-          conversation.deleteChat();
+          await conversation.deleteChat();
           Get.back();
         }
 
@@ -515,221 +515,227 @@ class FlyerChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(_FlyerChatScreenController(conversation));
-    return Scaffold(
-      appBar: AppBar(
-        leadingWidth: 40,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              foregroundImage: CachedNetworkImageProvider(
-                conversation.friend.profilePicture,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(conversation.friend.fullName)
-          ],
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: controller._handlePopupMenuPressed,
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: "delete-chat",
-                child: ListTile(
-                  title: Text("Delete chat"),
-                  leading: Icon(Icons.delete, color: Colors.red),
-                ),
-              ),
-              PopupMenuItem(
-                value: "clear-chat",
-                child: ListTile(
-                  title: Text("Clear chat"),
-                  leading: Icon(Icons.delete_sweep),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Builder(builder: (context) {
-        return GetBuilder<_FlyerChatScreenController>(builder: (controller) {
-          return Chat(
-            messages: conversation.messages,
-            onMessageTap: controller._handleMessageTap,
-            onPreviewDataFetched: controller._handlePreviewDataFetched,
-            onSendPressed: controller._handleSendPressed,
-
-            customBottomWidget: Container(
-              color: Get.theme.inputDecorationTheme.fillColor,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (controller._isUploadingFile.isTrue)
-                    const LinearProgressIndicator(),
-                  if (controller._currentRepliedMessage != null)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.6),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(10),
-                        ),
-                      ),
-                      padding: const EdgeInsets.only(left: 10),
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Builder(
-                              builder: (context) {
-                                final msg = controller._currentRepliedMessage;
-
-                                if (msg is types.TextMessage) {
-                                  return Text(
-                                    msg.text,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  );
-                                } else if (msg is types.ImageMessage) {
-                                  return CachedNetworkImage(
-                                    imageUrl: msg.uri,
-                                    height: 100,
-                                  );
-                                }
-                                return const SizedBox();
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              controller._currentRepliedMessage = null;
-                              controller.update();
-                            },
-                            icon: const Icon(Icons.cancel),
-                          )
-                        ],
-                      ),
-                    ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          controller._handleAttachmentPressed();
-                        },
-                        icon: const Icon(Icons.attach_file),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: TextField(
-                            controller: controller._newMessageController,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(8),
-                              hintText: "New messsage",
-                              hintStyle: TextStyle(
-                                color: Get.isDarkMode ? Colors.white54 : null,
-                              ),
-                            ),
-                            minLines: 1,
-                            maxLines: 10,
-                            onChanged: (value) {
-                              controller.update(["send-button-get-builder"]);
-                            },
-                          ),
-                        ),
-                      ),
-                      GetBuilder<_FlyerChatScreenController>(
-                        id: "send-button-get-builder",
-                        builder: (controller) {
-                          if (controller._isSendingMessage.isTrue) {
-                            return const Padding(
-                              padding: EdgeInsets.all(15),
-                              child: CupertinoActivityIndicator(
-                                color: Colors.blue,
-                              ),
-                            );
-                          }
-                          if (controller._newMessageController.text.isEmpty) {
-                            return const SizedBox();
-                          }
-                          return IconButton(
-                            onPressed: () {
-                              controller._handleSendPressed(
-                                types.PartialText(
-                                  text: controller._newMessageController.text,
-                                  repliedMessage:
-                                      controller._currentRepliedMessage,
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.send),
-                          );
-                        },
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            theme: DefaultChatTheme(
-              backgroundColor: Get.theme.scaffoldBackgroundColor,
-              messageInsetsVertical: 0,
-              messageInsetsHorizontal: 5,
-              messageBorderRadius: 20,
-            ),
-            user: controller._user,
-            // customBottomWidget: TextField(
-            //   controller: controller.newMessageController,
-            //   decoration: InputDecoration(
-            //     prefix: IconButton(onPressed: (), icon: icon)
-
-            //   ),
-            // ),
-            onMessageLongPress: controller._handleMessageLongpress,
-            avatarBuilder: (userId) {
-              if (userId == conversation.me.id) {
-                return CircleAvatar(
-                  radius: 20,
-                  foregroundImage: CachedNetworkImageProvider(
-                    conversation.me.profilePicture,
-                  ),
-                );
-              }
-              return CircleAvatar(
+    return WillPopScope(
+      onWillPop: () async {
+        controller.conversation.saveChat();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leadingWidth: 40,
+          title: Row(
+            children: [
+              CircleAvatar(
                 radius: 20,
                 foregroundImage: CachedNetworkImageProvider(
                   conversation.friend.profilePicture,
                 ),
-              );
-            },
-            bubbleBuilder: (
-              child, {
-              required message,
-              required nextMessageInGroup,
-            }) {
-              return Bubble(
-                color: controller._user.id == message.author.id
-                    ? Get.theme.appBarTheme.backgroundColor
-                    : Colors.blue,
-                margin: nextMessageInGroup
-                    ? const BubbleEdges.symmetric(horizontal: 6)
-                    : null,
-                nip: nextMessageInGroup
-                    ? BubbleNip.no
-                    : controller._user.id != message.author.id
-                        ? BubbleNip.leftTop
-                        : BubbleNip.rightTop,
-                radius: const Radius.circular(10),
-                child: child,
-              );
-            },
-          );
-        });
-      }),
+              ),
+              const SizedBox(width: 10),
+              Text(conversation.friend.fullName)
+            ],
+          ),
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: controller._handlePopupMenuPressed,
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: "delete-chat",
+                  child: ListTile(
+                    title: Text("Delete chat"),
+                    leading: Icon(Icons.delete, color: Colors.red),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: "clear-chat",
+                  child: ListTile(
+                    title: Text("Clear chat"),
+                    leading: Icon(Icons.delete_sweep),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: Builder(builder: (context) {
+          return GetBuilder<_FlyerChatScreenController>(builder: (controller) {
+            return Chat(
+              messages: conversation.messages,
+              onMessageTap: controller._handleMessageTap,
+              onPreviewDataFetched: controller._handlePreviewDataFetched,
+              onSendPressed: controller._handleSendPressed,
+
+              customBottomWidget: Container(
+                color: Get.theme.inputDecorationTheme.fillColor,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (controller._isUploadingFile.isTrue)
+                      const LinearProgressIndicator(),
+                    if (controller._currentRepliedMessage != null)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.6),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(10),
+                          ),
+                        ),
+                        padding: const EdgeInsets.only(left: 10),
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Builder(
+                                builder: (context) {
+                                  final msg = controller._currentRepliedMessage;
+
+                                  if (msg is types.TextMessage) {
+                                    return Text(
+                                      msg.text,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  } else if (msg is types.ImageMessage) {
+                                    return CachedNetworkImage(
+                                      imageUrl: msg.uri,
+                                      height: 100,
+                                    );
+                                  }
+                                  return const SizedBox();
+                                },
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                controller._currentRepliedMessage = null;
+                                controller.update();
+                              },
+                              icon: const Icon(Icons.cancel),
+                            )
+                          ],
+                        ),
+                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            controller._handleAttachmentPressed();
+                          },
+                          icon: const Icon(Icons.attach_file),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: TextField(
+                              controller: controller._newMessageController,
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.all(8),
+                                hintText: "New messsage",
+                                hintStyle: TextStyle(
+                                  color: Get.isDarkMode ? Colors.white54 : null,
+                                ),
+                              ),
+                              minLines: 1,
+                              maxLines: 10,
+                              onChanged: (value) {
+                                controller.update(["send-button-get-builder"]);
+                              },
+                            ),
+                          ),
+                        ),
+                        GetBuilder<_FlyerChatScreenController>(
+                          id: "send-button-get-builder",
+                          builder: (controller) {
+                            if (controller._isSendingMessage.isTrue) {
+                              return const Padding(
+                                padding: EdgeInsets.all(15),
+                                child: CupertinoActivityIndicator(
+                                  color: Colors.blue,
+                                ),
+                              );
+                            }
+                            if (controller._newMessageController.text.isEmpty) {
+                              return const SizedBox();
+                            }
+                            return IconButton(
+                              onPressed: () {
+                                controller._handleSendPressed(
+                                  types.PartialText(
+                                    text: controller._newMessageController.text,
+                                    repliedMessage:
+                                        controller._currentRepliedMessage,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.send),
+                            );
+                          },
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              theme: DefaultChatTheme(
+                backgroundColor: Get.theme.scaffoldBackgroundColor,
+                messageInsetsVertical: 0,
+                messageInsetsHorizontal: 5,
+                messageBorderRadius: 20,
+              ),
+              user: controller._user,
+              // customBottomWidget: TextField(
+              //   controller: controller.newMessageController,
+              //   decoration: InputDecoration(
+              //     prefix: IconButton(onPressed: (), icon: icon)
+
+              //   ),
+              // ),
+              onMessageLongPress: controller._handleMessageLongpress,
+              avatarBuilder: (userId) {
+                if (userId == conversation.me.id) {
+                  return CircleAvatar(
+                    radius: 20,
+                    foregroundImage: CachedNetworkImageProvider(
+                      conversation.me.profilePicture,
+                    ),
+                  );
+                }
+                return CircleAvatar(
+                  radius: 20,
+                  foregroundImage: CachedNetworkImageProvider(
+                    conversation.friend.profilePicture,
+                  ),
+                );
+              },
+              bubbleBuilder: (
+                child, {
+                required message,
+                required nextMessageInGroup,
+              }) {
+                return Bubble(
+                  color: controller._user.id == message.author.id
+                      ? Get.theme.appBarTheme.backgroundColor
+                      : Colors.blue,
+                  margin: nextMessageInGroup
+                      ? const BubbleEdges.symmetric(horizontal: 6)
+                      : null,
+                  nip: nextMessageInGroup
+                      ? BubbleNip.no
+                      : controller._user.id != message.author.id
+                          ? BubbleNip.leftTop
+                          : BubbleNip.rightTop,
+                  radius: const Radius.circular(10),
+                  child: child,
+                );
+              },
+            );
+          });
+        }),
+      ),
     );
   }
 }
