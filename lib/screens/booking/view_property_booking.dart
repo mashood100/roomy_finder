@@ -140,18 +140,14 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   }
 
   Future<void> chatWithClient(PropertyBooking booking) async {
-    final conv = (await ChatConversation.getSavedChat(
-            ChatConversation.createConvsertionKey(
-                AppController.me.id, booking.client.id))) ??
-        ChatConversation.newConversation(friend: booking.client);
+    final conv =
+        ChatConversation.newConversation(AppController.me, booking.client);
     Get.to(() => FlyerChatScreen(conversation: conv));
   }
 
   Future<void> chatWithLandlord(PropertyBooking booking) async {
-    final conv = (await ChatConversation.getSavedChat(
-            ChatConversation.createConvsertionKey(
-                AppController.me.id, booking.poster.id))) ??
-        ChatConversation.newConversation(friend: booking.poster);
+    final conv =
+        ChatConversation.newConversation(AppController.me, booking.poster);
     Get.to(() => FlyerChatScreen(conversation: conv));
   }
 }

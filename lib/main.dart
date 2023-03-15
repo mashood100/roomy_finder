@@ -47,13 +47,13 @@ void main() async {
 
   // Firebase Cloud Messaging
   FirebaseMessaging.instance.getToken();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen((msg) {
     NotificationController.firebaseMessagingHandler(msg, true);
   });
   FirebaseMessaging.onMessageOpenedApp.listen((msg) {
     NotificationController.onFCMMessageOpenedAppHandler(msg);
   });
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Dynamic link
 
@@ -280,8 +280,7 @@ class MyApp extends StatelessWidget {
 }
 
 // Declared as global, outside of any class
+@pragma("vm:entry-point")
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-
-  NotificationController.firebaseMessagingHandler(message, false);
+  await NotificationController.firebaseMessagingHandler(message, false);
 }

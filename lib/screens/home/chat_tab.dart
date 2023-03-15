@@ -22,10 +22,11 @@ class ChatTabController extends LoadingController {
     super.onInit();
     _getNotifications();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
       if (data["event"] == "new-message") {
+        await Future.delayed(const Duration(milliseconds: 200));
         _getNotifications();
       }
     });
@@ -38,8 +39,10 @@ class ChatTabController extends LoadingController {
       conversations.clear();
       conversations.addAll(notifications);
     } catch (_) {
-    } finally {}
-    isLoading(false);
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 }
 

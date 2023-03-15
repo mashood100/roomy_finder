@@ -41,7 +41,9 @@ class _FlyerChatScreenController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    conversation.updateChatInfo();
+
+    // conversation.loadMessages().then((_) => update());
+    conversation.updateChatInfo().then((_) => update());
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
       final data = event.data;
       AppController.instance.haveNewMessage(false);
@@ -58,7 +60,6 @@ class _FlyerChatScreenController extends GetxController {
 
           if (convKey == conversation.key) {
             conversation.newMessage(msg);
-            conversation.saveChat();
             update();
           }
         } catch (e, trace) {
@@ -398,6 +399,7 @@ class _FlyerChatScreenController extends GetxController {
   Future<void> _handleSendPressed(types.PartialText message) async {
     try {
       _isSendingMessage(true);
+      update();
 
       final textMessage = types.TextMessage(
         author: _user,
@@ -432,6 +434,7 @@ class _FlyerChatScreenController extends GetxController {
       showToast("Failed to send messsage");
     } finally {
       _isSendingMessage(false);
+      update();
     }
   }
 
@@ -494,9 +497,7 @@ class _FlyerChatScreenController extends GetxController {
         final shouldClear =
             await showConfirmDialog("This conversation will be deleted");
         if (shouldClear == true) {
-          conversation.messages.clear();
-          conversation.saveChat();
-          ChatConversation.removeSavedChat(conversation.key);
+          conversation.deleteChat();
           Get.back();
         }
 

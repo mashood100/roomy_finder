@@ -1,12 +1,12 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/user.dart' as app_user;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class ChatConversation {
   final app_user.User me;
@@ -21,26 +21,23 @@ class ChatConversation {
     required this.createdAt,
   });
 
-  static String get conversationsKey =>
-      "${AppController.me.id}-chat-conversations-keys";
+  static String get conversationsKey => "chat_conversations";
 
-  ChatConversation.newConversation({required this.friend})
-      : me = AppController.me,
-        createdAt = DateTime.now(),
+  ChatConversation.newConversation(this.me, this.friend)
+      : createdAt = DateTime.now(),
         messages = [];
 
-  String get key => "$conversationsKey${me.id}#${friend.id}";
+  String get key => "${conversationsKey}_${me.id}_${friend.id}";
   int get hasUreadMessages => messages.where((e) => false).length;
 
   void newMessage(types.Message msg) {
     if (messages.contains(msg)) messages.remove(msg);
     messages.insert(0, msg);
     saveChat();
-    addUserConversationKeyToStorage(key);
   }
 
-  static String createConvsertionKey(String myId, String frienId) {
-    return "$conversationsKey$myId#$frienId";
+  static String createConvsertionKey(String myId, String friendId) {
+    return "${conversationsKey}_${myId}_$friendId";
   }
 
   Future<void> updateChatInfo() async {
@@ -59,31 +56,36 @@ class ChatConversation {
 
   Future<void> saveChat() async {
     try {
-      final pref = await SharedPreferences.getInstance();
-      pref.setString(key, toJson());
+      final directory = await getApplicationDocumentsDirectory();
+
+      final file =
+          File(path.join(directory.path, "conversations", "$key.json"));
+      if (!(await file.exists())) {
+        file.createSync(recursive: true);
+      }
+
+      await file.writeAsString(toJson());
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
     }
   }
 
-  static Future<ChatConversation?> getSavedChat(String key) async {
+  Future<bool> loadMessages() async {
     try {
-      final pref = await SharedPreferences.getInstance();
-      final source = pref.getString(key);
-      if (source == null) return null;
-      return ChatConversation.fromJson(source);
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-      return null;
-    }
-  }
+      final directory = await getApplicationDocumentsDirectory();
 
-  static Future<bool?> removeSavedChat(String key) async {
-    try {
-      final pref = await SharedPreferences.getInstance();
-      pref.remove(key);
+      final file =
+          File(path.join(directory.path, "conversations", "$key.json"));
+
+      if (!file.existsSync()) return false;
+
+      final content = file.readAsStringSync();
+
+      final chat = ChatConversation.fromJson(content);
+
+      messages.clear();
+      messages.addAll(chat.messages);
       return true;
     } catch (e, trace) {
       Get.log("$e");
@@ -92,31 +94,45 @@ class ChatConversation {
     }
   }
 
-  static Future<void> addUserConversationKeyToStorage(String key) async {
-    final pref = await SharedPreferences.getInstance();
-    final keys = pref.getStringList(conversationsKey) ?? [];
-    if (!keys.contains(key)) {
-      keys.insert(0, key);
-      pref.setStringList(conversationsKey, keys);
-    }
-  }
+  Future<bool?> deleteChat() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
 
-  static Future<List<String>> getUserConversationKeyToStorage() async {
-    final pref = await SharedPreferences.getInstance();
-    final keys = pref.getStringList(conversationsKey) ?? [];
-    return keys;
+      final file =
+          File(path.join(directory.path, "conversations", "$key.json"));
+
+      if (file.existsSync()) file.deleteSync();
+
+      return true;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      return false;
+    }
   }
 
   static Future<List<ChatConversation>> getAllSavedChats() async {
-    final keys = await getUserConversationKeyToStorage();
+    final directory = await getApplicationDocumentsDirectory();
 
-    final List<ChatConversation> result = [];
+    final conversationDirectory =
+        Directory(path.join(directory.path, "conversations"));
 
-    for (var key in keys) {
-      final data = await ChatConversation.getSavedChat(key);
-      if (data != null) result.add(data);
+    final files = conversationDirectory.listSync();
+
+    final List<ChatConversation> conversations = [];
+
+    for (var item in files) {
+      try {
+        if (path.extension(item.path) == ".json") {
+          final file = File(item.path);
+          final data = file.readAsStringSync();
+
+          conversations.add(ChatConversation.fromJson(data));
+        }
+      } catch (_) {}
     }
-    return result;
+
+    return conversations;
   }
 
   Map<String, dynamic> toMap() {

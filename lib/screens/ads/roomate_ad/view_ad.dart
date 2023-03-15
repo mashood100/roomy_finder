@@ -81,10 +81,7 @@ class _ViewRoommateAdController extends LoadingController {
   }
 
   Future<void> chatWithUser() async {
-    final conv = (await ChatConversation.getSavedChat(
-            ChatConversation.createConvsertionKey(
-                AppController.me.id, ad.poster.id))) ??
-        ChatConversation.newConversation(friend: ad.poster);
+    final conv = ChatConversation.newConversation(AppController.me, ad.poster);
     Get.to(() => FlyerChatScreen(conversation: conv));
   }
 

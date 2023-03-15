@@ -96,7 +96,10 @@ Future<List<T>> filterListData<T>(
                                 }
                                 return Text(
                                   "$e",
-                                  style: const TextStyle(fontSize: 16),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
                                   textAlign: TextAlign.center,
                                 );
                               }),

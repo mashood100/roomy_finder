@@ -35,7 +35,7 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
     return Obx(() {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Looking for Properties"),
+          title: const Text("Find Room"),
           backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
         ),
         body: Padding(

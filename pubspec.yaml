@@ -146,17 +146,17 @@ flutter_icons:
 
 # Splash screen
 flutter_native_splash:
-  color: "#530730"
-  image: assets/images/logo.png
+  color: "#711785"
+  image: assets/images/splas_log.jpg
   # branding: assets/branding-production.png
-  color_dark: "#530730"
-  image_dark: assets/images/logo.png
+  color_dark: "#711785"
+  image_dark: assets/images/splas_log.jpg
   # branding_dark: assets/branding-production.png
 
   android_12:
-    image: assets/images/logo.png
-    icon_background_color: "#530730"
-    image_dark: assets/images/logo.png
-    icon_background_color_dark: "#530730"
+    image: assets/images/splas_log.jpg
+    icon_background_color: "#711785"
+    image_dark: assets/images/splas_log.jpg
+    icon_background_color_dark: "#711785"
 
   web: false

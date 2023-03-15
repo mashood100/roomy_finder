@@ -38,6 +38,7 @@ class HomeController extends LoadingController {
       NotificationController.onActionReceivedMethod(
         NotificationController.initialAction!,
       );
+      NotificationController.initialAction = null;
     }
 
     super.onInit();

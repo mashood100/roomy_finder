@@ -178,8 +178,11 @@ class NotificationController {
   /// Handler for chance played
   ///
 
+  @pragma("vm:entry-point")
   static Future<void> firebaseMessagingHandler(
-      RemoteMessage msg, bool isForeground) async {
+    RemoteMessage msg,
+    bool isForeground,
+  ) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
       case "booking-offered":
@@ -267,15 +270,9 @@ class NotificationController {
       final sender = User.fromJson(msg.data["sender"]);
       final reciever = User.fromJson(msg.data["reciever"]);
 
-      final convKey =
-          ChatConversation.createConvsertionKey(reciever.id, sender.id);
-
-      final conv = await ChatConversation.getSavedChat(convKey) ??
-          ChatConversation.newConversation(friend: sender);
-
+      final conv = ChatConversation.newConversation(reciever, sender);
+      await conv.loadMessages();
       conv.newMessage(message);
-      conv.saveChat();
-      ChatConversation.addUserConversationKeyToStorage(conv.key);
 
       final String notificationMessage;
 
@@ -368,11 +365,8 @@ class NotificationController {
       final sender = User.fromJson(data["sender"]);
       final reciever = User.fromJson(data["reciever"]);
 
-      final convKey =
-          ChatConversation.createConvsertionKey(reciever.id, sender.id);
-
-      final conv = await ChatConversation.getSavedChat(convKey) ??
-          ChatConversation.newConversation(friend: sender);
+      final conv = ChatConversation.newConversation(reciever, sender);
+      await conv.loadMessages();
       Get.to(() => FlyerChatScreen(conversation: conv));
     } catch (e) {
       Get.log("$e");
