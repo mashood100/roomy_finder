@@ -210,6 +210,7 @@ class NotificationController {
       case "booking-cancelled":
       case "pay-property-rent-fee-completed-client":
       case "pay-property-rent-fee-completed-landlord":
+      case "pay-property-rent-fee-paid-cash":
         final message = msg.data["message"] ?? "new notification";
 
         if (msg.data["event"] != null) {
@@ -286,6 +287,8 @@ class NotificationController {
           body: notificationMessage,
           notificationLayout: NotificationLayout.Messaging,
           payload: Map<String, String?>.from(msg.data),
+          summary: 'Chat notification',
+          largeIcon: sender.profilePicture,
         ),
       );
     } catch (e, trace) {
@@ -355,9 +358,8 @@ class NotificationController {
     try {
       final sender = User.fromJson(data["sender"]);
       final reciever = User.fromJson(data["reciever"]);
-
       final conv = ChatConversation.newConversation(reciever, sender);
-      await conv.loadMessages();
+
       Get.to(() => FlyerChatScreen(conversation: conv));
     } catch (e) {
       Get.log("$e");

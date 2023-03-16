@@ -64,6 +64,8 @@ class Country {
   }
 
   String get localeName => name;
+  bool get isUAE => code == "AE";
+  bool get isSA => code == "SA";
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{

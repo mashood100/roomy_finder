@@ -791,8 +791,11 @@ class PostPropertyAdScreen extends StatelessWidget {
                             TypeAheadFormField<String>(
                               textFieldConfiguration: TextFieldConfiguration(
                                 controller: controller._cityController,
-                                decoration: const InputDecoration(
-                                  hintText: 'Example : Dubai',
+                                decoration: InputDecoration(
+                                  hintText:
+                                      AppController.instance.country.value.isUAE
+                                          ? 'Example : Dubai'
+                                          : "Example : Riyadh",
                                 ),
                               ),
                               itemBuilder: (context, itemData) {
@@ -878,6 +881,29 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 }
                                 return null;
                               },
+                            ),
+                            const SizedBox(height: 10),
+                            // Floor number
+                            Text('Appartment number'.tr),
+                            TextFormField(
+                              initialValue:
+                                  controller.address["appartmentNumber"],
+                              enabled: controller.isLoading.isFalse,
+                              decoration: InputDecoration(
+                                  hintText: 'Examlple : 201'.tr),
+                              onChanged: (value) => controller
+                                  .address["appartmentNumber"] = value,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*'))
+                              ],
                             ),
                             const SizedBox(height: 10),
                             // Floor number

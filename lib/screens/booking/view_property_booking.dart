@@ -174,7 +174,6 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 10),
                       if (!booking.isPayed)
                         Alert(
                           text: booking.isMine
@@ -190,6 +189,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                         "About booking",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
+
                       Card(
                         margin: EdgeInsets.zero,
                         child: Padding(
@@ -198,11 +198,12 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Label(label: "Property", value: booking.ad.type),
-                              Label(
-                                label: "Property location",
-                                value:
-                                    "${booking.ad.address['city']}, ${booking.ad.address['location']}",
-                              ),
+                              if (booking.isPayed)
+                                Label(
+                                  label: "Property location",
+                                  value:
+                                      "${booking.ad.address['city']}, ${booking.ad.address['location']}",
+                                ),
                               // Label(label: "Rent type", value: booking.rentType),
                               Label(
                                 label: "Quantity booked",
@@ -241,6 +242,47 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // About property
+                      if (booking.isPayed) ...[
+                        const SizedBox(height: 10),
+                        const Text(
+                          "About Property",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                      if (booking.isPayed)
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Label(
+                                    label: "Property", value: booking.ad.type),
+                                Label(
+                                  label: "Property location",
+                                  value: "${booking.ad.address['city']}, "
+                                      "${booking.ad.address['location']}",
+                                ),
+                                Label(
+                                  label: "Building",
+                                  value:
+                                      "${booking.ad.address['buildingName']}",
+                                ),
+                                Label(
+                                  label: "Appartment number",
+                                  value:
+                                      "${booking.ad.address['appartmentNumber']}",
+                                ),
+                                Label(
+                                  label: "Floor number",
+                                  value: "${booking.ad.address['floorNumber']}",
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       // About landlord
                       if (!booking.isMine && booking.isPayed) ...[
                         const SizedBox(height: 10),
@@ -248,12 +290,34 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                           "About Landlond",
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Label(label: "Name", value: booking.poster.fullName),
-                        Label(label: "Country", value: booking.poster.country),
-                        Label(label: "Email", value: booking.poster.email),
-                        Label(label: "Phone", value: booking.poster.phone),
-                        Label(label: "Gender", value: booking.poster.gender),
                       ],
+                      if (!booking.isMine && booking.isPayed)
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Label(
+                                    label: "Name",
+                                    value: booking.poster.fullName),
+                                Label(
+                                    label: "Country",
+                                    value: booking.poster.country),
+                                Label(
+                                    label: "Email",
+                                    value: booking.poster.email),
+                                Label(
+                                    label: "Phone",
+                                    value: booking.poster.phone),
+                                Label(
+                                    label: "Gender",
+                                    value: booking.poster.gender),
+                              ],
+                            ),
+                          ),
+                        ),
                       // About client
                       if (booking.isMine && booking.isPayed) ...[
                         const SizedBox(height: 10),
@@ -261,12 +325,38 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                           "About client",
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Label(label: "Name", value: booking.client.fullName),
-                        Label(label: "Country", value: booking.client.country),
-                        Label(label: "Email", value: booking.client.email),
-                        Label(label: "Phone", value: booking.client.phone),
-                        Label(label: "Gender", value: booking.client.gender),
                       ],
+                      if (booking.isMine && booking.isPayed)
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 10),
+                                const Text(
+                                  "About client",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Label(
+                                    label: "Name",
+                                    value: booking.client.fullName),
+                                Label(
+                                    label: "Country",
+                                    value: booking.client.country),
+                                Label(
+                                    label: "Email",
+                                    value: booking.client.email),
+                                Label(
+                                    label: "Phone",
+                                    value: booking.client.phone),
+                                Label(
+                                    label: "Gender",
+                                    value: booking.client.gender),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 10),
                       if (!booking.isMine && booking.isPending)
                         SizedBox(

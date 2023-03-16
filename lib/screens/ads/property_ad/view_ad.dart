@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:month_year_picker/month_year_picker.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -32,9 +31,12 @@ class _VewPropertyController extends LoadingController {
   @override
   onInit() {
     rentType = ad.preferedRentType.obs;
+    final now = DateTime.now();
 
-    checkIn = DateTime.now().obs;
-    checkOut = DateTime.now().obs;
+    final firstDate = DateTime(now.year, now.month, now.day);
+
+    checkIn = firstDate.obs;
+    checkOut = firstDate.obs;
 
     _resetDates();
 
@@ -58,19 +60,27 @@ class _VewPropertyController extends LoadingController {
 
     final context = Get.context!;
     final lastDate = DateTime.now().add(const Duration(days: 365 * 100));
+    final now = DateTime.now();
 
-    final firstDate = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
 
     switch (rentType.value) {
       case "Monthly":
         final initialDate =
             isCheckIn ? firstDate : checkIn.value.add(const Duration(days: 30));
-        date = await showMonthYearPicker(
+        date = await showDatePicker(
           context: context,
           lastDate: lastDate,
-          firstDate: firstDate,
+          firstDate: isCheckIn
+              ? firstDate
+              : checkIn.value.add(const Duration(days: 30)),
           initialDate: initialDate,
-          initialMonthYearPickerMode: MonthYearPickerMode.month,
+          selectableDayPredicate: (day) {
+            if (isCheckIn) return true;
+            final difference = day.difference(checkIn.value);
+
+            return difference.inDays % 30 == 0;
+          },
         );
         break;
       case "Weekly":
@@ -109,7 +119,7 @@ class _VewPropertyController extends LoadingController {
   void _resetDates() {
     switch (rentType.value) {
       case "Monthly":
-        checkOut(checkIn.value.add(const Duration(days: 31)));
+        checkOut(checkIn.value.add(const Duration(days: 30)));
         break;
       case "Weekly":
         checkOut(checkIn.value.add(const Duration(days: 7)));

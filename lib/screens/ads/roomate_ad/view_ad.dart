@@ -148,8 +148,8 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   GridView.count(
-                    crossAxisCount: screenWidth > 370 ? 2 : 1,
-                    childAspectRatio: screenWidth > 370 ? 5 : 7,
+                    crossAxisCount: 1,
+                    childAspectRatio: 7,
                     crossAxisSpacing: 10,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
@@ -168,11 +168,6 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         icon: Icons.mail_outline,
                         label: "Email",
                         value: ad.poster.email,
-                      ),
-                      DataLabel(
-                        icon: Icons.phone,
-                        label: "Contact",
-                        value: ad.poster.phone,
                       ),
                       DataLabel(
                         icon: Icons.ac_unit_outlined,

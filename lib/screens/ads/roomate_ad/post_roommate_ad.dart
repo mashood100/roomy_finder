@@ -548,7 +548,10 @@ class PostRoomateAdScreen extends StatelessWidget {
                               textFieldConfiguration: TextFieldConfiguration(
                                 controller: controller._cityController,
                                 decoration: InputDecoration(
-                                  hintText: 'Example : Dubai'.tr,
+                                  hintText:
+                                      AppController.instance.country.value.isUAE
+                                          ? 'Example : Dubai'
+                                          : "Example : Riyadh",
                                 ),
                               ),
                               itemBuilder: (context, itemData) {
