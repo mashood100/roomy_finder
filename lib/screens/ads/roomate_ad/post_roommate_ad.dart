@@ -1408,10 +1408,6 @@ class PostRoomateAdScreen extends StatelessWidget {
           floatingActionButton: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Builder(builder: (context) {
-              if (MediaQuery.of(context).viewInsets.bottom > 50) {
-                return const SizedBox();
-              }
-
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

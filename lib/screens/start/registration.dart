@@ -813,10 +813,6 @@ class RegistrationScreen extends StatelessWidget {
           floatingActionButton: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Builder(builder: (context) {
-              if (MediaQuery.of(context).viewInsets.bottom > 50) {
-                return const SizedBox();
-              }
-
               if (controller._pageIndex.value == 2) {
                 return const SizedBox();
               }
