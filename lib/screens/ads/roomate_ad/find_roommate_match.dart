@@ -7,7 +7,6 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
@@ -27,11 +26,11 @@ class _FindRoommateMatchController extends LoadingController {
 
   final showFilter = false.obs;
 
-  Future<void> changeCanSeeAds() async {
+  Future<void> changeCanSeeAds(RoommateAd ad) async {
     Get.to(() => UpgragePlanScreen(
           skipCallback: () {
             canSeeDetails(true);
-            showToast("You can now see ad details");
+            Get.to(() => ViewRoommateAdScreen(ad: ad));
           },
         ));
     update();
@@ -179,7 +178,7 @@ class FindRoommateMatchsScreen extends StatelessWidget {
                     onSeeDetails: () =>
                         Get.to(() => ViewRoommateAdScreen(ad: ad)),
                     canSeeDetails: controller.canSeeDetails.value,
-                    onUpgrade: controller.changeCanSeeAds,
+                    onUpgrade: () => controller.changeCanSeeAds(ad),
                   );
                 },
                 itemCount: controller.ads.length + 1,

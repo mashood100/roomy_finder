@@ -186,10 +186,6 @@ class _VewPropertyController extends LoadingController {
   }
 
   Future<void> bookProperty(PropertyAd ad) async {
-    final shouldContinue = await showConfirmDialog(
-      "Please confirm",
-    );
-    if (shouldContinue != true) return;
     try {
       isLoading(true);
 
@@ -307,7 +303,6 @@ class ViewPropertyAd extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final controller = Get.put(_VewPropertyController(ad));
     return Scaffold(
       appBar: AppBar(
@@ -317,6 +312,96 @@ class ViewPropertyAd extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            const SizedBox(height: 1),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ...ad.images.map(
+                    (e) => GestureDetector(
+                      onTap: () => controller._viewImage(e),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: CachedNetworkImage(
+                            imageUrl: e,
+                            height: 250,
+                            fit: BoxFit.fitHeight,
+                            errorWidget: (ctx, e, trace) {
+                              return const SizedBox(
+                                child: CupertinoActivityIndicator(
+                                  radius: 30,
+                                ),
+                              );
+                            },
+                            progressIndicatorBuilder:
+                                (context, url, downloadProgress) {
+                              return Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: CircularProgressIndicator(
+                                  value: downloadProgress.progress,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...ad.videos.map(
+                    (e) => GestureDetector(
+                      onTap: () => Get.to(() {
+                        return PlayVideoScreen(source: e, isAsset: false);
+                      }),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(5),
+                              child: FutureBuilder(
+                                builder: (ctx, asp) {
+                                  if (asp.hasData) {
+                                    return Image.file(
+                                      File(asp.data!),
+                                      alignment: Alignment.center,
+                                      height: 250,
+                                      fit: BoxFit.fitHeight,
+                                    );
+                                  }
+                                  return Container();
+                                },
+                                future: VideoThumbnail.thumbnailFile(
+                                  video: e,
+                                  quality: 50,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Icon(
+                              Icons.play_arrow,
+                              size: 40,
+                              color: Color.fromARGB(255, 2, 3, 2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 5),
               child: Column(
@@ -324,7 +409,6 @@ class ViewPropertyAd extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(width: double.infinity),
                   Text(
                     "${ad.quantity} ${ad.type} in ${ad.address["city"]}",
                     style: const TextStyle(
@@ -332,29 +416,35 @@ class ViewPropertyAd extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text("Location : ${ad.address["location"]}"),
+                  Text(
+                    "Location : ${ad.address["location"]}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Text(
                     "Building : ${ad.address["buildingName"]}"
                     ", Floor number : ${ad.address["floorNumber"]}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 10),
-                  Text("ID ${ad.id}"),
-                  const Divider(height: 20),
+                  Text(
+                    "ID ${ad.id}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(height: 30),
                   const Text("Pricing", style: TextStyle(fontSize: 14)),
                   Text(
-                    "Monthly  : ${ad.monthlyPrice} AED",
+                    "Monthly  : ${ad.monthlyPrice + ad.monthlyCommission} AED",
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Weekly   : ${ad.weeklyPrice} AED",
+                    "Weekly   : ${ad.weeklyPrice + ad.weeklyCommission} AED",
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Daily  : ${ad.dailyPrice} AED",
+                    "Daily  : ${ad.dailyPrice + ad.dailyCommission} AED",
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 20),
                   const Text("Availability", style: TextStyle(fontSize: 14)),
@@ -499,109 +589,7 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
 
                   const SizedBox(height: 20),
-                  const Text("Images", style: TextStyle(fontSize: 14)),
-                  if (controller.ad.images.isNotEmpty)
-                    GridView.count(
-                      crossAxisCount: screenWidth > 370 ? 4 : 2,
-                      crossAxisSpacing: 10,
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      children: ad.images
-                          .map(
-                            (e) => GestureDetector(
-                              onTap: () => controller._viewImage(e),
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5),
-                                  child: CachedNetworkImage(
-                                    imageUrl: e,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (ctx, e, trace) {
-                                      return const SizedBox(
-                                        width: double.infinity,
-                                        height: 150,
-                                        child: CupertinoActivityIndicator(
-                                            radius: 30),
-                                      );
-                                    },
-                                    progressIndicatorBuilder:
-                                        (context, url, downloadProgress) {
-                                      return CircularProgressIndicator(
-                                        value: downloadProgress.progress,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  const SizedBox(height: 20),
-                  const Text("Videos", style: TextStyle(fontSize: 14)),
-                  if (controller.ad.videos.isNotEmpty)
-                    GridView.count(
-                      crossAxisCount: screenWidth > 370 ? 4 : 2,
-                      crossAxisSpacing: 10,
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      children: ad.videos
-                          .map(
-                            (e) => GestureDetector(
-                              onTap: () => Get.to(() {
-                                return PlayVideoScreen(
-                                    source: e, isAsset: false);
-                              }),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    height: double.infinity,
-                                    width: double.infinity,
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: FutureBuilder(
-                                        builder: (ctx, asp) {
-                                          if (asp.hasData) {
-                                            return Image.file(
-                                              File(asp.data!),
-                                              fit: BoxFit.cover,
-                                            );
-                                          }
-                                          return Container();
-                                        },
-                                        future: VideoThumbnail.thumbnailFile(
-                                          video: e,
-                                          quality: 50,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.play_arrow,
-                                    size: 40,
-                                    color: Colors.green,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  const SizedBox(height: 20),
+
                   if (!ad.isMine && controller.bookingId == null) ...[
                     const Text(
                       "Booking",
@@ -762,8 +750,7 @@ class ViewPropertyAd extends StatelessWidget {
                     }),
                 ],
               ),
-            ),
-            const SizedBox(height: 50),
+            )
           ],
         ),
       ),

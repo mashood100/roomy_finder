@@ -114,7 +114,7 @@ class UpgragePlanScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset("assets/images/premium.png"),
+                  // Image.asset("assets/images/premium.png"),
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(10.0),

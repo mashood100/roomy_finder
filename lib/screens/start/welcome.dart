@@ -81,11 +81,7 @@ class WelcomeScreen extends StatelessWidget {
                 top: 10,
                 child: Container(
                   width: Get.width,
-                  padding: EdgeInsets.only(
-                    right: Get.width * 0.2,
-                    left: 10,
-                    top: 20,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -97,6 +93,7 @@ class WelcomeScreen extends StatelessWidget {
                           color: Colors.white,
                           // fontWeight: FontWeight.bold,
                         ),
+                        // textAlign : TextAlign.center,
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -112,12 +109,29 @@ class WelcomeScreen extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: const [
                               SizedBox(
-                                width: 100,
-                                child: Text(
-                                  "ROOMY FINDER",
+                                // width: 100,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: "ROOMY ",
+                                        style: TextStyle(
+                                          color:
+                                              Color.fromRGBO(255, 123, 77, 1),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: "FINDER",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   style: TextStyle(
-                                    fontSize: 18,
-                                    color: Color.fromRGBO(96, 15, 116, 1),
+                                    fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -148,7 +162,7 @@ class WelcomeScreen extends StatelessWidget {
                           Get.to(() => const LoginScreen());
                         },
                         child: const Text(
-                          "Login in to continue",
+                          "Login to continue",
                           style: TextStyle(
                             color: Color.fromRGBO(96, 15, 116, 1),
                             fontWeight: FontWeight.bold,

@@ -168,15 +168,6 @@ class Country {
     locale: 'ar',
     aedCurrencyConvertRate: 1.0211028,
   );
-  static const USA = Country(
-    name: 'Saudi Arabia',
-    code: "SA",
-    phone: '971',
-    currencyCode: "SAR",
-    flag: "🇸🇦",
-    locale: 'ar',
-    aedCurrencyConvertRate: 1.0211028,
-  );
 }
 
 // data

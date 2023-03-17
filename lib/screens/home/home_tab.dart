@@ -127,7 +127,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
                 HomeCard(
                   label: "POST AD".tr,
-                  assetImage: "assets/images/premium_roommate.png",
+                  assetImage: "assets/images/appartment-inner-view-2.jpg",
                   onTap: () async {
                     Get.to(() => const PostAdScreen());
                   },
@@ -154,7 +154,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 },
                                 child: Card(
                                   child: Stack(
-                                    alignment: Alignment.topCenter,
+                                    alignment: Alignment.center,
                                     children: [
                                       SizedBox(
                                         width: Get.width - 10,
@@ -162,7 +162,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           child: Image.asset(
-                                            "assets/images/premium_background_people.jpeg",
+                                            "assets/images/premium_roommate.jpg",
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -187,7 +187,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 },
                                 child: Card(
                                   child: Stack(
-                                    alignment: Alignment.topCenter,
+                                    alignment: Alignment.center,
                                     children: [
                                       SizedBox(
                                         width: Get.width - 10,
@@ -195,7 +195,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           child: Image.asset(
-                                            "assets/images/roommatch_background_people.jpeg",
+                                            "assets/images/roommate_match.jpg",
                                             fit: BoxFit.cover,
                                             height: 200,
                                           ),
@@ -505,6 +505,7 @@ class HomeCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   )),
               const Icon(
                 Icons.arrow_forward_ios,

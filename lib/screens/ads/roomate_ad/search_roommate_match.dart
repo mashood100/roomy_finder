@@ -70,7 +70,6 @@ class _SearchRoommateMatchController extends LoadingController {
     "country": "",
     "city": "",
     "location": "",
-    "buildingName": "",
   }.obs;
 
   final socialPreferences = {

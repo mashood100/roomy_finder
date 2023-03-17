@@ -69,13 +69,18 @@ class PropertyBooking {
 
   /// Commission fee (10% of rent fee[rentFee])
   num get commissionFee {
+    final num fee;
     switch (rentType) {
       case "Monthly":
+        fee = ad.monthlyCommission * quantity * rentPeriod;
+        break;
       case "Weekly":
-        return rentFee * 0.1;
+        fee = ad.weeklyCommission * quantity * rentPeriod;
+        break;
       default:
-        return rentFee * 0.05;
+        fee = ad.dailyCommission * quantity * rentPeriod;
     }
+    return fee;
   }
 
   /// TAV (5% of commission fee [commissionFee])

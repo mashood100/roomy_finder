@@ -6,7 +6,6 @@ import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
@@ -20,12 +19,12 @@ class _PremiumRoommatesController extends LoadingController {
   final showFilter = false.obs;
 
   final canSeeDetails = AppController.me.isPremium.obs;
-  Future<void> changeCanSeeAds() async {
+  Future<void> changeCanSeeAds(RoommateAd ad) async {
     final result = await Get.to(
       () => UpgragePlanScreen(
         skipCallback: () {
           canSeeDetails(true);
-          showToast("You can now see ad details");
+          Get.to(() => ViewRoommateAdScreen(ad: ad));
         },
       ),
     );
@@ -163,7 +162,7 @@ class PremiumRoommatesAdsScreen extends StatelessWidget {
                     ad: ad,
                     onTap: () {
                       if (controller.canSeeDetails.isFalse) {
-                        controller.changeCanSeeAds();
+                        controller.changeCanSeeAds(ad);
                       } else {
                         Get.to(() => ViewRoommateAdScreen(ad: ad));
                       }

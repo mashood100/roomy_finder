@@ -416,7 +416,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           "Partition",
                           "Room",
                           "Master Room",
-                          "Mix"
+                          // "Mix"
                         ].map((e) {
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 5),

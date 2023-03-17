@@ -79,7 +79,27 @@ class AboutScreeen extends StatelessWidget {
               const SizedBox(height: 10),
               Center(
                 child: FutureBuilder(
-                  builder: (ctx, asp) => Text("Roomy Finder ${asp.data}"),
+                  builder: (ctx, asp) => Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(
+                          text: "Roomy  ",
+                          style: TextStyle(
+                            color: Colors.purple,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: "Finder ",
+                          style: TextStyle(
+                            color: Color.fromRGBO(255, 123, 77, 1),
+                          ),
+                        ),
+                        TextSpan(text: "${asp.data}"),
+                      ],
+                    ),
+                  )
+                  // Text("Roomy Finder ${asp.data}")
+                  ,
                   future: controller._appVersion,
                 ),
               ),

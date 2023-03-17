@@ -4,15 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PropertyAdWidget extends StatelessWidget {
-  const PropertyAdWidget({super.key, required this.ad, this.onTap});
+  const PropertyAdWidget({
+    super.key,
+    required this.ad,
+    this.onTap,
+    this.onFavoriteTap,
+  });
 
   final PropertyAd ad;
   final void Function()? onTap;
+  final void Function()? onFavoriteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -112,8 +120,20 @@ class PropertyAdWidget extends StatelessWidget {
                   SizedBox(
                     height: 30,
                     child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.favorite),
+                      onPressed: onFavoriteTap ??
+                          () {
+                            _addAdToFavorite(
+                              ad.toJson(),
+                              "favorites-property-ads",
+                            ).then((value) {
+                              if (value) {
+                                showToast("Ad added to favorites");
+                              }
+                            });
+                          },
+                      icon: onFavoriteTap != null
+                          ? const Icon(Icons.delete, color: Colors.red)
+                          : const Icon(Icons.favorite),
                     ),
                   )
                 ],
@@ -204,10 +224,6 @@ class RoommateAdWidget extends StatelessWidget {
                   return const SizedBox(
                     width: double.infinity,
                     height: 150,
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 50,
-                    ),
                   );
                 },
               ),
@@ -297,5 +313,20 @@ class RoommateAdWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<bool> _addAdToFavorite(String item, String listKey) async {
+  try {
+    final pref = await SharedPreferences.getInstance();
+
+    final favorites = pref.getStringList(listKey) ?? [];
+    if (!favorites.contains(item)) {
+      favorites.add(item);
+    }
+    pref.setStringList(listKey, favorites);
+    return true;
+  } catch (_) {
+    return false;
   }
 }

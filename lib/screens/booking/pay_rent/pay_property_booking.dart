@@ -125,7 +125,6 @@ class PayProperyBookingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset("assets/images/premium.png"),
                   const Padding(
                     padding: EdgeInsets.all(10.0),
                     child: Text(
@@ -156,7 +155,7 @@ class PayProperyBookingScreen extends StatelessWidget {
                           Label(
                             label: "Rent period",
                             value:
-                                "${booking.rentPeriod} ${booking.rentPeriodUnit} "
+                                "${booking.rentPeriod} ${booking.rentPeriodUnit}"
                                 "${booking.rentPeriod > 1 ? "s" : ""}",
                             fontSize: 16,
                           ),
@@ -166,8 +165,7 @@ class PayProperyBookingScreen extends StatelessWidget {
                               value: formatMoney(
                                 (booking.rentFee + booking.commissionFee) *
                                     AppController.instance.country.value
-                                        .aedCurrencyConvertRate *
-                                    5,
+                                        .aedCurrencyConvertRate,
                               ),
                               fontSize: 16,
                             );

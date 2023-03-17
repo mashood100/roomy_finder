@@ -42,8 +42,8 @@ class PropertyAd {
   }
 
   num get monthlyCommission => monthlyPrice * 0.1;
-  num get weeklyCommission => monthlyPrice * 0.1;
-  num get dailyCommission => monthlyPrice * 0.05;
+  num get weeklyCommission => weeklyPrice * 0.1;
+  num get dailyCommission => dailyPrice * 0.05;
 
   num get prefferedRentDisplayPrice {
     switch (preferedRentType) {

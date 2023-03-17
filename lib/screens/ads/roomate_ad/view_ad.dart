@@ -260,12 +260,13 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         label: "Gender preferred",
                         value: "${ad.socialPreferences["gender"]}",
                       ),
-                      DataLabel(
-                        icon: Icons.group,
-                        label: "People",
-                        value:
-                            "${ad.socialPreferences["numberOfPeople"]} peoples",
-                      ),
+                      if (ad.isPremium)
+                        DataLabel(
+                          icon: Icons.group,
+                          label: "People",
+                          value:
+                              "${ad.socialPreferences["numberOfPeople"]} peoples",
+                        ),
                       DataLabel(
                         icon: Icons.sports_gymnastics,
                         label: "Gym",

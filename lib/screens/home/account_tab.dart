@@ -125,6 +125,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             const Divider(height: 20),
             Card(
               child: ListTile(
+                onTap: () => Get.to(() => const NotificationsScreen()),
                 leading: const CircleAvatar(
                   child: Icon(Icons.notifications),
                 ),

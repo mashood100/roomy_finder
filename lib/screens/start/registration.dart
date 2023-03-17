@@ -206,16 +206,20 @@ class _RegistrationController extends LoadingController {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      final imgRef = FirebaseStorage.instance
-          .ref()
-          .child('images')
-          .child("propile-pictures")
-          .child('/${const Uuid().v4()}${path.extension(_images[0].path)}');
+      String? imageUrl;
 
-      final uploadTask =
-          imgRef.putData(await File(_images[0].path).readAsBytes());
+      if (_images.isNotEmpty) {
+        final imgRef = FirebaseStorage.instance
+            .ref()
+            .child('images')
+            .child("propile-pictures")
+            .child('/${const Uuid().v4()}${path.extension(_images[0].path)}');
 
-      final imageUrl = await (await uploadTask).ref.getDownloadURL();
+        final uploadTask =
+            imgRef.putData(await File(_images[0].path).readAsBytes());
+
+        imageUrl = await (await uploadTask).ref.getDownloadURL();
+      }
 
       final res = await ApiService.getDio.post(
         "/auth/credentials",
@@ -295,11 +299,7 @@ class _RegistrationController extends LoadingController {
   Future<bool> validateCredentials() async {
     try {
       if (_formkeyCredentials.currentState?.validate() != true) return false;
-      if (_images.isEmpty) {
-        showGetSnackbar("Profile picture is required".tr,
-            severity: Severity.error);
-        return false;
-      }
+
       if (acceptTermsAndConditions.isFalse) {
         showGetSnackbar(
           "You need to read and accept the terms and conditions before continuing"
@@ -418,7 +418,6 @@ class RegistrationScreen extends StatelessWidget {
                         UserAccountType.landlord,
                         UserAccountType.tenant,
                         UserAccountType.roommate,
-                        UserAccountType.freelancer,
                       ].map((e) {
                         final title = e.name.toLowerCase();
                         return Container(

@@ -76,11 +76,10 @@ class _PostRoommateAdController extends LoadingController {
     "country": "",
     "city": "",
     "location": "",
-    "buildingName": "",
   }.obs;
 
   final socialPreferences = {
-    "numberOfPeople": "1 to 5",
+    "numberOfPeople": "0",
     "grouping": "Single",
     "gender": "Male",
     "nationality": "Arabs",
@@ -122,7 +121,6 @@ class _PostRoommateAdController extends LoadingController {
           address["country"] = oldData!.address["country"].toString();
       _locationController.text =
           address["location"] = oldData!.address["location"].toString();
-      address["buildingName"] = oldData!.address["buildingName"].toString();
 
       aboutYou["astrologicalSign"] =
           oldData!.aboutYou["astrologicalSign"].toString();
@@ -623,25 +621,6 @@ class PostRoomateAdScreen extends StatelessWidget {
                             ),
 
                             const SizedBox(height: 10),
-
-                            // building name
-                            Text('buildingName'.tr),
-                            TextFormField(
-                              initialValue:
-                                  controller.address["buildingName"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                  hintText: 'Your property building'.tr),
-                              onChanged: (value) =>
-                                  controller.address["buildingName"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
 
                             // Description
                             Text('description'.tr),
@@ -1210,36 +1189,33 @@ class PostRoomateAdScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 10),
+                          if (isPremium) ...[
+                            const SizedBox(height: 10),
 
-                          // People Count
-                          Text('numberOfPeople'.tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'numberOfPeople'.tr,
-                              helperText: 'howManyPeopleInYourProperty'.tr,
+                            // People Count
+                            Text('numberOfPeople'.tr),
+                            DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                hintText: 'numberOfPeople'.tr,
+                                helperText: 'howManyPeopleInYourProperty'.tr,
+                              ),
+                              value:
+                                  controller.socialPreferences["numberOfPeople"]
+                                      as String?,
+                              items: ["1", "2"]
+                                  .map((e) => DropdownMenuItem<String>(
+                                      value: e, child: Text(e)))
+                                  .toList(),
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.socialPreferences[
+                                            "numberOfPeople"] = val;
+                                      }
+                                    },
                             ),
-                            value: controller
-                                .socialPreferences["numberOfPeople"] as String,
-                            items: [
-                              "1 to 5",
-                              "5 to 10",
-                              "10 to 15",
-                              "15 to 20",
-                              "+20",
-                            ]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences[
-                                          "numberOfPeople"] = val;
-                                    }
-                                  },
-                          ),
+                          ],
                           const SizedBox(height: 20),
                           // Nationalities
                           Text('nationality'.tr),

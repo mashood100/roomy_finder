@@ -49,22 +49,22 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        hintText: "Search city",
-                        border: InputBorder.none,
-                        fillColor: Colors.transparent,
-                      ),
-                      onChanged: controller.citySortKey,
-                    ),
-                  ),
-                ),
+                // Card(
+                //   child: Padding(
+                //     padding: const EdgeInsets.symmetric(
+                //       horizontal: 10,
+                //       vertical: 5,
+                //     ),
+                //     child: TextField(
+                //       decoration: const InputDecoration(
+                //         hintText: "Search city",
+                //         border: InputBorder.none,
+                //         fillColor: Colors.transparent,
+                //       ),
+                //       onChanged: controller.citySortKey,
+                //     ),
+                //   ),
+                // ),
                 GridView.count(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
