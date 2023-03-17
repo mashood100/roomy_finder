@@ -167,7 +167,7 @@ class SearchRoommateMatchScreen extends StatelessWidget {
             title: const Text("Register Roommate Match"),
           ),
           body: Padding(
-            padding: const EdgeInsets.only(right: 5, left: 5, bottom: 50),
+            padding: const EdgeInsets.only(right: 5, left: 5, bottom: 110),
             child: PageView(
               controller: controller._pageController,
               onPageChanged: (index) {
@@ -498,15 +498,6 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             return null;
                           },
                           onTap: controller.pickMovingDate,
-                        ),
-                        const SizedBox(height: 10),
-
-                        Text('Interests'.tr),
-                        TextFormField(
-                          enabled: controller.isLoading.isFalse,
-                          decoration: InputDecoration(
-                            hintText: 'interest'.tr,
-                          ),
                         ),
                         const SizedBox(height: 10),
 

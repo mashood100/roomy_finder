@@ -164,18 +164,25 @@ class PayProperyBookingScreen extends StatelessWidget {
                               label: "Total Rent fee",
                               value: formatMoney(
                                 (booking.rentFee + booking.commissionFee) *
-                                    AppController.instance.country.value
-                                        .aedCurrencyConvertRate,
+                                    AppController.cnvertionRate,
                               ),
                               fontSize: 16,
                             );
                           }),
+                          if (booking.ad.deposit)
+                            Label(
+                              label: "Deposit fee",
+                              value: " ${formatMoney(
+                                booking.ad.depositPrice! *
+                                    booking.quantity *
+                                    AppController.cnvertionRate,
+                              )}",
+                              fontSize: 16,
+                            ),
                           Label(
                             label: "VAT",
                             value: "(5%)  ${formatMoney(
-                              booking.vatFee *
-                                  AppController.instance.country.value
-                                      .aedCurrencyConvertRate,
+                              booking.vatFee * AppController.cnvertionRate,
                             )}",
                             fontSize: 16,
                           ),
@@ -183,21 +190,23 @@ class PayProperyBookingScreen extends StatelessWidget {
                             label: "Service fee",
                             value: "(3%)  ${formatMoney(
                               booking.calculateFee(0.03) *
-                                  AppController.instance.country.value
-                                      .aedCurrencyConvertRate,
+                                  AppController.cnvertionRate,
                             )}",
                             fontSize: 16,
                           ),
                           Builder(builder: (context) {
+                            var total = booking.rentFee +
+                                booking.commissionFee +
+                                booking.vatFee +
+                                booking.calculateFee(0.03);
+                            if (booking.ad.deposit) {
+                              total +=
+                                  booking.ad.depositPrice! * booking.quantity;
+                            }
                             return Label(
                               label: "Total",
                               value: formatMoney(
-                                (booking.rentFee +
-                                        booking.commissionFee +
-                                        booking.vatFee +
-                                        booking.calculateFee(0.03)) *
-                                    AppController.instance.country.value
-                                        .aedCurrencyConvertRate,
+                                (total) * AppController.cnvertionRate,
                               ),
                               fontSize: 20,
                               boldLabel: true,

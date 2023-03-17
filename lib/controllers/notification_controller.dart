@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -281,14 +282,19 @@ class NotificationController {
       AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: Random().nextInt(1000),
-          channelKey: "chat_channel_key",
-          groupKey: "chat_channel_group_key",
+          channelKey:
+              Platform.isAndroid ? "chat_channel_key" : "notification_channel",
+          groupKey: Platform.isAndroid
+              ? "chat_channel_group_key"
+              : "notification_channel_group",
           title: sender.firstName,
           body: notificationMessage,
-          notificationLayout: NotificationLayout.Messaging,
+          notificationLayout: Platform.isAndroid
+              ? NotificationLayout.Messaging
+              : NotificationLayout.Messaging,
           payload: Map<String, String?>.from(msg.data),
-          summary: 'Chat notification',
-          largeIcon: sender.profilePicture,
+          summary: Platform.isAndroid ? 'Chat notification' : null,
+          largeIcon: Platform.isAndroid ? sender.profilePicture : null,
         ),
       );
     } catch (e, trace) {

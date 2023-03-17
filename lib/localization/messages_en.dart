@@ -84,7 +84,7 @@ const Map<String, String> enMessages = {
   "someThingWentWrong": "Something went wrong",
   "thisFieldIsRequired": "This field is required",
   "registration": "Registration",
-  "thisUserAlreadyExistPleaseLogin": "This user already exxist",
+  "thisUserAlreadyExistPleaseLogin": "This user already exist",
   "emailIsAlreadyUsed": "Email already used",
   "profilePicture": "Profile picture",
   "errorPickingProfilePicture": "Error picking image",

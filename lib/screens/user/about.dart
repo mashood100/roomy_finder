@@ -83,7 +83,7 @@ class AboutScreeen extends StatelessWidget {
                     TextSpan(
                       children: [
                         const TextSpan(
-                          text: "Roomy  ",
+                          text: "Roomy",
                           style: TextStyle(
                             color: Colors.purple,
                           ),

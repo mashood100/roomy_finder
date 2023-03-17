@@ -7,11 +7,13 @@ import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
@@ -44,15 +46,44 @@ class _VewPropertyController extends LoadingController {
   }
 
   String get checkDifference {
-    var jiffy = Jiffy(checkOut.value);
     switch (rentType.value) {
       case "Monthly":
-        return "${jiffy.diff(checkIn.value, Units.MONTH)} Months";
+        return "$_rentPeriod Months";
       case "Weekly":
-        return "${jiffy.diff(checkIn.value, Units.WEEK)} Weeks";
+        return "$_rentPeriod Weeks";
       default:
-        return "${jiffy.diff(checkIn.value, Units.DAY)} Days";
+        return "$_rentPeriod Days";
     }
+  }
+
+  int get _rentPeriod {
+    // The difference in milliseconds between the checkout and the checkin date
+    final checkOutCheckInMillisecondsDifference =
+        checkOut.value.millisecondsSinceEpoch -
+            checkIn.value.millisecondsSinceEpoch;
+
+    final int period;
+
+    switch (rentType.value) {
+      case "Monthly":
+        const oneMothDuration = 1000 * 3600 * 24 * 30;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneMothDuration).ceil();
+
+        break;
+      case "Weekly":
+        const oneWeekDuration = 1000 * 3600 * 24 * 7;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneWeekDuration).ceil();
+        break;
+      default:
+        const oneDayDuration = 1000 * 3600 * 24;
+        period =
+            (checkOutCheckInMillisecondsDifference / oneDayDuration).ceil();
+        break;
+    }
+
+    return period;
   }
 
   Future<DateTime?> _pickDate({bool isCheckIn = false}) async {
@@ -432,20 +463,26 @@ class ViewPropertyAd extends StatelessWidget {
                   const Divider(height: 30),
                   const Text("Pricing", style: TextStyle(fontSize: 14)),
                   Text(
-                    "Monthly  : ${ad.monthlyPrice + ad.monthlyCommission} AED",
+                    "Monthly  : ${formatMoney((ad.monthlyPrice + ad.monthlyCommission) * AppController.cnvertionRate)}",
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Weekly   : ${ad.weeklyPrice + ad.weeklyCommission} AED",
+                    "Weekly   : ${formatMoney((ad.weeklyPrice + ad.weeklyCommission) * AppController.cnvertionRate)}",
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Daily  : ${ad.dailyPrice + ad.dailyCommission} AED",
+                    "Daily  : ${formatMoney((ad.dailyPrice + ad.dailyCommission) * AppController.cnvertionRate)}",
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
+                  if (ad.deposit)
+                    Text(
+                      "Deposit fee : ${formatMoney(ad.depositPrice! * AppController.cnvertionRate)}",
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   const Divider(height: 20),
                   const Text("Availability", style: TextStyle(fontSize: 14)),
                   const SizedBox(height: 5),

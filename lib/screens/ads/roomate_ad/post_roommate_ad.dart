@@ -424,7 +424,12 @@ class PostRoomateAdScreen extends StatelessWidget {
           body: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.only(
+                  left: 5,
+                  right: 5,
+                  top: 5,
+                  bottom: 60,
+                ),
                 child: PageView(
                   controller: controller._pageController,
                   onPageChanged: (index) => controller._pageIndex(index),
@@ -912,9 +917,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                                 padding: const EdgeInsets.all(10),
                                 height: 150,
                                 child: const Text(
-                                  "Help everyone imagine What it's like "
-                                  "to live at your property upload clear"
-                                  " photo and video of your property",
+                                  "Please upload your photos",
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -1222,9 +1225,6 @@ class PostRoomateAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'nationality'.tr,
-                              helperText:
-                                  'The nationality of the people who live on your property'
-                                      .tr,
                             ),
                             value: controller.socialPreferences["nationality"]
                                 as String,

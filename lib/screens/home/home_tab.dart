@@ -284,7 +284,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     ),
                     TextSpan(
                       text: "FINDER",
-                      style: TextStyle(color: Colors.amber),
+                      style: TextStyle(color: Color.fromRGBO(255, 123, 77, 1)),
                     ),
                   ],
                 ),

@@ -110,9 +110,8 @@ class _PostPropertyAdController extends LoadingController {
       information["weeklyPrice"] = oldData!.weeklyPrice.toString();
       information["dailyPrice"] = oldData!.dailyPrice.toString();
       information["deposit"] = oldData!.deposit;
-      if (oldData!.depositPrice != null && oldData!.deposit == true) {
-        information["depositPrice"] = oldData!.depositPrice.toString();
-      }
+      information["depositPrice"] = oldData!.depositPrice;
+
       information["description"] = oldData!.description;
       information["posterType"] = oldData!.posterType;
 
@@ -402,7 +401,12 @@ class PostPropertyAdScreen extends StatelessWidget {
           body: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 10, right: 10, bottom: 50),
+                padding: const EdgeInsets.only(
+                  left: 5,
+                  right: 5,
+                  top: 5,
+                  bottom: 110,
+                ),
                 child: PageView(
                   controller: controller._pageController,
                   onPageChanged: (index) => controller._pageIndex(index),

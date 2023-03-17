@@ -59,7 +59,7 @@ class _UpgradePlanController extends LoadingController {
           break;
 
         case "ROOMY_FINDER_CARD":
-          showGetSnackbar("Payment with Roomy Finder can is comming soon!");
+          showGetSnackbar("Payment with Roomy Finder card is comming soon!");
           break;
         case "SKIP":
           Get.back(result: "SKIP");

@@ -406,8 +406,12 @@ class RegistrationScreen extends StatelessWidget {
           body: Stack(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.only(
+                  left: 5,
+                  right: 5,
+                  top: 5,
+                  bottom: 60,
+                ),
                 child: PageView(
                   controller: controller._pageController,
                   onPageChanged: (index) => controller._pageIndex(index),

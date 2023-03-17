@@ -122,8 +122,7 @@ class PropertyAd {
       weeklyPrice: map['weeklyPrice'] as num,
       dailyPrice: map['dailyPrice'] as num,
       deposit: map['deposit'] as bool,
-      depositPrice:
-          map['depositPrice'] != null ? map['depositPrice'] as num : null,
+      depositPrice: num.tryParse("${map['depositPrice']}") ?? 0,
       posterType: map['posterType'] as String,
       description: map['description'] as String,
       images: List<String>.from((map['images'] as List)),
