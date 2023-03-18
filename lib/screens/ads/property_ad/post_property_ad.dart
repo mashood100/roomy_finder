@@ -121,6 +121,7 @@ class _PostPropertyAdController extends LoadingController {
           address["location"] = oldData!.address["location"].toString();
       address["buildingName"] = oldData!.address["buildingName"].toString();
       address["floorNumber"] = oldData!.address["floorNumber"].toString();
+      address["appartmentNumber"] = oldData!.address["appartmentNumber"].toString();
       amenties.value = oldData!.amenties;
 
       if (oldData!.agentInfo != null) {
@@ -596,14 +597,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             if (controller.information["deposit"] == true)
                               // Deposit fee
-                              Text('depositFee'.tr),
+                              Text('Deposit price'.tr),
                             if (controller.information["deposit"] == true)
                               TextFormField(
                                 initialValue:
-                                    controller.information["depositFee"] == null
+                                    controller.information["depositPrice"] == null
                                         ? ''
-                                        : controller.information["depositFee"]
-                                            as String,
+                                        : controller.information["depositPrice"].toString(),
+                                        
                                 enabled: controller.isLoading.isFalse,
                                 decoration: InputDecoration(
                                   hintText: 'Example 100 AED'.tr,
@@ -611,7 +612,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                       .instance.country.value.currencyCode,
                                 ),
                                 onChanged: (value) => controller
-                                    .information["depositFee"] = value,
+                                    .information["depositPrice"] = value,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return 'thisFieldIsRequired'.tr;

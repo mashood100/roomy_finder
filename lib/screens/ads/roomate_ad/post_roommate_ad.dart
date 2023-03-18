@@ -79,7 +79,7 @@ class _PostRoommateAdController extends LoadingController {
   }.obs;
 
   final socialPreferences = {
-    "numberOfPeople": "0",
+    "numberOfPeople": "1",
     "grouping": "Single",
     "gender": "Male",
     "nationality": "Arabs",
@@ -1200,7 +1200,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                             DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 hintText: 'numberOfPeople'.tr,
-                                helperText: 'howManyPeopleInYourProperty'.tr,
+                                
                               ),
                               value:
                                   controller.socialPreferences["numberOfPeople"]
@@ -1256,9 +1256,7 @@ class PostRoomateAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'gender'.tr,
-                              helperText:
-                                  'Gender of people who live in your property'
-                                      .tr,
+                             
                             ),
                             value: controller.socialPreferences["gender"]
                                 as String,
