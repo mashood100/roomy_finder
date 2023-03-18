@@ -123,8 +123,6 @@ class _RegistrationController extends LoadingController {
         timeout: const Duration(minutes: 1),
         verificationFailed: (e) {
           Get.log(" Verification failed with code : ${e.code}");
-          print("karan");
-          print(e);
           _isVerifyingPhone(false);
           switch (e.code) {
             case "invalid-phone-number":
