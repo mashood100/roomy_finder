@@ -37,18 +37,14 @@ class AppController extends GetxController {
 
   static AppVersion? updateVersion;
 
-  @override
-  void onInit() {
-    super.onInit();
-    setupToken();
-  }
-
   Future<void> initRequired() async {
     // User
     final savedUser = await getSaveUser();
 
     if (savedUser != null) {
       user = savedUser.obs;
+
+      setupUserFCMToken();
 
       userPassword = await getUserPassword();
 
@@ -259,7 +255,7 @@ class AppController extends GetxController {
   }
 
   // FCM
-  Future<void> saveTokenToDatabase(String token) async {
+  static Future<void> saveTokenToDatabase(String token) async {
     try {
       await ApiService.getDio.put(
         "$API_URL/auth//update-fcm-token",
@@ -270,7 +266,7 @@ class AppController extends GetxController {
     }
   }
 
-  Future<void> setupToken() async {
+  static Future<void> setupUserFCMToken() async {
     // Get the token each time the application loads
     String? token = await FirebaseMessaging.instance.getToken();
 
