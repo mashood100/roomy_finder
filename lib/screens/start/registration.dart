@@ -260,6 +260,7 @@ class _RegistrationController extends LoadingController {
         AppController.instance.user = user.obs;
         AppController.instance.setIsFirstStart(false);
         AppController.instance.userPassword = information["password"];
+        AppController.setupFCMTokenHandler();
 
         AppNotication.currentUser = user;
 

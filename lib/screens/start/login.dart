@@ -43,6 +43,7 @@ class _LoginController extends LoadingController {
 
           AppController.instance.user = user.obs;
           AppController.instance.userPassword = _passwordController.text;
+          AppController.setupFCMTokenHandler();
 
           AppNotication.currentUser = user;
 
