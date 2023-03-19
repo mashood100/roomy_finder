@@ -263,7 +263,6 @@ class _RegistrationController extends LoadingController {
         AppController.instance.userPassword = information["password"];
 
         AppNotication.currentUser = user;
-        AppController.setupUserFCMToken();
 
         Get.offAllNamed('/home');
       } else {

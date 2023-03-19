@@ -45,7 +45,6 @@ class _LoginController extends LoadingController {
           AppController.instance.userPassword = _passwordController.text;
 
           AppNotication.currentUser = user;
-          AppController.setupUserFCMToken();
 
           if (rememberMe.isTrue) {
             await AppController.instance.saveUser();

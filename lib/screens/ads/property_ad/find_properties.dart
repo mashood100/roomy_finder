@@ -41,7 +41,8 @@ class _FindPropertiesController extends LoadingController {
         try {
           var propertyAd = PropertyAd.fromMap(e);
           return propertyAd;
-        } catch (e) {
+        } catch (e, trace) {
+          print(trace);
           return null;
         }
       });
