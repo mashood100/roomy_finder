@@ -123,7 +123,6 @@ class _RegistrationController extends LoadingController {
         timeout: const Duration(minutes: 1),
         verificationFailed: (e) {
           Get.log(" Verification failed with code : ${e.code}");
-
           _isVerifyingPhone(false);
           switch (e.code) {
             case "invalid-phone-number":
@@ -261,6 +260,7 @@ class _RegistrationController extends LoadingController {
         AppController.instance.user = user.obs;
         AppController.instance.setIsFirstStart(false);
         AppController.instance.userPassword = information["password"];
+        AppController.setupFCMTokenHandler();
 
         AppNotication.currentUser = user;
 

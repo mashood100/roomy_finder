@@ -180,7 +180,8 @@ class NotificationController {
   ///
 
   @pragma("vm:entry-point")
-  static Future<void> firebaseMessagingHandler(RemoteMessage msg) async {
+  static Future<void> firebaseMessagingHandler(
+      RemoteMessage msg, bool showAndroidMessage) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
       case "booking-offered":
@@ -190,20 +191,22 @@ class NotificationController {
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
         }
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: "Booking",
-            body: message,
-            notificationLayout: NotificationLayout.BigText,
-            payload: {
-              "bookingId": bookingId,
-              "event": msg.data["event"].toString(),
-            },
-          ),
-        );
+        if (Platform.isAndroid && showAndroidMessage) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Booking",
+              body: message,
+              notificationLayout: NotificationLayout.BigText,
+              payload: {
+                "bookingId": bookingId,
+                "event": msg.data["event"].toString(),
+              },
+            ),
+          );
+        }
 
         break;
       case "auto-reply":
@@ -218,20 +221,22 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: "Booking",
-            body: message,
-            notificationLayout: NotificationLayout.BigText,
-          ),
-        );
+        if (Platform.isAndroid && showAndroidMessage) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Booking",
+              body: message,
+              notificationLayout: NotificationLayout.BigText,
+            ),
+          );
+        }
 
         break;
       case "new-message":
-        _messageNotificationHandler(msg);
+        _messageNotificationHandler(msg, showAndroidMessage);
         break;
       case "plan-upgraded-successfully":
         final message = msg.data["message"] ?? "new notification";
@@ -240,16 +245,18 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: "Premium",
-            body: message,
-            notificationLayout: NotificationLayout.BigText,
-          ),
-        );
+        if (Platform.isAndroid && showAndroidMessage) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Premium",
+              body: message,
+              notificationLayout: NotificationLayout.BigText,
+            ),
+          );
+        }
         break;
 
       default:
@@ -257,7 +264,10 @@ class NotificationController {
     }
   }
 
-  static Future<void> _messageNotificationHandler(RemoteMessage msg) async {
+  static Future<void> _messageNotificationHandler(
+    RemoteMessage msg,
+    bool showAndroidMessage,
+  ) async {
     try {
       final message = types.Message.fromJson(jsonDecode(msg.data["message"]));
       final sender = User.fromJson(msg.data["sender"]);
@@ -279,24 +289,27 @@ class NotificationController {
         notificationMessage = "Sent a file";
       }
 
-      AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: Random().nextInt(1000),
-          channelKey:
-              Platform.isAndroid ? "chat_channel_key" : "notification_channel",
-          groupKey: Platform.isAndroid
-              ? "chat_channel_group_key"
-              : "notification_channel_group",
-          title: sender.firstName,
-          body: notificationMessage,
-          notificationLayout: Platform.isAndroid
-              ? NotificationLayout.Messaging
-              : NotificationLayout.Messaging,
-          payload: Map<String, String?>.from(msg.data),
-          summary: Platform.isAndroid ? 'Chat notification' : null,
-          largeIcon: Platform.isAndroid ? sender.profilePicture : null,
-        ),
-      );
+      if (Platform.isAndroid && showAndroidMessage) {
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: Platform.isAndroid
+                ? "chat_channel_key"
+                : "notification_channel",
+            groupKey: Platform.isAndroid
+                ? "chat_channel_group_key"
+                : "notification_channel_group",
+            title: sender.fullName,
+            body: notificationMessage,
+            notificationLayout: Platform.isAndroid
+                ? NotificationLayout.Messaging
+                : NotificationLayout.Messaging,
+            payload: Map<String, String?>.from(msg.data),
+            summary: Platform.isAndroid ? 'Chat notification' : null,
+            largeIcon: Platform.isAndroid ? sender.profilePicture : null,
+          ),
+        );
+      }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");

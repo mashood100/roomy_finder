@@ -333,11 +333,6 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                             padding: const EdgeInsets.all(10.0),
                             child: Column(
                               children: [
-                                const SizedBox(height: 10),
-                                const Text(
-                                  "About client",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
                                 Label(
                                     label: "Name",
                                     value: booking.client.fullName),
