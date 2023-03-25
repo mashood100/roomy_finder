@@ -25,7 +25,7 @@ class _ViewRoommateAdController extends LoadingController {
   _ViewRoommateAdController(this.ad);
 
   Future<void> editAd(RoommateAd ad) async {
-    Get.to(() => PostRoomateAdScreen(oldData: ad, isPremium: ad.isPremium));
+    Get.to(() => PostRoommateAdScreen(oldData: ad, isPremium: ad.isPremium));
   }
 
   Future<void> deleteAd(RoommateAd ad) async {

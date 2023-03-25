@@ -104,16 +104,16 @@ class PostAdScreen extends StatelessWidget {
                   Get.to(() => const PostPropertyAdScreen());
                   break;
                 case AdType.roommateMatch:
-                  Get.to(() => const PostRoomateAdScreen(isPremium: false));
+                  Get.to(() => const PostRoommateAdScreen(isPremium: false));
                   break;
                 case AdType.roommatePremium:
                   if (AppController.me.isPremium) {
-                    Get.to(() => const PostRoomateAdScreen(isPremium: true));
+                    Get.to(() => const PostRoommateAdScreen(isPremium: true));
                   } else {
                     Get.to(() => UpgragePlanScreen(
                           skipCallback: () {
                             Get.to(() =>
-                                const PostRoomateAdScreen(isPremium: true));
+                                const PostRoommateAdScreen(isPremium: true));
                           },
                         ));
                   }

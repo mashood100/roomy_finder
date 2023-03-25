@@ -25,8 +25,8 @@ String relativeTimeText(DateTime dateTime) {
 String formatMoney(num price) {
   final NumberFormat formatter = NumberFormat.currency(
     locale: "en_US",
-    name: AppController.instance.country.value.currencyCode,
-    decimalDigits: 2,
+    name: "${AppController.instance.country.value.currencyCode} ",
+    decimalDigits: price.toInt() == price.toDouble() ? 0 : 2,
   );
 
   return formatter.format(price);

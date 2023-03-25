@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _WelcomeScreenController extends GetxController {
   late final PageController _pageController;
@@ -48,139 +49,129 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(_WelcomeScreenController(pageIndex));
     return Scaffold(
-      // appBar: AppBar(toolbarHeight: 0),
-      body: PageView(
-        controller: controller._pageController,
-        onPageChanged: controller._pageIndex,
-        // physics: const NeverScrollableScrollPhysics(),
+      appBar: AppBar(toolbarHeight: 0),
+      body: Stack(
         children: [
-          Stack(
-            alignment: Alignment.bottomCenter,
+          // Image.asset(
+          //   "assets/images/dubai-city.jpg",
+          //   width: Get.width,
+          //   height: Get.height,
+          //   fit: BoxFit.cover,
+          //   alignment: Alignment.topCenter,
+          // ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Image.asset(
-                "assets/images/dubai-city.jpg",
-                width: Get.width,
-                height: Get.height,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-              ),
-              // Container(
-              //   height: Get.height * 0.5,
-              //   width: Get.width,
-              //   decoration: const BoxDecoration(
-              //     gradient: LinearGradient(
-              //       colors: [Colors.white, Color.fromRGBO(0, 0, 0, 0)],
-              //       // stops: [0.8, 0.85],
-              //       begin: Alignment.bottomCenter,
-              //       end: Alignment.topCenter,
-              //       // tileMode: TileMode.decal,
-              //     ),
-              //   ),
-              // ),
-              Positioned(
-                top: 10,
-                child: Container(
-                  width: Get.width,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        sloganText,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          // fontWeight: FontWeight.bold,
-                        ),
-                        // textAlign : TextAlign.center,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Image.asset(
-                            "assets/images/logo.png",
-                            height: 50,
-                            width: 50,
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              SizedBox(
-                                // width: 100,
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: "ROOMY ",
-                                        style: TextStyle(
-                                          color:
-                                              Color.fromRGBO(255, 123, 77, 1),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: "FINDER",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ],
-                  ),
+              const Spacer(),
+              Center(
+                child: Image.asset(
+                  "assets/images/logo.png",
+                  height: 100,
+                  width: 100,
                 ),
               ),
+              const SizedBox(height: 10),
+              const Text(
+                "Roomy ",
+                style: TextStyle(
+                  color: ROOMY_PURPLE,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const Text(
+                "FINDER ",
+                style: TextStyle(
+                  color: ROOMY_ORANGE,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Spacer(),
+              const Text(
+                "Welcome ",
+                style: TextStyle(
+                  color: ROOMY_PURPLE,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
                 decoration: const BoxDecoration(
-                  color: Colors.white70,
+                  color: ROOMY_PURPLE,
                   borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
+                    top: Radius.circular(40),
                   ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: ROOMY_ORANGE,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          side: const BorderSide(color: ROOMY_ORANGE),
+                        ),
                         onPressed: () {
                           Get.to(() => const LoginScreen());
                         },
                         child: const Text(
-                          "Login to continue",
+                          "Login",
                           style: TextStyle(
-                            color: Color.fromRGBO(96, 15, 116, 1),
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    const Text('Or'),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
                           Get.to(() => const RegistrationScreen());
                         },
+                        style: OutlinedButton.styleFrom(
+                          // backgroundColor: ROOMY_ORANGE,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          side: const BorderSide(color: ROOMY_ORANGE),
+                        ),
                         child: const Text(
-                          "Register now",
+                          "Sign Up",
                           style: TextStyle(
-                            color: Color.fromRGBO(96, 15, 116, 1),
+                            color: ROOMY_ORANGE,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () {
+                          Get.offAllNamed("/home");
+                        },
+                        style: TextButton.styleFrom(
+                          // backgroundColor: ROOMY_ORANGE,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                        child: const Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

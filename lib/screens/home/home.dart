@@ -129,7 +129,7 @@ class Home extends GetView<HomeController> {
       child: Obx(() {
         return Scaffold(
           appBar: tabs[controller.currentTabIndex.value].appBar,
-          // drawer: const HomeDrawer(),
+          drawer: const Drawer(),
           body: LazyLoadIndexedStack(
             index: controller.currentTabIndex.value,
             children: tabs,

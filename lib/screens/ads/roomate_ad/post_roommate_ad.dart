@@ -388,8 +388,9 @@ class _PostRoommateAdController extends LoadingController {
   }
 }
 
-class PostRoomateAdScreen extends StatelessWidget {
-  const PostRoomateAdScreen({super.key, required this.isPremium, this.oldData});
+class PostRoommateAdScreen extends StatelessWidget {
+  const PostRoommateAdScreen(
+      {super.key, required this.isPremium, this.oldData});
 
   final bool isPremium;
   final RoommateAd? oldData;
@@ -1200,7 +1201,6 @@ class PostRoomateAdScreen extends StatelessWidget {
                             DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 hintText: 'numberOfPeople'.tr,
-                                
                               ),
                               value:
                                   controller.socialPreferences["numberOfPeople"]
@@ -1256,7 +1256,6 @@ class PostRoomateAdScreen extends StatelessWidget {
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               hintText: 'gender'.tr,
-                             
                             ),
                             value: controller.socialPreferences["gender"]
                                 as String,

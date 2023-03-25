@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -41,6 +42,7 @@ class User {
   bool get isTenant => type == "tenant";
   bool get isRoommate => type == "roommate";
   bool get isFreelancer => type == "freelancer";
+  bool get isGuest => this == GUEST_USER;
 
   Future<String> get formattedPhoneNumber async {
     final phoneNumber = PhoneNumber(
@@ -157,7 +159,7 @@ class User {
 
         return CircleAvatar(
           radius: innerRadius,
-          foregroundImage: NetworkImage(profilePicture),
+          foregroundImage: CachedNetworkImageProvider(profilePicture),
           onForegroundImageError: (e, trace) {},
           child: Text(
             logoText,
@@ -167,4 +169,20 @@ class User {
       }),
     );
   }
+
+  // ignore: non_constant_identifier_names
+  static User GUEST_USER = User(
+    id: "010101010101010101010101",
+    type: "",
+    email: "",
+    phone: "",
+    firstName: "",
+    lastName: "",
+    country: "",
+    gender: "",
+    profilePicture: "",
+    isPremium: false,
+    createdAt: DateTime(2023),
+    fcmToken: "",
+  );
 }

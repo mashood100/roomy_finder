@@ -23,13 +23,14 @@ class AppController extends GetxController {
   static AppController instance = Get.find<AppController>(tag: "appController");
   static User get me => instance.user.value;
   static AppLocale get locale => instance.appLocale.value;
-  static num get cnvertionRate => instance.country.value.aedCurrencyConvertRate;
+  static num get convertionRate =>
+      instance.country.value.aedCurrencyConvertRate;
 
-  late Rx<User> user;
+  Rx<User> user = User.GUEST_USER.obs;
   late final Rx<bool> allowPushNotifications;
   late Rx<AppLocale> appLocale;
 
-  late String? userPassword;
+  String? userPassword;
 
   final RxBool haveNewMessage = false.obs;
   final RxInt unreadNotificationCount = 0.obs;

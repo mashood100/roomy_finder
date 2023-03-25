@@ -21,6 +21,7 @@ import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 
@@ -96,6 +97,7 @@ class MyApp extends StatelessWidget {
       brightness: Brightness.light,
       primarySwatch: Colors.purple,
       useMaterial3: true,
+      scaffoldBackgroundColor: Colors.white,
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         hintStyle: const TextStyle(color: Colors.grey),
@@ -115,7 +117,7 @@ class MyApp extends StatelessWidget {
       ),
       fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color.fromRGBO(255, 123, 77, 1),
+        backgroundColor: ROOMY_PURPLE,
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 22),
         iconTheme: IconThemeData(color: Colors.white),
         actionsIconTheme: IconThemeData(color: Colors.white),

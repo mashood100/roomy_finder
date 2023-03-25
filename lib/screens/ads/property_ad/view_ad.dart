@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
@@ -17,6 +18,7 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -29,6 +31,7 @@ class _VewPropertyController extends LoadingController {
   late final Rx<DateTime> checkIn;
   late final Rx<DateTime> checkOut;
   final quantity = 1.obs;
+  final _showAllDescription = false.obs;
 
   @override
   onInit() {
@@ -337,99 +340,223 @@ class ViewPropertyAd extends StatelessWidget {
     final controller = Get.put(_VewPropertyController(ad));
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Looking for properties"),
+        title: Text("${ad.type} Property"),
         backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+        bottom: ad.isMine
+            ? PreferredSize(
+                preferredSize: const Size(double.infinity, 50),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : () => controller.editAd(ad),
+                          child: const Text("Edit"),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red),
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : () => controller.deleteAd(ad),
+                          child: const Text(
+                            "Delete",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 1),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ...ad.images.map(
-                    (e) => GestureDetector(
-                      onTap: () => controller._viewImage(e),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 1),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: CachedNetworkImage(
-                            imageUrl: e,
-                            height: 250,
-                            fit: BoxFit.fitHeight,
-                            errorWidget: (ctx, e, trace) {
-                              return const SizedBox(
-                                child: CupertinoActivityIndicator(
-                                  radius: 30,
-                                ),
-                              );
-                            },
-                            progressIndicatorBuilder:
-                                (context, url, downloadProgress) {
-                              return Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: CircularProgressIndicator(
-                                  value: downloadProgress.progress,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  ...ad.videos.map(
-                    (e) => GestureDetector(
-                      onTap: () => Get.to(() {
-                        return PlayVideoScreen(source: e, isAsset: false);
-                      }),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            margin: const EdgeInsets.symmetric(horizontal: 1),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(5),
-                              child: FutureBuilder(
-                                builder: (ctx, asp) {
-                                  if (asp.hasData) {
-                                    return Image.file(
-                                      File(asp.data!),
-                                      alignment: Alignment.center,
+            Card(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: SizedBox(
+                  width: Get.width,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ...ad.images.map(
+                              (e) => GestureDetector(
+                                onTap: () => controller._viewImage(e),
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 1),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(5),
+                                    ),
+                                    child: CachedNetworkImage(
+                                      imageUrl: e,
                                       height: 250,
                                       fit: BoxFit.fitHeight,
-                                    );
-                                  }
-                                  return Container();
-                                },
-                                future: VideoThumbnail.thumbnailFile(
-                                  video: e,
-                                  quality: 50,
+                                      errorWidget: (ctx, e, trace) {
+                                        return const SizedBox(
+                                          child: CupertinoActivityIndicator(
+                                            radius: 30,
+                                          ),
+                                        );
+                                      },
+                                      progressIndicatorBuilder:
+                                          (context, url, downloadProgress) {
+                                        return Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: CircularProgressIndicator(
+                                            value: downloadProgress.progress,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Icon(
-                              Icons.play_arrow,
-                              size: 40,
-                              color: Color.fromARGB(255, 2, 3, 2),
+                            ...ad.videos.map(
+                              (e) => GestureDetector(
+                                onTap: () => Get.to(() {
+                                  return PlayVideoScreen(
+                                      source: e, isAsset: false);
+                                }),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 1),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: FutureBuilder(
+                                          builder: (ctx, asp) {
+                                            if (asp.hasData) {
+                                              return Image.file(
+                                                File(asp.data!),
+                                                alignment: Alignment.center,
+                                                height: 250,
+                                                fit: BoxFit.fitHeight,
+                                              );
+                                            }
+                                            return Container();
+                                          },
+                                          future: VideoThumbnail.thumbnailFile(
+                                            video: e,
+                                            quality: 50,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.all(20),
+                                      child: Icon(
+                                        Icons.play_arrow,
+                                        size: 40,
+                                        color: Color.fromARGB(255, 2, 3, 2),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 5),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${ad.type} to rent",
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Obx(() {
+                              return Text(
+                                formatMoney(
+                                  ad.prefferedRentDisplayPrice *
+                                      AppController.instance.country.value
+                                          .aedCurrencyConvertRate,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                      const Divider(),
+                      Container(
+                        padding: const EdgeInsets.only(
+                          right: 10,
+                          left: 10,
+                          bottom: 10,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.room, color: ROOMY_ORANGE),
+                                const SizedBox(width: 5),
+                                Text(
+                                  "${ad.address["location"]}, ${ad.address["city"]}",
+                                  style: const TextStyle(fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Text(
+                              "Available ${ad.quantity - ad.quantityTaken}",
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              "Taken ${ad.quantityTaken}",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 5),
@@ -440,94 +567,124 @@ class ViewPropertyAd extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    "${ad.quantity} ${ad.type} in ${ad.address["city"]}",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    "Location : ${ad.address["location"]}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "Building : ${ad.address["buildingName"]}"
-                    ", Floor number : ${ad.address["floorNumber"]}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "ID ${ad.id}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: 30),
-                  const Text("Pricing", style: TextStyle(fontSize: 14)),
-                  Text(
-                    "Monthly  : ${formatMoney((ad.monthlyPrice + ad.monthlyCommission) * AppController.cnvertionRate)}",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "Weekly   : ${formatMoney((ad.weeklyPrice + ad.weeklyCommission) * AppController.cnvertionRate)}",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "Daily  : ${formatMoney((ad.dailyPrice + ad.dailyCommission) * AppController.cnvertionRate)}",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  if (ad.deposit)
+                  if (ad.description != null)
                     Text(
-                      "Deposit fee : ${formatMoney(ad.depositPrice! * AppController.cnvertionRate)}",
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                      ad.description!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines:
+                          controller._showAllDescription.isTrue ? null : 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  const Divider(height: 20),
-                  const Text("Availability", style: TextStyle(fontSize: 14)),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          decoration: BoxDecoration(
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(30)),
-                              border: Border.all(color: Colors.grey)),
-                          child: Text(
-                            "${ad.quantityTaken} taken",
-                            style: const TextStyle(fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          decoration: BoxDecoration(
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(30)),
-                              border: Border.all(color: Colors.green)),
-                          child: Text(
-                            "${ad.quantity} available",
-                            style: const TextStyle(fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+
                   const SizedBox(height: 10),
-                  const Text("Overview", style: TextStyle(fontSize: 14)),
-                  const SizedBox(height: 5),
+
+                  Label(
+                    label: "Monthly price",
+                    value: formatMoney(
+                      (ad.monthlyPrice + ad.monthlyCommission) *
+                          AppController.convertionRate,
+                    ),
+                    fontSize: 15,
+                    valueColor: ROOMY_ORANGE,
+                    boldValue: true,
+                  ),
+                  Label(
+                    label: "Weekly price",
+                    value: formatMoney(
+                      (ad.weeklyPrice + ad.weeklyCommission) *
+                          AppController.convertionRate,
+                    ),
+                    fontSize: 15,
+                    valueColor: ROOMY_ORANGE,
+                    boldValue: true,
+                  ),
+                  Label(
+                    label: "Daily price",
+                    value: formatMoney(
+                      (ad.dailyPrice + ad.dailyCommission) *
+                          AppController.convertionRate,
+                    ),
+                    fontSize: 15,
+                    valueColor: ROOMY_ORANGE,
+                    boldValue: true,
+                  ),
+
+                  if (ad.deposit)
+                    Label(
+                      label: "Deposit fee",
+                      value: formatMoney(
+                        (ad.depositPrice!) * AppController.convertionRate,
+                      ),
+                      fontSize: 15,
+                      valueColor: ROOMY_ORANGE,
+                      boldValue: true,
+                    ),
+
+                  const Divider(height: 20),
+                  DefaultTextStyle(
+                    style: const TextStyle(
+                      color: ROOMY_ORANGE,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset("assets/icons/washing_2.png", height: 30),
+                        const Text("APPLIANCES"),
+                        const Spacer(),
+                        Image.asset("assets/icons/wifi.png", height: 30),
+                        const Text("TECH"),
+                        const Spacer(),
+                        const Icon(Icons.widgets, color: ROOMY_ORANGE),
+                        const Text("UTILITIES"),
+                      ],
+                    ),
+                  ),
+                  DefaultTextStyle(
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.homeAppliancesAmenities
+                              .map((e) => Text(e))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.technologyAmenities
+                              .map((e) => Text(e, textAlign: TextAlign.center))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.utilitiesAmenities
+                              .map(
+                                (e) => Text(e, textAlign: TextAlign.end),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 20),
                   GridView.count(
                     crossAxisCount: 2,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    childAspectRatio: 2.5,
+                    childAspectRatio: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
                     children: [
                       PropertyAdOverviewItemWidget(
                         icon: const Icon(Icons.group),
@@ -544,7 +701,7 @@ class ViewPropertyAd extends StatelessWidget {
                       ),
                       PropertyAdOverviewItemWidget(
                         icon: const Icon(Icons.public),
-                        label: "Nationality preferred",
+                        label: "Nationality",
                         value: "${ad.socialPreferences["nationality"]}",
                       ),
                       PropertyAdOverviewItemWidget(
@@ -560,7 +717,7 @@ class ViewPropertyAd extends StatelessWidget {
                         icon: Icon(ad.socialPreferences["gender"] == "Male"
                             ? Icons.male
                             : Icons.female),
-                        label: "Gender preferred",
+                        label: "Gender",
                         value: "${ad.socialPreferences["gender"]}",
                       ),
                       PropertyAdOverviewItemWidget(
@@ -572,14 +729,8 @@ class ViewPropertyAd extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Divider(height: 10),
-                  const Text("Description", style: TextStyle(fontSize: 14)),
-                  const SizedBox(height: 5),
-                  Text(
-                    ad.description,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 20),
+
+                  const Divider(height: 20),
                   const Text("Amenities", style: TextStyle(fontSize: 14)),
                   const SizedBox(height: 5),
                   GridView.count(
@@ -608,8 +759,7 @@ class ViewPropertyAd extends StatelessWidget {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 20),
-
+                  const Divider(height: 20),
                   // Google map representing the location of the properrty
                   if (ad.cameraPosition != null)
                     const Text("Map location", style: TextStyle(fontSize: 14)),
@@ -624,8 +774,6 @@ class ViewPropertyAd extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                  const SizedBox(height: 20),
 
                   if (!ad.isMine && controller.bookingId == null) ...[
                     const Text(
@@ -763,9 +911,8 @@ class ViewPropertyAd extends StatelessWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: controller.bookingId != null
-                                ? Colors.red
-                                : const Color.fromRGBO(96, 15, 116, 1),
+                            backgroundColor:
+                                const Color.fromRGBO(96, 15, 116, 1),
                           ),
                           onPressed: controller.isLoading.isTrue
                               ? null
@@ -791,42 +938,6 @@ class ViewPropertyAd extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Builder(builder: (context) {
-        if (ad.isMine) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: controller.isLoading.isTrue
-                        ? null
-                        : () => controller.editAd(ad),
-                    child: const Text("Edit"),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: ElevatedButton(
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    onPressed: controller.isLoading.isTrue
-                        ? null
-                        : () => controller.deleteAd(ad),
-                    child: const Text(
-                      "Delete",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return const SizedBox();
-      }),
     );
   }
 }

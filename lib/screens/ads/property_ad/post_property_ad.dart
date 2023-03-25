@@ -2,17 +2,16 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_switch/flutter_switch.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/place_autocomplete.dart';
-import 'package:roomy_finder/components/alert.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -24,6 +23,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -121,7 +121,8 @@ class _PostPropertyAdController extends LoadingController {
           address["location"] = oldData!.address["location"].toString();
       address["buildingName"] = oldData!.address["buildingName"].toString();
       address["floorNumber"] = oldData!.address["floorNumber"].toString();
-      address["appartmentNumber"] = oldData!.address["appartmentNumber"].toString();
+      address["appartmentNumber"] =
+          oldData!.address["appartmentNumber"].toString();
       amenties.value = oldData!.amenties;
 
       if (oldData!.agentInfo != null) {
@@ -267,6 +268,44 @@ class _PostPropertyAdController extends LoadingController {
 
       switch (res.statusCode) {
         case 200:
+          await showDialog(
+            context: Get.context!,
+            builder: (context) {
+              return CupertinoAlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.check_circle,
+                      size: 40,
+                      color: Colors.green,
+                    ),
+                    Text(
+                      "Congratulations!",
+                      style: TextStyle(
+                        color: ROOMY_PURPLE,
+                      ),
+                    ),
+                    Text(
+                      "Your property is added.",
+                      style: TextStyle(
+                        color: ROOMY_PURPLE,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    onPressed: () {
+                      Get.back();
+                    },
+                    child: const Text("Ok"),
+                  )
+                ],
+              );
+            },
+          );
+
           Get.offNamedUntil(
             "/my-property-ads",
             ModalRoute.withName('/home'),
@@ -403,46 +442,248 @@ class PostPropertyAdScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(
-                  left: 5,
-                  right: 5,
+                  left: 10,
+                  right: 10,
                   top: 5,
-                  bottom: 110,
+                  bottom: 50,
                 ),
                 child: PageView(
                   controller: controller._pageController,
                   onPageChanged: (index) => controller._pageIndex(index),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
+                    // Property address
+                    SingleChildScrollView(
+                      child: Form(
+                        key: controller._addressFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "Please choose your property location",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: ROOMY_PURPLE,
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 30),
+                            // City
+                            InlineDropDown<String>(
+                              labelText: 'City :',
+                              value: controller.address["city"]!.isEmpty
+                                  ? null
+                                  : controller.address["city"],
+                              items: citiesFromCurrentCountry,
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.address["location"] = "";
+                                        controller.address["city"] = val;
+                                      }
+                                    },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            // Area
+                            InlineDropDown<String>(
+                              labelText: 'Area :',
+                              value: controller.address["location"]!.isEmpty
+                                  ? null
+                                  : controller.address["location"],
+                              items: getLocationsFromCity(
+                                controller.address["city"].toString(),
+                              ),
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.address["location"] = val;
+                                      }
+                                    },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Building Name
+                            InlineTextField(
+                              labelText: "Tower name",
+                              enabled: controller.isLoading.isFalse,
+                              initialValue: controller.address["buildingName"],
+                              onChanged: (value) {
+                                controller.address["buildingName"] = value;
+                              },
+                              labelStyle: const TextStyle(
+                                fontSize: 15,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Appartment number
+                            InlineTextField(
+                              labelText: "Appartment number",
+                              enabled: controller.isLoading.isFalse,
+                              initialValue:
+                                  controller.address["appartmentNumber"],
+                              onChanged: (value) {
+                                controller.address["appartmentNumber"] = value;
+                              },
+                              labelStyle: const TextStyle(
+                                fontSize: 15,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*'),
+                                )
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Floor number
+                            InlineTextField(
+                              labelText: "Floor number",
+                              enabled: controller.isLoading.isFalse,
+                              initialValue: controller.address["floorNumber"],
+                              onChanged: (value) {
+                                controller.address["floorNumber"] = value;
+                              },
+                              labelStyle: const TextStyle(
+                                fontSize: 15,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*'),
+                                )
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     // Property type
                     SingleChildScrollView(
                       child: Column(
                         children: [
-                          "Bed",
-                          "Partition",
-                          "Room",
-                          "Master Room",
-                          // "Mix"
-                        ].map((e) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 5),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(20),
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please choose your PROPERTY TYPE",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
                             ),
-                            child: RadioListTile<String>(
-                              value: e,
-                              groupValue:
-                                  controller.information["type"] as String,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  controller.information["type"] = value;
-                                }
+                          ),
+                          const Divider(height: 30),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            children: [
+                              {
+                                "value": "Bed",
+                                "label": "Bed Space",
+                                "asset": "assets/icons/bed.png",
                               },
-                              title: Text(e),
-                            ),
-                          );
-                        }).toList(),
+                              {
+                                "value": "Partition",
+                                "label": "Partition",
+                                "asset": "assets/icons/partition.png",
+                              },
+                              {
+                                "value": "Room",
+                                "label": "Reguler Room",
+                                "asset": "assets/icons/regular_room.png",
+                              },
+                              {
+                                "value": "Master Room",
+                                "label": "Master Room",
+                                "asset": "assets/icons/master_room.png",
+                              },
+                              // "Mix"
+                            ].map((e) {
+                              return GestureDetector(
+                                onTap: () {
+                                  controller.information["type"] =
+                                      "${e["value"]}";
+                                },
+                                child: Card(
+                                  child: Stack(
+                                    alignment: Alignment.topRight,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          children: [
+                                            const SizedBox(height: 20),
+                                            Expanded(
+                                                child: Image.asset(
+                                                    "${e["asset"]}")),
+                                            Text(
+                                              "${e["label"]}",
+                                              style: const TextStyle(
+                                                color: ROOMY_PURPLE,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        controller.information["type"] ==
+                                                e["value"]
+                                            ? Icons
+                                                .check_circle_outline_outlined
+                                            : Icons.circle_outlined,
+                                        color: ROOMY_ORANGE,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -454,14 +695,25 @@ class PostPropertyAdScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "Please fill in RENT DETAILS",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: ROOMY_PURPLE,
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 30),
                             // Quantity
-                            Text('quantity'.tr),
-                            TextFormField(
+                            InlineTextField(
+                              labelWidth: Get.width * 0.3,
+                              labelText: 'Number of units'.tr,
+                              hintText: 'maximum : 500'.tr,
                               initialValue:
                                   controller.information["quantity"] as String,
                               enabled: controller.isLoading.isFalse,
-                              decoration:
-                                  InputDecoration(hintText: 'quantity'.tr),
                               onChanged: (value) =>
                                   controller.information["quantity"] = value,
                               validator: (value) {
@@ -473,8 +725,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 if (numValue == null || numValue < 1) {
                                   return 'invalidPropertyAdQuantityMessage'.tr;
                                 }
-                                if (numValue > 200) {
-                                  return 'Quantity must be less than 200'.tr;
+                                if (numValue > 500) {
+                                  return 'Quantity must be less than 500'.tr;
                                 }
                                 return null;
                               },
@@ -485,52 +737,77 @@ class PostPropertyAdScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 20),
+
                             // Rent type
-                            Text('Prefered rent type'.tr),
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                hintText: 'Rent type',
-                              ),
-                              value: controller.information["preferedRentType"]
-                                  as String,
-                              items: ["Monthly", "Weekly", "Daily"]
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
+                            Row(
+                              children: [
+                                const Text(
+                                  "Rent period",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const Spacer(),
+                                ...["Monthly", "Weekly", "Daily"].map((e) {
+                                  return Container(
+                                    margin: const EdgeInsets.only(left: 10),
+                                    padding: const EdgeInsets.all(8.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: controller.information[
+                                                  "preferedRentType"] ==
+                                              e
+                                          ? ROOMY_ORANGE
+                                          : Colors.grey.shade200,
+                                    ),
+                                    child: InkWell(
+                                      onTap: () {
                                         controller.information[
-                                            "preferedRentType"] = val;
-                                      }
-                                    },
+                                            "preferedRentType"] = e;
+                                      },
+                                      child: Text(e),
+                                    ),
+                                  );
+                                }).toList()
+                              ],
                             ),
+
                             const SizedBox(height: 20),
+
+                            const Text(
+                              "Prices",
+                              style: TextStyle(
+                                fontSize: 18,
+                              ),
+                            ),
+
                             // Price
                             for (final item in [
                               {
                                 'value': "monthlyPrice",
-                                'label': "Monthly rent price",
+                                'label': "Monthly",
                               },
                               {
                                 'value': "weeklyPrice",
-                                'label': "Weekly rent price",
+                                'label': "Weekly",
                               },
                               {
                                 'value': "dailyPrice",
-                                'label': "Daily rent price",
+                                'label': "Daily",
                               },
                             ]) ...[
-                              Text(item['label']!),
-                              TextFormField(
+                              InlineTextField(
+                                labelWidth: Get.width * 0.3,
+                                labelStyle: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey,
+                                ),
+                                labelText: item['label']!,
+                                suffixText: AppController
+                                    .instance.country.value.currencyCode,
                                 initialValue: controller
                                     .information[item['value']] as String,
                                 enabled: controller.isLoading.isFalse,
-                                decoration: InputDecoration(
-                                  hintText: item['label'],
-                                  suffixText: "AED",
-                                ),
                                 onChanged: (value) => controller
                                     .information[item['value']!] = value,
                                 validator: (value) {
@@ -574,43 +851,51 @@ class PostPropertyAdScreen extends StatelessWidget {
                             ],
 
                             // Deposit
-                            // Text('deposit'.tr),
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(5),
-                                border: Border.all(
-                                  width: 1,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              child: CheckboxListTile(
-                                value:
-                                    controller.information["deposit"] as bool,
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    controller.information["deposit"] = val;
-                                  }
-                                },
-                                title: Text('deposit'.tr),
+                            GestureDetector(
+                              onTap: () {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                if (controller.information["deposit"] == true) {
+                                  controller.information["deposit"] = false;
+                                } else {
+                                  controller.information["deposit"] = true;
+                                }
+                              },
+                              child: Row(
+                                children: [
+                                  const Text(
+                                    "Deposit",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: ROOMY_ORANGE,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Icon(
+                                    controller.information["deposit"] == true
+                                        ? Icons.check_circle_outline_outlined
+                                        : Icons.circle_outlined,
+                                    color: ROOMY_ORANGE,
+                                  )
+                                ],
                               ),
                             ),
+
                             const SizedBox(height: 10),
                             if (controller.information["deposit"] == true)
-                              // Deposit fee
-                              Text('Deposit price'.tr),
-                            if (controller.information["deposit"] == true)
-                              TextFormField(
+                              InlineTextField(
+                                labelWidth: Get.width * 0.3,
+                                labelText: "Deposit price",
                                 initialValue:
-                                    controller.information["depositPrice"] == null
+                                    controller.information["depositPrice"] ==
+                                            null
                                         ? ''
-                                        : controller.information["depositPrice"].toString(),
-                                        
+                                        : controller.information["depositPrice"]
+                                            .toString(),
+                                labelStyle: const TextStyle(fontSize: 15),
                                 enabled: controller.isLoading.isFalse,
-                                decoration: InputDecoration(
-                                  hintText: 'Example 100 AED'.tr,
-                                  suffixText: AppController
-                                      .instance.country.value.currencyCode,
-                                ),
+                                suffixText: AppController
+                                    .instance.country.value.currencyCode,
                                 onChanged: (value) => controller
                                     .information["depositPrice"] = value,
                                 validator: (value) {
@@ -631,27 +916,27 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 ],
                               ),
                             const SizedBox(height: 10),
-                            // Description
-                            Text('description'.tr),
-                            TextFormField(
-                              initialValue: controller
-                                  .information["description"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'Add your ad description here'.tr,
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["description"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              minLines: 2,
-                              maxLines: 5,
-                              maxLength: 500,
-                            ),
+                            // // Description
+                            // Text('description'.tr),
+                            // TextFormField(
+                            //   initialValue: controller
+                            //       .information["description"] as String,
+                            //   enabled: controller.isLoading.isFalse,
+                            //   decoration: InputDecoration(
+                            //     hintText: 'Add your ad description here'.tr,
+                            //   ),
+                            //   onChanged: (value) =>
+                            //       controller.information["description"] = value,
+                            //   validator: (value) {
+                            //     if (value == null || value.trim().isEmpty) {
+                            //       return 'thisFieldIsRequired'.tr;
+                            //     }
+                            //     return null;
+                            //   },
+                            //   minLines: 2,
+                            //   maxLines: 5,
+                            //   maxLength: 500,
+                            // ),
                           ],
                         ),
                       ),
@@ -661,33 +946,79 @@ class PostPropertyAdScreen extends StatelessWidget {
                     SingleChildScrollView(
                       child: Column(
                         children: [
-                          // Poster type
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: ["Landlord", "Agent/Broker"].map((e) {
-                              return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 5),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: RadioListTile<String>(
-                                  value: e,
-                                  groupValue: controller
-                                      .information["posterType"] as String,
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      controller.information["posterType"] =
-                                          value;
-                                    }
-                                  },
-                                  title: Text(e),
-                                ),
-                              );
-                            }).toList(),
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please fill in if you are an AGENT or BROKER",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
                           ),
+                          const Divider(height: 30),
+                          Row(
+                            children: [
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () {
+                                  controller.information["posterType"] =
+                                      "Landlord";
+                                },
+                                child: Icon(
+                                  controller.information["posterType"] ==
+                                          "Landlord"
+                                      ? Icons.check_circle_outline_outlined
+                                      : Icons.circle_outlined,
+                                  color: ROOMY_ORANGE,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  controller.information["posterType"] =
+                                      "Landlord";
+                                },
+                                child: const Text(
+                                  "Landlord",
+                                  style: TextStyle(
+                                    color: ROOMY_PURPLE,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () {
+                                  controller.information["posterType"] =
+                                      "Agent/Broker";
+                                },
+                                child: Icon(
+                                  controller.information["posterType"] ==
+                                          "Agent/Broker"
+                                      ? Icons.check_circle_outline_outlined
+                                      : Icons.circle_outlined,
+                                  color: ROOMY_ORANGE,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  controller.information["posterType"] =
+                                      "Agent/Broker";
+                                },
+                                child: const Text(
+                                  "Agent/Broker",
+                                  style: TextStyle(
+                                    color: ROOMY_PURPLE,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                            ],
+                          ),
+                          const SizedBox(height: 20), // Poster type
+
                           if (controller.information["posterType"] ==
                               "Agent/Broker")
                             Form(
@@ -697,20 +1028,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const SizedBox(height: 10),
-                                  Center(
-                                    child: Text(
-                                        'You are an Agent/Broker right? Tell us about you'
-                                            .tr),
-                                  ),
-                                  const SizedBox(height: 10),
+
                                   // First name
-                                  Text('firstName'.tr),
-                                  TextFormField(
+                                  InlineTextField(
+                                    labelWidth: Get.width * 0.3,
+                                    labelText: "firstName".tr,
                                     initialValue: controller
                                         .agentBrokerInformation["firstName"],
                                     enabled: controller.isLoading.isFalse,
-                                    decoration: InputDecoration(
-                                        hintText: 'firstName'.tr),
                                     onChanged: (value) =>
                                         controller.agentBrokerInformation[
                                             "firstName"] = value,
@@ -725,16 +1050,16 @@ class PostPropertyAdScreen extends StatelessWidget {
 
                                   const SizedBox(height: 10),
                                   // Last name
-                                  Text('lastName'.tr),
-                                  TextFormField(
+                                  InlineTextField(
+                                    labelWidth: Get.width * 0.3,
+                                    labelText: "lastName".tr,
                                     initialValue: controller
                                         .agentBrokerInformation["lastName"],
                                     enabled: controller.isLoading.isFalse,
-                                    decoration: InputDecoration(
-                                        hintText: 'lastName'.tr),
-                                    onChanged: (value) =>
-                                        controller.agentBrokerInformation[
-                                            "lastName"] = value,
+                                    onChanged: (value) {
+                                      controller.agentBrokerInformation[
+                                          "lastName"] = value;
+                                    },
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'thisFieldIsRequired'.tr;
@@ -745,13 +1070,12 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 10),
                                   // Email
-                                  Text('email'.tr),
-                                  TextFormField(
+                                  InlineTextField(
+                                    labelWidth: Get.width * 0.3,
+                                    labelText: "email".tr,
                                     initialValue: controller
                                         .agentBrokerInformation["email"],
                                     enabled: controller.isLoading.isFalse,
-                                    decoration:
-                                        InputDecoration(hintText: 'email'.tr),
                                     onChanged: (value) => controller
                                             .agentBrokerInformation["email"] =
                                         value,
@@ -768,8 +1092,9 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     keyboardType: TextInputType.emailAddress,
                                   ),
                                   const SizedBox(height: 10),
-                                  Text('phoneNumber'.tr),
-                                  PhoneNumberInput(
+                                  InlinePhoneNumberInput(
+                                    labelStyle: const TextStyle(fontSize: 15),
+                                    labelText: 'phoneNumber'.tr,
                                     initialValue: controller.agentPhoneNumber,
                                     hintText: "phoneNumber".tr,
                                     onChange: (phoneNumber) {
@@ -778,169 +1103,276 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                            )
+                          else
+                            const Center(
+                              child: Text(
+                                "Continue",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                        ],
+                      ),
+                    ),
+                    // Preference preferences
+                    SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please specify TENANT details",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
                             ),
+                          ),
+                          const Divider(height: 30),
+
+                          // People Count
+                          InlineDropDown<String>(
+                            // labelWidth: Get.width * 0.3,
+                            labelText: 'numberOfPeople'.tr,
+                            value: controller
+                                .socialPreferences["numberOfPeople"] as String,
+                            items: const [
+                              "1 to 5",
+                              "5 to 10",
+                              "10 to 15",
+                              "15 to 20",
+                              "+20",
+                            ],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences[
+                                          "numberOfPeople"] = val;
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 20),
+                          // Gender
+                          InlineDropDown<String>(
+                            labelText: 'gender'.tr,
+                            value: controller.socialPreferences["gender"]
+                                as String,
+                            items: const ["Male", "Female", "Mix"],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences["gender"] =
+                                          val;
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 20),
+                          // Nationalities
+                          InlineDropDown<String>(
+                            labelText: 'nationality'.tr,
+                            value: controller.socialPreferences["nationality"]
+                                as String,
+                            items: const [
+                              "Arabs",
+                              "Pakistani",
+                              "Indian",
+                              "European",
+                              "Filipinos",
+                              "African",
+                              "Russian",
+                              "Mix",
+                            ],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences[
+                                          "nationality"] = val;
+                                    }
+                                  },
+                          ),
+                          const Divider(height: 40),
+
+                          const Center(
+                            child: Text(
+                              "Comfortable with :",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            children: [
+                              {
+                                "value": "smoking",
+                                "label": "Smoking",
+                                "asset": "assets/icons/cigarette.png",
+                              },
+                              {
+                                "value": "drinking",
+                                "label": "Drinking",
+                                "asset": "assets/icons/drink.png",
+                              },
+                              {
+                                "value": "visitors",
+                                "label": "Visitors",
+                                "asset": "assets/icons/people.png",
+                              },
+
+                              // "Mix"
+                            ].map((e) {
+                              return GestureDetector(
+                                onTap: () {
+                                  if (controller
+                                          .socialPreferences[e["value"]] ==
+                                      true) {
+                                    controller.socialPreferences[
+                                        "${e["value"]}"] = false;
+                                  } else {
+                                    controller.socialPreferences[
+                                        "${e["value"]}"] = true;
+                                  }
+                                },
+                                child: Card(
+                                  child: Stack(
+                                    alignment: Alignment.topRight,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          children: [
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              child:
+                                                  Image.asset("${e["asset"]}"),
+                                            ),
+                                            Text(
+                                              "${e["label"]}",
+                                              style: const TextStyle(
+                                                color: ROOMY_PURPLE,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        controller.socialPreferences[
+                                                    e["value"]] ==
+                                                true
+                                            ? Icons
+                                                .check_circle_outline_outlined
+                                            : Icons.circle_outlined,
+                                        color: ROOMY_ORANGE,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         ],
                       ),
                     ),
 
-                    // Property address
+                    // Amenities
                     SingleChildScrollView(
-                      child: Form(
-                        key: controller._addressFormKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 10),
-                            // City
-                            Text('city'.tr),
-                            TypeAheadFormField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._cityController,
-                                decoration: InputDecoration(
-                                  hintText:
-                                      AppController.instance.country.value.isUAE
-                                          ? 'Example : Dubai'
-                                          : "Example : Riyadh",
-                                ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please choose AMENITIES of your property",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
                               ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["city"] = suggestion;
-                                controller._cityController.text = suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return citiesFromCurrentCountry.where(
-                                  (e) {
-                                    final lowerPattern =
-                                        pattern.toLowerCase().trim();
-                                    final lowerSearch = e.toLowerCase().trim();
-                                    return lowerSearch.contains(lowerPattern) ||
-                                        lowerSearch == lowerPattern;
-                                  },
-                                );
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              onSaved: (newValue) {
-                                if (newValue != null) {
-                                  controller.address["city"] = newValue;
-                                  controller._cityController.text = newValue;
-                                }
-                              },
                             ),
-
-                            const SizedBox(height: 20),
-                            // Location
-                            Text('location'.tr),
-                            TypeAheadField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._locationController,
-                                decoration: const InputDecoration(
-                                  hintText: "Search for location",
-                                ),
-                              ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["location"] = suggestion;
-                                controller._locationController.text =
-                                    suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return getLocationsFromCity(
-                                        controller.address["city"].toString())
-                                    .where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            // Building Name
-                            Text('buildingName'.tr),
-                            TextFormField(
-                              initialValue: controller.address["buildingName"],
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                  hintText: 'Your property building'.tr),
-                              onChanged: (value) =>
-                                  controller.address["buildingName"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            // Floor number
-                            Text('Appartment number'.tr),
-                            TextFormField(
-                              initialValue:
-                                  controller.address["appartmentNumber"],
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                  hintText: 'Examlple : 201'.tr),
-                              onChanged: (value) => controller
-                                  .address["appartmentNumber"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d*'))
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            // Floor number
-                            Text('floorNumber'.tr),
-                            TextFormField(
-                              initialValue: controller.address["floorNumber"],
-                              enabled: controller.isLoading.isFalse,
-                              decoration:
-                                  InputDecoration(hintText: 'Examlple : 17'.tr),
-                              onChanged: (value) =>
-                                  controller.address["floorNumber"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d*'))
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const SizedBox(height: 10),
-                          ],
-                        ),
+                          ),
+                          const Divider(height: 30),
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            shrinkWrap: true,
+                            crossAxisCount: 3,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            children: allAmenties
+                                .map(
+                                  (e) => GestureDetector(
+                                    onTap: () {
+                                      if (controller.amenties
+                                          .contains(e["value"])) {
+                                        controller.amenties.remove(e["value"]);
+                                      } else {
+                                        controller.amenties
+                                            .add("${e["value"]}");
+                                      }
+                                    },
+                                    child: Card(
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            alignment: Alignment.center,
+                                            child: Column(
+                                              children: [
+                                                const SizedBox(height: 10),
+                                                Expanded(
+                                                  child: Image.asset(
+                                                      "${e["asset"]}"),
+                                                ),
+                                                Text(
+                                                  "${e["value"]}",
+                                                  style: const TextStyle(
+                                                    color: ROOMY_PURPLE,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Icon(
+                                            controller.amenties
+                                                    .contains(e["value"])
+                                                ? Icons
+                                                    .check_circle_outline_outlined
+                                                : Icons.circle_outlined,
+                                            color: ROOMY_ORANGE,
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
                       ),
                     ),
 
                     // Images/Videos
-
                     SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1255,181 +1687,50 @@ class PostPropertyAdScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Preference preferences
+                    // Description
                     SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-
-                          // Center(child: Text('otherPreferences'.tr)),
-                          // const SizedBox(height: 10),
-
-                          // People Count
-                          Text("numberOfPeople".tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'numberOfPeople'.tr,
-                            ),
-                            value: controller
-                                .socialPreferences["numberOfPeople"] as String,
-                            items: [
-                              "1 to 5",
-                              "5 to 10",
-                              "10 to 15",
-                              "15 to 20",
-                              "+20",
-                            ]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences[
-                                          "numberOfPeople"] = val;
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 20),
-                          // Nationalities
-                          Text("nationality".tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'nationality'.tr,
-                            ),
-                            value: controller.socialPreferences["nationality"]
-                                as String,
-                            items: [
-                              "Arabs",
-                              "Pakistani",
-                              "Indian",
-                              "European",
-                              "Filipinos",
-                              "African",
-                              "Russian",
-                              "Mix",
-                            ]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences[
-                                          "nationality"] = val;
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 10),
-                          // Gender
-                          Text("gender".tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'gender'.tr,
-                            ),
-                            value: controller.socialPreferences["gender"]
-                                as String,
-                            items: ["Male", "Female", "Mix"]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences["gender"] =
-                                          val;
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 20),
-                          for (final item in [
-                            "smoking",
-                            "cooking",
-                            "drinking",
-                            "visitors",
-                          ])
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 5),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  width: 1,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(item.tr,
-                                      style: const TextStyle(fontSize: 16)),
-                                  FlutterSwitch(
-                                    value: controller.socialPreferences[item]
-                                        as bool,
-                                    onToggle: (value) {
-                                      controller.socialPreferences[item] =
-                                          value;
-                                    },
-                                  )
-                                ],
+                          const Center(
+                            child: Text(
+                              "Please add description to your property",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
                               ),
                             ),
-                        ],
-                      ),
-                    ),
+                          ),
+                          const Divider(height: 30),
 
-                    // Amenties
-                    SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 10),
-                          Alert(text: "Your property amenties".tr),
-                          const SizedBox(height: 10),
-                          GridView.count(
-                            shrinkWrap: true,
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.6,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: allAmenties
-                                .map(
-                                  (e) => GestureDetector(
-                                    onTap: () {
-                                      if (controller.amenties.contains(e)) {
-                                        controller.amenties.remove(e);
-                                      } else {
-                                        controller.amenties.add(e);
-                                      }
-                                    },
-                                    child: Card(
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: controller.amenties.contains(e)
-                                              ? Colors.amber.shade900
-                                              : Colors.grey,
-                                          borderRadius:
-                                              BorderRadius.circular(5),
-                                        ),
-                                        height: 100,
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.all(10),
-                                        child: Text(
-                                          e,
-                                          style: const TextStyle(fontSize: 16),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                          // Description
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: TextFormField(
+                              initialValue: controller
+                                  .information["description"] as String,
+                              enabled: controller.isLoading.isFalse,
+                              decoration: InputDecoration(
+                                hintText: 'Type...'.tr,
+                                border: InputBorder.none,
+                                fillColor: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey
+                                    : Colors.grey.shade200,
+                              ),
+                              onChanged: (value) =>
+                                  controller.information["description"] = value,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              minLines: 5,
+                              maxLines: 10,
+                            ),
                           ),
                         ],
                       ),
@@ -1444,113 +1745,129 @@ class PostPropertyAdScreen extends StatelessWidget {
               FloatingActionButtonLocation.centerDocked,
           floatingActionButton: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
-            child: Builder(builder: (context) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LinearProgressIndicator(
-                    color: const Color.fromRGBO(96, 15, 116, 1),
-                    value: (controller._pageIndex.value + 1) /
-                        (oldData != null ? 7 : 10),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // const SizedBox(width: 10),
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () {
-                                if (controller._pageIndex.value == 0) {
-                                  Get.back();
-                                } else {
-                                  controller._moveToPreviousPage();
-                                }
-                              },
-                        // icon: const Icon(Icons.arrow_left),
-                        child: controller._pageIndex.value == 0
-                            ? Text("back".tr)
-                            : Text("previous".tr),
-                      ),
-                      // Slider(
-                      //   value: controller._pageIndex.value + 1,
-                      //   onChanged: (_) {},
-                      //   min: 0,
-                      //   max: 6,
-                      //   divisions: 6,
-                      // ),
-                      // const Spacer(),
-                      // Text('${controller._pageIndex.value + 1}/7'),
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () {
-                                switch (controller._pageIndex.value) {
-                                  case 0:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 1:
-                                    if (controller
-                                            ._informationFormKey.currentState
-                                            ?.validate() ==
-                                        true) {
-                                      controller._moveToNextPage();
-                                    }
-                                    break;
-                                  case 2:
-                                    if (controller.information['posterType'] ==
-                                        "Agent/Broker") {
+            child: GetBuilder<_PostPropertyAdController>(
+              id: 'bottom-progress',
+              builder: (controller) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    LinearProgressIndicator(
+                      color: const Color.fromRGBO(96, 15, 116, 1),
+                      value: (controller._pageIndex.value + 1) /
+                          (oldData != null ? 7 : 10),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // const SizedBox(width: 10),
+                        TextButton(
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : () {
+                                  if (controller._pageIndex.value == 0) {
+                                    Get.back();
+                                  } else {
+                                    controller._moveToPreviousPage();
+                                  }
+                                  controller.update();
+                                },
+                          // icon: const Icon(Icons.arrow_left),
+                          child: controller._pageIndex.value == 0
+                              ? Text("back".tr)
+                              : Text("previous".tr),
+                        ),
+                        // Slider(
+                        //   value: controller._pageIndex.value + 1,
+                        //   onChanged: (_) {},
+                        //   min: 0,
+                        //   max: 6,
+                        //   divisions: 6,
+                        // ),
+                        // const Spacer(),
+                        // Text('${controller._pageIndex.value + 1}/7'),
+
+                        TextButton(
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : () {
+                                  switch (controller._pageIndex.value) {
+                                    case 0:
                                       if (controller
-                                              ._agentBrokerFormKey.currentState
+                                              ._addressFormKey.currentState
                                               ?.validate() ==
                                           true) {
                                         controller._moveToNextPage();
                                       }
-                                    } else {
+                                      break;
+
+                                    case 1:
                                       controller._moveToNextPage();
-                                    }
-                                    break;
-                                  case 3:
-                                    if (controller._addressFormKey.currentState
-                                            ?.validate() ==
-                                        true) {
+                                      break;
+                                    case 2:
+                                      if (controller
+                                              ._informationFormKey.currentState
+                                              ?.validate() ==
+                                          true) {
+                                        controller._moveToNextPage();
+                                      }
+                                      break;
+
+                                    case 3:
                                       controller._moveToNextPage();
-                                    }
-                                    break;
-                                  case 4:
-                                    if (controller.images.isEmpty &&
-                                        controller.oldImages.isEmpty) {
-                                      showGetSnackbar(
-                                        "You need atleast one image",
-                                        severity: Severity.error,
-                                      );
-                                    } else {
+                                      break;
+                                    case 4:
+                                      if (controller
+                                              .information['posterType'] ==
+                                          "Agent/Broker") {
+                                        if (controller._agentBrokerFormKey
+                                                .currentState
+                                                ?.validate() ==
+                                            true) {
+                                          controller._moveToNextPage();
+                                        }
+                                      } else {
+                                        controller._moveToNextPage();
+                                      }
+                                      break;
+                                    case 5:
                                       controller._moveToNextPage();
-                                    }
-                                    break;
-                                  case 5:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 6:
-                                    if (oldData != null) {
-                                      controller._upatePropertyAd();
-                                    } else {
-                                      controller._savePropertyAd();
-                                    }
-                                    break;
-                                  default:
-                                }
-                              },
-                        child: controller._pageIndex.value == 6
-                            ? Text("save".tr)
-                            : Text("next".tr),
-                      ),
-                      // const Icon(Icons.arrow_right),
-                    ],
-                  ),
-                ],
-              );
-            }),
+                                      break;
+                                    case 6:
+                                      if (controller.images.isEmpty &&
+                                          controller.oldImages.isEmpty) {
+                                        showGetSnackbar(
+                                          "You need atleast one image",
+                                          severity: Severity.error,
+                                        );
+                                      } else {
+                                        controller._moveToNextPage();
+                                      }
+                                      break;
+                                    case 7:
+                                      if (oldData != null) {
+                                        controller._upatePropertyAd();
+                                      } else {
+                                        controller._savePropertyAd();
+                                      }
+                                      break;
+                                    default:
+                                  }
+                                  controller.update();
+                                },
+                          child: Builder(builder: (context) {
+                            if (controller._pageIndex.value == 7) {
+                              return Text("save".tr);
+                            }
+                            return Text("next".tr);
+                          }),
+                        ),
+                        // const Icon(Icons.arrow_right),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       }),
@@ -1558,17 +1875,53 @@ class PostPropertyAdScreen extends StatelessWidget {
   }
 }
 
-final allAmenties = <String>[
-  "Close to metro",
-  "Balcony",
-  "Kitchen appliances",
-  "Parking",
-  "WIFI",
-  "TV",
-  "Shared gym",
-  "Washer",
-  "Cleaning included",
-  "Near to supermarket",
-  "Shared swimming pool",
-  "Near to pharmacy",
+final allAmenties = [
+  {
+    "value": "Close to metro",
+    "asset": "assets/icons/metro.png",
+  },
+  {
+    "value": "Balcony",
+    "asset": "assets/icons/balcony.png",
+  },
+  {
+    "value": "Kitchen appliances",
+    "asset": "assets/icons/kitchen_appliance.png",
+  },
+  {
+    "value": "Parking",
+    "asset": "assets/icons/parking.png",
+  },
+  {
+    "value": "WIFI",
+    "asset": "assets/icons/wifi.png",
+  },
+  {
+    "value": "TV",
+    "asset": "assets/icons/tv.png",
+  },
+  {
+    "value": "Shared gym",
+    "asset": "assets/icons/gym.png",
+  },
+  {
+    "value": "Washer",
+    "asset": "assets/icons/washing.png",
+  },
+  {
+    "value": "Cleaning included",
+    "asset": "assets/icons/cleanning.png",
+  },
+  {
+    "value": "Near to supermarket",
+    "asset": "assets/icons/grocery.png",
+  },
+  {
+    "value": "Shared swimming pool",
+    "asset": "assets/icons/swimming.png",
+  },
+  {
+    "value": "Near to pharmacy",
+    "asset": "assets/icons/pharmacy.png",
+  },
 ];

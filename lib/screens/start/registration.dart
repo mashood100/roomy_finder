@@ -14,6 +14,7 @@ import 'package:pinput/pinput.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -21,6 +22,8 @@ import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
+// import 'package:roomy_finder/screens/start/login.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
@@ -32,7 +35,6 @@ class _RegistrationController extends LoadingController {
   late final PageController _pageController;
   final _piniputController = TextEditingController();
   final _pageIndex = 0.obs;
-  final _gender = "Male".obs;
 
   final showPassword = false.obs;
   final showConfirmPassword = false.obs;
@@ -405,11 +407,21 @@ class RegistrationScreen extends StatelessWidget {
           ),
           body: Stack(
             children: [
+              Container(
+                height: 15,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Get.theme.appBarTheme.backgroundColor,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.elliptical(50, 25),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(
-                  left: 5,
-                  right: 5,
-                  top: 5,
+                  left: 10,
+                  top: 40,
+                  right: 10,
                   bottom: 60,
                 ),
                 child: PageView(
@@ -417,34 +429,6 @@ class RegistrationScreen extends StatelessWidget {
                   onPageChanged: (index) => controller._pageIndex(index),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    Column(
-                      children: <UserAccountType>[
-                        UserAccountType.landlord,
-                        UserAccountType.tenant,
-                        UserAccountType.roommate,
-                      ].map((e) {
-                        final title = e.name.toLowerCase();
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 5),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: RadioListTile<UserAccountType>(
-                            value: e,
-                            groupValue: controller.accountType.value,
-                            onChanged: (value) {
-                              if (value != null) controller.accountType(value);
-                            },
-                            title: Text(
-                              title.replaceFirst(
-                                  title[0], title[0].toUpperCase()),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
                     // Credentials
                     SingleChildScrollView(
                       child: Form(
@@ -452,111 +436,110 @@ class RegistrationScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Profile picture
+                            // Account type
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                const Spacer(),
                                 GestureDetector(
-                                  onTap: controller._viewPropfilePicture,
-                                  child: CircleAvatar(
-                                    radius: 40,
-                                    backgroundImage: controller
-                                            ._images.isNotEmpty
-                                        ? FileImage(
-                                            File(controller._images[0].path))
-                                        : null,
-                                    child: controller._images.isNotEmpty
-                                        ? null
-                                        : const Icon(
-                                            CupertinoIcons.person_alt_circle,
-                                            size: 50,
-                                          ),
+                                  onTap: () {
+                                    controller
+                                        .accountType(UserAccountType.tenant);
+                                  },
+                                  child: Icon(
+                                    !controller.isLandlord
+                                        ? Icons.check_circle_outline_outlined
+                                        : Icons.circle_outlined,
+                                    color: ROOMY_ORANGE,
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text("yourPhoto".tr),
-                                      const SizedBox(width: 10),
-                                      IconButton(
-                                        onPressed: () =>
-                                            controller._pickProfilePicture(),
-                                        icon: const Icon(Icons.image),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      IconButton(
-                                        onPressed: () =>
-                                            controller._pickProfilePicture(
-                                                gallery: false),
-                                        icon: const Icon(Icons.camera),
-                                      ),
-                                    ],
+                                GestureDetector(
+                                  onTap: () {
+                                    controller
+                                        .accountType(UserAccountType.tenant);
+                                  },
+                                  child: const Text(
+                                    "Tenant",
+                                    style: TextStyle(
+                                      color: ROOMY_PURPLE,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () {
+                                    controller
+                                        .accountType(UserAccountType.landlord);
+                                  },
+                                  child: Icon(
+                                    controller.isLandlord
+                                        ? Icons.check_circle_outline_outlined
+                                        : Icons.circle_outlined,
+                                    color: ROOMY_ORANGE,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    controller
+                                        .accountType(UserAccountType.landlord);
+                                  },
+                                  child: const Text(
+                                    "Landlord",
+                                    style: TextStyle(
+                                      color: ROOMY_PURPLE,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
                               ],
                             ),
-                            // information
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius:
-                                    const BorderRadius.all(Radius.circular(5)),
-                                border:
-                                    Border.all(color: Colors.black54, width: 1),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Text("Gender"),
-                                  const Spacer(),
-                                  Radio(
-                                    value: "Male",
-                                    groupValue: controller._gender.value,
-                                    onChanged: (value) {
-                                      FocusManager.instance.primaryFocus
-                                          ?.unfocus();
-                                      controller.information["gender"] = "Male";
-                                      if (value != null) {
-                                        controller._gender(value);
-                                      }
-                                    },
-                                  ),
-                                  const Text("Male"),
-                                  Radio(
-                                    value: "Female",
-                                    groupValue: controller._gender.value,
-                                    onChanged: (value) {
-                                      FocusManager.instance.primaryFocus
-                                          ?.unfocus();
-                                      controller.information["gender"] =
-                                          "Female";
-                                      if (value != null) {
-                                        controller._gender(value);
-                                      }
-                                    },
-                                  ),
-                                  const Text("Female"),
-                                ],
-                              ),
+                            const Divider(),
+                            InlineTextField(
+                              initialValue: controller.information["firstName"],
+                              enabled: controller.isLoading.isFalse,
+                              labelText: 'firstName'.tr,
+                              onChanged: (value) =>
+                                  controller.information["firstName"] = value,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 10),
-                            Text("emailAddress".tr),
-                            TextFormField(
+                            InlineTextField(
+                              labelText: 'lastName'.tr,
+                              initialValue: controller.information["lastName"],
+                              enabled: controller.isLoading.isFalse,
+                              onChanged: (value) =>
+                                  controller.information["lastName"] = value,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            InlineDropDown<String>(
+                              labelText: 'gender'.tr,
+                              value: controller.information["gender"],
+                              items: const ["Male", "Female"],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.information["gender"] = val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 10),
+                            InlineTextField(
+                              labelText: 'email'.tr,
                               initialValue: controller.information["email"],
                               enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'emailAddress'.tr,
-                                suffixIcon: const Icon(CupertinoIcons.mail),
-                              ),
                               onChanged: (value) =>
                                   controller.information["email"] = value,
                               validator: (value) {
@@ -568,55 +551,16 @@ class RegistrationScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 10),
-                            Text("firstName".tr),
-                            TextFormField(
-                              initialValue: controller.information["firstName"],
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'firstName'.tr,
-                                suffixIcon: const Icon(CupertinoIcons.person),
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["firstName"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            Text("lastName".tr),
-                            TextFormField(
-                              initialValue: controller.information["lastName"],
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'lastName'.tr,
-                                suffixIcon: const Icon(CupertinoIcons.person),
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["lastName"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            Text("password".tr),
-                            TextFormField(
+                            InlineTextField(
+                              labelText: 'password'.tr,
                               initialValue: controller.information["password"],
                               enabled: controller.isLoading.isFalse,
                               obscureText: controller.showPassword.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'password'.tr,
-                                suffixIcon: IconButton(
-                                  onPressed: controller.showPassword.toggle,
-                                  icon: controller.showPassword.isFalse
-                                      ? const Icon(CupertinoIcons.eye)
-                                      : const Icon(CupertinoIcons.eye_slash),
-                                ),
+                              suffixIcon: IconButton(
+                                onPressed: controller.showPassword.toggle,
+                                icon: controller.showPassword.isFalse
+                                    ? const Icon(CupertinoIcons.eye)
+                                    : const Icon(CupertinoIcons.eye_slash),
                               ),
                               onChanged: (value) =>
                                   controller.information["password"] = value,
@@ -634,22 +578,19 @@ class RegistrationScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 10),
-                            Text("confirmPassword".tr),
-                            TextFormField(
+                            InlineTextField(
+                              labelText: 'confirmPassword'.tr,
                               initialValue:
                                   controller.information["confirmPassword"],
                               enabled: controller.isLoading.isFalse,
                               obscureText:
                                   controller.showConfirmPassword.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'confirmPassword'.tr,
-                                suffixIcon: IconButton(
-                                  onPressed:
-                                      controller.showConfirmPassword.toggle,
-                                  icon: controller.showPassword.isFalse
-                                      ? const Icon(CupertinoIcons.eye)
-                                      : const Icon(CupertinoIcons.eye_slash),
-                                ),
+                              suffixIcon: IconButton(
+                                onPressed:
+                                    controller.showConfirmPassword.toggle,
+                                icon: controller.showPassword.isFalse
+                                    ? const Icon(CupertinoIcons.eye)
+                                    : const Icon(CupertinoIcons.eye_slash),
                               ),
                               onChanged: (value) => controller
                                   .information["confirmPassword"] = value,
@@ -663,25 +604,19 @@ class RegistrationScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 10),
-                            Text("phoneNumber".tr),
-                            PhoneNumberInput(
+
+                            InlinePhoneNumberInput(
                               initialValue: controller.phoneNumber,
-                              hintText: "phoneNumber".tr,
+                              labelText: "phoneNumber".tr,
                               onChange: (phoneNumber) {
                                 controller.phoneNumber = phoneNumber;
                               },
                             ),
                             const SizedBox(height: 10),
-                            Text("country".tr),
-                            DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                hintText: 'country'.tr,
-                              ),
+                            InlineDropDown<String>(
+                              labelText: 'country'.tr,
                               value: controller.information["country"],
-                              items: allCountriesNames
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
+                              items: allCountriesNames,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -691,36 +626,117 @@ class RegistrationScreen extends StatelessWidget {
                                     },
                             ),
                             const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
+
+                            // Profile picture
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                GestureDetector(
+                                  onTap: controller._viewPropfilePicture,
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: controller
+                                            ._images.isNotEmpty
+                                        ? FileImage(
+                                            File(controller._images[0].path))
+                                        : null,
+                                    child: controller._images.isNotEmpty
+                                        ? null
+                                        : const Icon(
+                                            Icons.person,
+                                            size: 40,
+                                            color: Colors.white,
+                                          ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      isScrollControlled: true,
+                                      context: context,
+                                      builder: (context) {
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ListTile(
+                                              leading: const Icon(Icons.camera),
+                                              title: const Text("Camera"),
+                                              onTap: () {
+                                                Get.back();
+                                                controller._pickProfilePicture(
+                                                    gallery: false);
+                                              },
+                                            ),
+                                            const Divider(),
+                                            ListTile(
+                                              leading: const Icon(Icons.image),
+                                              title: const Text("Gallery"),
+                                              onTap: () {
+                                                Get.back();
+                                                controller
+                                                    ._pickProfilePicture();
+                                              },
+                                            ),
+                                            const Divider(),
+                                            ListTile(
+                                              leading: const Icon(
+                                                Icons.cancel,
+                                                color: Colors.red,
+                                              ),
+                                              title: const Text("Cancel"),
+                                              onTap: () {
+                                                Get.back();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: const Text("Add profile picture"),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: () {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                controller.acceptTermsAndConditions.toggle();
+                              },
                               child: Row(
                                 children: [
-                                  Checkbox(
-                                    value: controller
-                                        .acceptTermsAndConditions.value,
-                                    onChanged: controller.isLoading.isTrue
-                                        ? null
-                                        : (value) {
-                                            if (value != null) {
-                                              FocusManager.instance.primaryFocus
-                                                  ?.unfocus();
-                                              controller
-                                                  .acceptTermsAndConditions(
-                                                      value);
-                                            }
-                                          },
+                                  const Text(
+                                    "Terms and conditions",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: ROOMY_ORANGE,
+                                    ),
                                   ),
-                                  const SizedBox(width: 20),
-                                  Text("termsAndConditions".tr)
+                                  const Spacer(),
+                                  Icon(
+                                    controller.acceptTermsAndConditions.value
+                                        ? Icons.check_circle_outline_outlined
+                                        : Icons.circle_outlined,
+                                    color: ROOMY_ORANGE,
+                                  ),
                                 ],
                               ),
                             ),
-
-                            const SizedBox(height: 50),
+                            // const Divider(height: 30),
+                            // Center(
+                            //   child: TextButton(
+                            //     onPressed: () =>
+                            //         Get.off(() => const LoginScreen()),
+                            //     child: const Text(
+                            //       'Login',
+                            //       style: TextStyle(
+                            //         color: ROOMY_PURPLE,
+                            //         fontWeight: FontWeight.bold,
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ),
                           ],
                         ),
                       ),
@@ -731,8 +747,8 @@ class RegistrationScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 20),
-                          if (controller._pageIndex.value == 2)
+                          const SizedBox(height: 10),
+                          if (controller._pageIndex.value == 1)
                             FutureBuilder(
                               future: controller._formattedPhoneNumber,
                               builder: (ctx, asp) {
@@ -824,8 +840,8 @@ class RegistrationScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   LinearProgressIndicator(
-                      color: const Color.fromRGBO(96, 15, 116, 1),
-                      value: (controller._pageIndex.value + 1) / 3),
+                      color: ROOMY_PURPLE,
+                      value: (controller._pageIndex.value + 1) / 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -854,9 +870,6 @@ class RegistrationScreen extends StatelessWidget {
                             : () async {
                                 switch (controller._pageIndex.value) {
                                   case 0:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 1:
                                     final isValid =
                                         await controller.validateCredentials();
                                     if (!isValid) return;

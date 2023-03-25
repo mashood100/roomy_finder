@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -12,6 +13,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _LoginController extends LoadingController {
   final formkey = GlobalKey<FormState>();
@@ -118,165 +120,153 @@ class LoginScreen extends StatelessWidget {
         appBar: AppBar(toolbarHeight: 0),
         body: Stack(
           children: [
-            SingleChildScrollView(
-              child: Form(
-                key: controller.formkey,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(
-                        bottom: 25,
-                        left: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Get.theme.appBarTheme.backgroundColor,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(30),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              BackButton(color: Colors.white),
-                              SizedBox(width: 10),
-                              Text(
-                                "Welcome Back!",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              "Please sign in to continue",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+            const BackButton(),
+            Form(
+              key: controller.formkey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Image.asset(
+                        "assets/images/logo.png",
+                        height: 100,
+                        width: 100,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('email'.tr),
-                          TextFormField(
-                            controller: controller._emailController,
-                            decoration: InputDecoration(
-                              suffixIcon: const Icon(CupertinoIcons.mail),
-                              hintText: "emailAddress".tr,
+                  ),
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: ROOMY_PURPLE,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.elliptical(50, 20),
+                      ),
+                    ),
+                    child: DefaultTextStyle(
+                      style: const TextStyle(color: Colors.white),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'thisFieldIsRequired'.tr;
-                              }
+                            const SizedBox(height: 10),
+                            InlineTextField(
+                              labelText: "email".tr,
+                              hintText: "emailAddress".tr,
+                              controller: controller._emailController,
+                              suffixIcon: const Icon(CupertinoIcons.mail),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
 
-                              if (!value.isEmail) return 'invalidEmail'.tr;
+                                if (!value.isEmail) return 'invalidEmail'.tr;
 
-                              return null;
-                            },
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 10),
-                          Text('password'.tr),
-                          TextFormField(
-                            obscureText: controller.showPassword.isFalse,
-                            controller: controller._passwordController,
-                            decoration: InputDecoration(
+                                return null;
+                              },
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 10),
+                            InlineTextField(
+                              labelText: "password".tr,
                               hintText: "enterYourPassword".tr,
+                              obscureText: controller.showPassword.isFalse,
+                              controller: controller._passwordController,
                               suffixIcon: IconButton(
                                 onPressed: controller.showPassword.toggle,
                                 icon: controller.showPassword.isTrue
                                     ? const Icon(CupertinoIcons.eye_slash_fill)
                                     : const Icon(CupertinoIcons.eye_fill),
                               ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'thisFieldIsRequired'.tr;
-                              }
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
 
-                              return null;
-                            },
-                            keyboardType: TextInputType.visiblePassword,
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                child: Checkbox(
-                                  value: controller.rememberMe.isTrue,
-                                  onChanged: controller.isLoading.isTrue
-                                      ? null
-                                      : (_) => controller.rememberMe.toggle(),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text("rememberMe".tr),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () => Get.toNamed('/reset_password'),
-                                child: Text('forgotPassword'.tr),
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context)
-                                    .appBarTheme
-                                    .backgroundColor,
-                              ),
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : controller._login,
-                              child: Text(
-                                "Sign in".tr,
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                                return null;
+                              },
+                              keyboardType: TextInputType.visiblePassword,
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Center(child: Text("dontHaveAnAccount".tr)),
-                              TextButton(
-                                onPressed: () =>
-                                    Get.off(() => const RegistrationScreen()),
-                                child: Text(
-                                  'Register now'.tr,
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: ROOMY_ORANGE,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  side: const BorderSide(color: ROOMY_ORANGE),
+                                ),
+                                onPressed: controller.isLoading.isTrue
+                                    ? null
+                                    : controller._login,
+                                child: const Text(
+                                  "Login",
                                   style: TextStyle(
-                                    color:
-                                        Get.theme.appBarTheme.backgroundColor,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  child: Checkbox(
+                                    checkColor: ROOMY_ORANGE,
+                                    value: controller.rememberMe.isTrue,
+                                    onChanged: controller.isLoading.isTrue
+                                        ? null
+                                        : (_) => controller.rememberMe.toggle(),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text("rememberMe".tr),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: () =>
+                                      Get.toNamed('/reset_password'),
+                                  child: Text(
+                                    'forgotPassword'.tr,
+                                    style: const TextStyle(color: ROOMY_ORANGE),
+                                  ),
+                                )
+                              ],
+                            ),
+                            Center(
+                              child: TextButton(
+                                onPressed: () =>
+                                    Get.off(() => const RegistrationScreen()),
+                                child: const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
-                  ],
-                ),
+                    ),
+                  )
+                ],
               ),
             ),
             if (controller.isLoading.isTrue)

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:roomy_finder/classes/api_service.dart';
+import 'package:dio/dio.dart';
+import 'package:roomy_finder/data/constants.dart';
 
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 class BlogPost {
@@ -85,7 +86,7 @@ class BlogPost {
 
   // Static list of blog posts
   static Future<List<BlogPost>> getBlogPost() async {
-    final res = await ApiService.getDio.get("/blog-post");
+    final res = await Dio().get("$API_URL/blog-post");
     final post = (res.data as List).map((e) => BlogPost.fromMap(e)).toList();
 
     return post;

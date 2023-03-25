@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class PropertyAdWidget extends StatelessWidget {
   const PropertyAdWidget({
@@ -25,7 +24,7 @@ class PropertyAdWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      // onTap: onTap,
       child: Card(
         color: Theme.of(context).scaffoldBackgroundColor,
         elevation: 2,
@@ -54,10 +53,37 @@ class PropertyAdWidget extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "${ad.type} to rent",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.room, color: ROOMY_ORANGE),
+                          const SizedBox(width: 5),
+                          Text(
+                            "${ad.address["location"]}",
+                            style: const TextStyle(fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                   Obx(() {
                     return Text(
                       formatMoney(
@@ -66,76 +92,90 @@ class PropertyAdWidget extends StatelessWidget {
                                 .instance.country.value.aedCurrencyConvertRate,
                       ),
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
                       ),
                     );
                   }),
-                  Text(
-                    "Posted ${relativeTimeText(ad.createdAt)}",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    ad.disPlayText,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  Text(
-                    ad.preferedRentType,
-                    style: const TextStyle(fontSize: 14),
-                  )
                 ],
               ),
             ),
             const Divider(),
             Container(
-              padding: const EdgeInsets.only(
-                left: 5,
-                bottom: 10,
-                right: 10,
-              ),
+              padding: const EdgeInsets.only(right: 5),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(CupertinoIcons.location_solid),
-                      const SizedBox(width: 5),
-                      Text(
-                        "${ad.address["location"]}",
-                        style: const TextStyle(fontSize: 14),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 30,
-                    child: IconButton(
-                      onPressed: onFavoriteTap ??
-                          () {
-                            _addAdToFavorite(
-                              ad.toJson(),
-                              "favorites-property-ads",
-                            ).then((value) {
-                              if (value) {
-                                showToast("Ad added to favorites");
-                              }
-                            });
-                          },
-                      icon: onFavoriteTap != null
-                          ? const Icon(Icons.delete, color: Colors.red)
-                          : const Icon(Icons.favorite),
+                  Builder(builder: (context) {
+                    final String asset;
+                    switch (ad.type) {
+                      case "Bed":
+                        asset = "assets/icons/bed.png";
+                        break;
+                      case "Partition":
+                        asset = "assets/icons/partition.png";
+                        break;
+                      case "Room":
+                        asset = "assets/icons/regular_room.png";
+                        break;
+                      default:
+                        asset = "assets/icons/master_room.png";
+                    }
+                    return Image.asset(asset, height: 30);
+                  }),
+                  Text(
+                    "Available ${ad.quantity - ad.quantityTaken}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
                     ),
-                  )
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    "Taken ${ad.quantityTaken}",
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: ROOMY_ORANGE,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: const BorderSide(color: ROOMY_ORANGE),
+                      ),
+                      onPressed: onTap,
+                      child: const Text(
+                        "View Details",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // SizedBox(
+                  //   height: 30,
+                  //   child: IconButton(
+                  //     onPressed: onFavoriteTap ??
+                  //         () {
+                  //           _addAdToFavorite(
+                  //             ad.toJson(),
+                  //             "favorites-property-ads",
+                  //           ).then((value) {
+                  //             if (value) {
+                  //               showToast("Ad added to favorites");
+                  //             }
+                  //           });
+                  //         },
+                  //     icon: onFavoriteTap != null
+                  //         ? const Icon(Icons.delete, color: Colors.red)
+                  //         : const Icon(Icons.favorite),
+                  //   ),
+                  // )
                 ],
               ),
             ),
@@ -162,7 +202,7 @@ class PropertyAdOverviewItemWidget extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -186,6 +226,90 @@ class PropertyAdOverviewItemWidget extends StatelessWidget {
               ],
             )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class PropertyAdMiniWidget extends StatelessWidget {
+  const PropertyAdMiniWidget({super.key, required this.ad, this.onTap});
+
+  final PropertyAd ad;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(
+            Radius.circular(10),
+          ),
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              CachedNetworkImage(
+                imageUrl: ad.images.isNotEmpty
+                    ? ad.images[0]
+                    : ad.poster.profilePicture,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorWidget: (ctx, url, e) {
+                  return const SizedBox();
+                },
+              ),
+              DefaultTextStyle(
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: ROOMY_PURPLE,
+                ),
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(children: [
+                              TextSpan(
+                                text: ad.type,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const TextSpan(text: " for rent"),
+                            ]),
+                          ),
+                          Text(
+                            "${ad.address["location"]},"
+                            " ${ad.address["city"]}",
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: ROOMY_ORANGE,
+                        ),
+                        child: Text(
+                          "${ad.quantity - ad.quantityTaken}".padLeft(2, "0"),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -316,17 +440,101 @@ class RoommateAdWidget extends StatelessWidget {
   }
 }
 
-Future<bool> _addAdToFavorite(String item, String listKey) async {
-  try {
-    final pref = await SharedPreferences.getInstance();
+class RoommateAdMiniWidget extends StatelessWidget {
+  const RoommateAdMiniWidget({super.key, required this.ad, this.onTap});
 
-    final favorites = pref.getStringList(listKey) ?? [];
-    if (!favorites.contains(item)) {
-      favorites.add(item);
-    }
-    pref.setStringList(listKey, favorites);
-    return true;
-  } catch (_) {
-    return false;
+  final RoommateAd ad;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(
+            Radius.circular(10),
+          ),
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              CachedNetworkImage(
+                imageUrl: ad.images.isNotEmpty
+                    ? ad.images[0]
+                    : ad.poster.profilePicture,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorWidget: (ctx, url, e) {
+                  return const SizedBox();
+                },
+              ),
+              DefaultTextStyle(
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: ROOMY_PURPLE,
+                ),
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(children: [
+                              TextSpan(
+                                text: ad.type,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const TextSpan(text: " for rent"),
+                            ]),
+                          ),
+                          SizedBox(
+                            width: Get.width * 0.25,
+                            child: Text("${ad.address["location"]}"),
+                          ),
+                        ],
+                      ),
+                      Expanded(
+                        child: Text(
+                          formatMoney(ad.budget * AppController.convertionRate),
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: ROOMY_ORANGE,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
+
+// Future<bool> _addAdToFavorite(String item, String listKey) async {
+//   try {
+//     final pref = await SharedPreferences.getInstance();
+
+//     final favorites = pref.getStringList(listKey) ?? [];
+//     if (!favorites.contains(item)) {
+//       favorites.add(item);
+//     }
+//     pref.setStringList(listKey, favorites);
+//     return true;
+//   } catch (_) {
+//     return false;
+//   }
+// }

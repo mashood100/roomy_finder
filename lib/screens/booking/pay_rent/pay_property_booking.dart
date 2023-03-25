@@ -164,7 +164,7 @@ class PayProperyBookingScreen extends StatelessWidget {
                               label: "Total Rent fee",
                               value: formatMoney(
                                 (booking.rentFee + booking.commissionFee) *
-                                    AppController.cnvertionRate,
+                                    AppController.convertionRate,
                               ),
                               fontSize: 16,
                             );
@@ -175,14 +175,14 @@ class PayProperyBookingScreen extends StatelessWidget {
                               value: " ${formatMoney(
                                 booking.ad.depositPrice! *
                                     booking.quantity *
-                                    AppController.cnvertionRate,
+                                    AppController.convertionRate,
                               )}",
                               fontSize: 16,
                             ),
                           Label(
                             label: "VAT",
                             value: "(5%)  ${formatMoney(
-                              booking.vatFee * AppController.cnvertionRate,
+                              booking.vatFee * AppController.convertionRate,
                             )}",
                             fontSize: 16,
                           ),
@@ -190,7 +190,7 @@ class PayProperyBookingScreen extends StatelessWidget {
                             label: "Service fee",
                             value: "(3%)  ${formatMoney(
                               booking.calculateFee(0.03) *
-                                  AppController.cnvertionRate,
+                                  AppController.convertionRate,
                             )}",
                             fontSize: 16,
                           ),
@@ -206,7 +206,7 @@ class PayProperyBookingScreen extends StatelessWidget {
                             return Label(
                               label: "Total",
                               value: formatMoney(
-                                (total) * AppController.cnvertionRate,
+                                (total) * AppController.convertionRate,
                               ),
                               fontSize: 20,
                               boldLabel: true,

@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,24 +7,44 @@ import 'package:get/get.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
+import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
+import 'package:roomy_finder/models/property_ad.dart';
+import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/post_ad.dart';
+import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
+import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/search_query.dart';
+import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/premium_roommates_ads.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/search_roommate_match.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/blog_post/view_post.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeletons/skeletons.dart';
 
 class _HomeTabController extends LoadingController {
   final List<BlogPost> _blogPosts = [];
+  final _targetAds = "All".obs;
+
+  final _homePropertyAds = <PropertyAd>[];
+  final _homeRoommateAds = <RoommateAd>[];
+  final _isLoadingHomeAds = true.obs;
+  final _failedToLoadHomeAds = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+
+    _fetchHommeAds();
 
     _fetBlogPost();
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
@@ -45,6 +66,44 @@ class _HomeTabController extends LoadingController {
         default:
       }
     });
+  }
+
+  Future<void> _fetchHommeAds() async {
+    try {
+      _isLoadingHomeAds(true);
+      _failedToLoadHomeAds(false);
+
+      final res = await Dio().get("$API_URL/ads/recomended");
+
+      // Property ads
+      final propertyAds = (res.data["propertyAds"] as List).map((e) {
+        try {
+          var propertyAd = PropertyAd.fromMap(e);
+          return propertyAd;
+        } catch (e) {
+          return null;
+        }
+      });
+      _homePropertyAds.addAll(propertyAds.whereType<PropertyAd>());
+
+      // Roommate ads
+      final roommateAds = (res.data["roommateAds"] as List).map((e) {
+        try {
+          var propertyAd = RoommateAd.fromMap(e);
+          return propertyAd;
+        } catch (e) {
+          return null;
+        }
+      });
+      _homeRoommateAds.addAll(roommateAds.whereType<RoommateAd>());
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      _failedToLoadHomeAds(true);
+    } finally {
+      _isLoadingHomeAds(false);
+      update();
+    }
   }
 
   Future<void> _fetBlogPost() async {
@@ -106,162 +165,402 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   Widget build(BuildContext context) {
-    // final controller = Get.put(_HomeTabController());
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: CustomScrollView(
-        slivers: [
-          const SliverToBoxAdapter(
-            child: HomeUserInfo(),
-          ),
-          SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                const SizedBox(height: 10),
-                HomeCard(
-                  label: "FIND ROOM".tr,
-                  assetImage: "assets/images/looking-roommate.png",
-                  onTap: () {
-                    Get.to(() => const PropertyAdSearchQueryScreen());
-                  },
-                ),
-                HomeCard(
-                  label: "POST AD".tr,
-                  assetImage: "assets/images/appartment-inner-view-2.jpg",
-                  onTap: () async {
-                    Get.to(() => const PostAdScreen());
-                  },
-                ),
-                HomeCard(
-                  label: "FIND ROOMMATE".tr,
-                  assetImage: "assets/images/premium_roommate.png",
-                  onTap: () async {
-                    await precacheImage(
-                      const AssetImage(
-                          "assets/images/premium_background_people.jpeg"),
-                      Get.context!,
-                    );
-                    // ignore: unused_local_variable, use_build_context_synchronously
-                    final res = await showModalBottomSheet(
-                      context: context,
-                      builder: (context) {
-                        return Column(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Get.back(result: "PREMIUM");
-                                },
-                                child: Card(
-                                  child: Stack(
-                                    alignment: Alignment.center,
+    Get.put(_HomeTabController());
+    return GetBuilder<_HomeTabController>(builder: (controller) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(),
+        child: CustomScrollView(
+          slivers: [
+            // const SliverToBoxAdapter(
+            //   child: HomeUserInfo(),
+            // ),
+            SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      Image.asset(
+                        "assets/images/appartment-inner-view.jpg",
+                        width: double.infinity,
+                        height: 300,
+                        fit: BoxFit.cover,
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Account detail
+                          Container(
+                            width: Get.width,
+                            color: Colors.grey.shade300,
+                            child: Builder(
+                              builder: (context) {
+                                if (AppController.me.isGuest) {
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      SizedBox(
-                                        width: Get.width - 10,
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          child: Image.asset(
-                                            "assets/images/premium_roommate.jpg",
-                                            fit: BoxFit.cover,
+                                      TextButton(
+                                        onPressed: () {
+                                          Get.offAllNamed("/registration");
+                                        },
+                                        child: const Text(
+                                          "REGISTER",
+                                          style: TextStyle(
+                                            color: ROOMY_PURPLE,
+                                            fontSize: 16,
                                           ),
                                         ),
                                       ),
-                                      const Text(
-                                        "Premium Roommate",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Get.back(result: "ROOMMATE_MATCH");
-                                },
-                                child: Card(
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: Get.width - 10,
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          child: Image.asset(
-                                            "assets/images/roommate_match.jpg",
-                                            fit: BoxFit.cover,
-                                            height: 200,
+                                      TextButton(
+                                        onPressed: () {
+                                          Get.offAllNamed("/login");
+                                        },
+                                        child: const Text(
+                                          "LOGIN",
+                                          style: TextStyle(
+                                            color: ROOMY_ORANGE,
+                                            fontSize: 16,
                                           ),
                                         ),
                                       ),
-                                      const Text(
-                                        "Roommate Match",
+                                    ],
+                                  );
+                                } else {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(5.0),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  CupertinoIcons
+                                                      .person_alt_circle_fill,
+                                                  color: ROOMY_ORANGE,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  AppController.me.fullName,
+                                                  style: const TextStyle(
+                                                    color: ROOMY_PURPLE,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons.key,
+                                                  color: ROOMY_ORANGE,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Builder(builder: (context) {
+                                                  final type =
+                                                      AppController.me.type;
+                                                  return Text(
+                                                    type.replaceFirst(type[0],
+                                                        type[0].toUpperCase()),
+                                                    style: const TextStyle(
+                                                      color: ROOMY_PURPLE,
+                                                      fontSize: 16,
+                                                    ),
+                                                  );
+                                                }),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        AppController.me.ppWidget(size: 25)
+                                      ],
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          //  Ads types
+                          Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                              color: ROOMY_PURPLE,
+                            ),
+                            child: Row(
+                              children: ["Roommate", "Room", "All"].map((e) {
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      controller._targetAds(e);
+                                      controller.update();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(50),
+                                        color: controller._targetAds.value == e
+                                            ? Colors.white
+                                            : ROOMY_PURPLE,
+                                      ),
+                                      child: Text(
+                                        e,
+                                        textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30,
-                                          color: Colors.white,
+                                          color:
+                                              controller._targetAds.value == e
+                                                  ? ROOMY_PURPLE
+                                                  : Colors.white,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // Search box
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: TextField(
+                              decoration: InputDecoration(
+                                fillColor: Colors.white,
+                                hintText: "Search",
+                                suffixIcon: SizedBox(
+                                  child: IconButton(
+                                    onPressed: () {
+                                      switch (controller._targetAds.value) {
+                                        case "Room":
+                                          Get.to(() {
+                                            return const FindPropertiesAdsScreen();
+                                          });
+                                          break;
+                                        default:
+                                      }
+                                    },
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: ROOMY_PURPLE,
+                                      ),
+                                      child: const Icon(
+                                        Icons.search,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                contentPadding:
+                                    const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                              ),
+                              textInputAction: TextInputAction.search,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // Post ad button
+                          SizedBox(
+                            width: Get.width * 0.4,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (AppController.me.isGuest) {
+                                  Get.offAllNamed('/login');
+                                } else if (AppController.me.isLandlord) {
+                                  Get.to(() => const PostPropertyAdScreen());
+                                } else if (AppController.me.isRoommate) {
+                                  Get.to(() {
+                                    return const PostRoommateAdScreen(
+                                      isPremium: true,
+                                    );
+                                  });
+                                }
+                              },
+                              child: DefaultTextStyle(
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: ROOMY_ORANGE,
+                                ),
+                                child: Builder(
+                                  builder: (context) {
+                                    if (AppController.me.isGuest) {
+                                      return const Text("Post Ad");
+                                    }
+                                    if (AppController.me.isLandlord) {
+                                      return const Text("Post Property");
+                                    }
+                                    return const Text("Post Roommate");
+                                  },
                                 ),
                               ),
                             ),
-                            const Text(
-                              "All for you. Make your choice",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (controller._targetAds.value == "Room" ||
+                      controller._targetAds.value == "All") ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Properties",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: ROOMY_ORANGE,
                             ),
-                          ],
-                        );
-                      },
-                    );
-                    switch (res) {
-                      case "PREMIUM":
-                        Get.to(() => const PremiumRoommatesAdsScreen());
-                        break;
-                      case "ROOMMATE_MATCH":
-                        Get.to(() => const SearchRoommateMatchScreen());
-                        break;
-                      default:
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 10)),
-          SliverToBoxAdapter(
-            child: GetBuilder<_HomeTabController>(
-                id: "blogposts-get-builder",
-                builder: (controller) {
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: controller._blogPosts
-                          .map((e) => BlogPostWidget(
-                                post: e,
-                                onTap: () {
-                                  Get.to(() => ViewBlogPostScreen(post: e));
-                                },
-                              ))
-                          .toList(),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Get.to(() {
+                                return const FindPropertiesAdsScreen();
+                              });
+                            },
+                            child: const Text("See all"),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                }),
-          ),
-        ],
-      ),
-    );
+                    GridView.count(
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      children: List.generate(
+                        (controller._homePropertyAds.length ~/ 2) * 2,
+                        (ind) {
+                          if (controller._isLoadingHomeAds.isTrue) {
+                            return const Card(
+                              child: CupertinoActivityIndicator(radius: 30),
+                            );
+                          }
+                          final ad = controller._homePropertyAds[ind];
+                          return PropertyAdMiniWidget(
+                            ad: ad,
+                            onTap: () {
+                              Get.to(() => ViewPropertyAd(ad: ad));
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  if (controller._targetAds.value == "Roommate" ||
+                      controller._targetAds.value == "All") ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Roommates",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: ROOMY_ORANGE,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text("See all"),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GridView.count(
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      children: List.generate(
+                        (controller._homeRoommateAds.length ~/ 2) * 2,
+                        (ind) {
+                          if (controller._isLoadingHomeAds.isTrue) {
+                            return const Card(
+                              child: CupertinoActivityIndicator(radius: 30),
+                            );
+                          }
+                          final ad = controller._homeRoommateAds[ind];
+                          return RoommateAdMiniWidget(
+                            ad: ad,
+                            onTap: () {
+                              Get.to(() => ViewRoommateAdScreen(ad: ad));
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text(
+                      "Blog posts",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: GetBuilder<_HomeTabController>(
+                  id: "blogposts-get-builder",
+                  builder: (controller) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: controller._blogPosts
+                            .map((e) => BlogPostWidget(
+                                  post: e,
+                                  onTap: () {
+                                    Get.to(() => ViewBlogPostScreen(post: e));
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    );
+                  }),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   @override
@@ -269,7 +568,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
     final controller = Get.put(_HomeTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      automaticallyImplyLeading: false,
+      // automaticallyImplyLeading: false,
+      leadingWidth: 30,
       title: SizedBox(
         width: Get.width,
         child: Builder(builder: (context) {
@@ -291,7 +591,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
-
               IconButton(
                 onPressed: controller._toggleThemeMode,
                 icon: Theme.of(context).brightness == Brightness.light
@@ -299,23 +598,27 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     : const Icon(Icons.light_mode, color: Colors.white),
               ),
               Obx(() {
-                return TextButton.icon(
+                return TextButton(
                   onPressed: () => controller.changeAppCountry(context),
-                  icon: const Icon(Icons.arrow_drop_down, size: 40),
-                  label: Text(
+                  // icon: const Icon(Icons.arrow_drop_down, size: 40),
+                  child: Text(
                     AppController.instance.country.value.flag,
                     style: const TextStyle(fontSize: 25),
                   ),
                 );
               }),
-              // TextButton.icon(
-              //   onPressed: () => changeAppLocale(context),
-              //   label: Text(
-              //     AppController.locale.languageName,
-              //     style: const TextStyle(color: Colors.white),
-              //   ),
-              //   icon: Icon(Icons.language, color: Colors.grey.shade300),
-              // ),
+              // Builder(builder: (context) {
+              //   return IconButton(
+              //     onPressed: () {
+              //       if (Scaffold.of(context).isDrawerOpen) {
+              //         Scaffold.of(context).openDrawer();
+              //       } else {
+              //         Scaffold.of(context).closeDrawer();
+              //       }
+              //     },
+              //     icon: Icon(Icons.menu, color: Colors.grey.shade300),
+              //   );
+              // }),
             ],
           );
         }),

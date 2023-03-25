@@ -21,7 +21,7 @@ class PropertyAd {
   num? depositPrice;
   String posterType;
   Map<String, String>? agentInfo;
-  String description;
+  String? description;
   List<String> images;
   List<String> videos;
   List<String> amenties;
@@ -35,7 +35,6 @@ class PropertyAd {
 
   bool get isMine => poster.isMe;
   bool get isAvailable => quantity != quantityTaken;
-  String get disPlayText => "$quantity $type${quantity > 1 ? "s" : ""} to rent";
   String? get depositPriceText => deposit ? "Deposit $depositPrice AED" : null;
   String get locationText {
     return "${address["city"]}, ${address["location"]}, ${address["buildingName"]}";
@@ -56,6 +55,32 @@ class PropertyAd {
     }
   }
 
+  List<String> get technologyAmenities {
+    return amenties.where((e) {
+      return ["WIFI", "TV"].contains(e);
+    }).toList();
+  }
+
+  List<String> get homeAppliancesAmenities {
+    return amenties.where((e) {
+      return ["Washer", "Cleaning included", "Kitchen appliances"].contains(e);
+    }).toList();
+  }
+
+  List<String> get utilitiesAmenities {
+    return amenties.where((e) {
+      return [
+        "Close to metro",
+        "Balcony",
+        "Parking",
+        "Shared gym",
+        "Near to supermarket",
+        "Shared swimming pool",
+        "Near to pharmacy",
+      ].contains(e);
+    }).toList();
+  }
+
   PropertyAd({
     required this.id,
     required this.poster,
@@ -70,7 +95,7 @@ class PropertyAd {
     this.depositPrice,
     required this.posterType,
     this.agentInfo,
-    required this.description,
+    this.description,
     required this.images,
     required this.videos,
     required this.amenties,
@@ -124,7 +149,8 @@ class PropertyAd {
       deposit: map['deposit'] as bool,
       depositPrice: num.tryParse("${map['depositPrice']}") ?? 0,
       posterType: map['posterType'] as String,
-      description: map['description'] as String,
+      description:
+          map["description"] == null ? null : map['description'] as String,
       images: List<String>.from((map['images'] as List)),
       videos: List<String>.from((map['videos'] as List)),
       amenties: List<String>.from((map['amenties'] as List)),
