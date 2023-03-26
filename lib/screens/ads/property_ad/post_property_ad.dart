@@ -15,6 +15,7 @@ import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/amenities.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/city_location.dart';
@@ -472,8 +473,12 @@ class PostPropertyAdScreen extends StatelessWidget {
                             ),
                             const Divider(height: 30),
                             // City
-                            InlineDropDown<String>(
-                              labelText: 'City :',
+                            InlineDropdown<String>(
+                              labelText: 'City',
+                              hintText:
+                                  AppController.instance.country.value.isUAE
+                                      ? 'Example : Dubai'
+                                      : "Example : Riyadh",
                               value: controller.address["city"]!.isEmpty
                                   ? null
                                   : controller.address["city"],
@@ -495,8 +500,9 @@ class PostPropertyAdScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             // Area
-                            InlineDropDown<String>(
-                              labelText: 'Area :',
+                            InlineDropdown<String>(
+                              labelText: 'Area',
+                              hintText: "Select for area",
                               value: controller.address["location"]!.isEmpty
                                   ? null
                                   : controller.address["location"],
@@ -1117,7 +1123,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Preference preferences
+                    // property preferences
                     SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1136,7 +1142,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const Divider(height: 30),
 
                           // People Count
-                          InlineDropDown<String>(
+                          InlineDropdown<String>(
                             // labelWidth: Get.width * 0.3,
                             labelText: 'numberOfPeople'.tr,
                             value: controller
@@ -1159,7 +1165,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           // Gender
-                          InlineDropDown<String>(
+                          InlineDropdown<String>(
                             labelText: 'gender'.tr,
                             value: controller.socialPreferences["gender"]
                                 as String,
@@ -1175,7 +1181,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           // Nationalities
-                          InlineDropDown<String>(
+                          InlineDropdown<String>(
                             labelText: 'nationality'.tr,
                             value: controller.socialPreferences["nationality"]
                                 as String,
@@ -1874,54 +1880,3 @@ class PostPropertyAdScreen extends StatelessWidget {
     );
   }
 }
-
-final allAmenties = [
-  {
-    "value": "Close to metro",
-    "asset": "assets/icons/metro.png",
-  },
-  {
-    "value": "Balcony",
-    "asset": "assets/icons/balcony.png",
-  },
-  {
-    "value": "Kitchen appliances",
-    "asset": "assets/icons/kitchen_appliance.png",
-  },
-  {
-    "value": "Parking",
-    "asset": "assets/icons/parking.png",
-  },
-  {
-    "value": "WIFI",
-    "asset": "assets/icons/wifi.png",
-  },
-  {
-    "value": "TV",
-    "asset": "assets/icons/tv.png",
-  },
-  {
-    "value": "Shared gym",
-    "asset": "assets/icons/gym.png",
-  },
-  {
-    "value": "Washer",
-    "asset": "assets/icons/washing.png",
-  },
-  {
-    "value": "Cleaning included",
-    "asset": "assets/icons/cleanning.png",
-  },
-  {
-    "value": "Near to supermarket",
-    "asset": "assets/icons/grocery.png",
-  },
-  {
-    "value": "Shared swimming pool",
-    "asset": "assets/icons/swimming.png",
-  },
-  {
-    "value": "Near to pharmacy",
-    "asset": "assets/icons/pharmacy.png",
-  },
-];

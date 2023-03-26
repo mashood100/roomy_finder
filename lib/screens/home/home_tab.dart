@@ -12,24 +12,18 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/screens/ads/post_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
-import 'package:roomy_finder/screens/ads/property_ad/search_query.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
-import 'package:roomy_finder/screens/ads/roomate_ad/premium_roommates_ads.dart';
-import 'package:roomy_finder/screens/ads/roomate_ad/search_roommate_match.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/blog_post/view_post.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:skeletons/skeletons.dart';
 
 class _HomeTabController extends LoadingController {
   final List<BlogPost> _blogPosts = [];
@@ -84,6 +78,7 @@ class _HomeTabController extends LoadingController {
           return null;
         }
       });
+      _homePropertyAds.clear();
       _homePropertyAds.addAll(propertyAds.whereType<PropertyAd>());
 
       // Roommate ads
@@ -95,6 +90,7 @@ class _HomeTabController extends LoadingController {
           return null;
         }
       });
+      _homeRoommateAds.clear();
       _homeRoommateAds.addAll(roommateAds.whereType<RoommateAd>());
     } catch (e, trace) {
       Get.log("$e");
@@ -109,7 +105,7 @@ class _HomeTabController extends LoadingController {
   Future<void> _fetBlogPost() async {
     try {
       final posts = await BlogPost.getBlogPost();
-
+      _blogPosts.clear();
       _blogPosts.addAll(posts);
       update(["blogposts-get-builder"]);
     } catch (e) {
@@ -165,402 +161,415 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(_HomeTabController());
-    return GetBuilder<_HomeTabController>(builder: (controller) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(),
-        child: CustomScrollView(
-          slivers: [
-            // const SliverToBoxAdapter(
-            //   child: HomeUserInfo(),
-            // ),
-            SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  Stack(
-                    alignment: Alignment.topCenter,
-                    children: [
-                      Image.asset(
-                        "assets/images/appartment-inner-view.jpg",
-                        width: double.infinity,
-                        height: 300,
-                        fit: BoxFit.cover,
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Account detail
-                          Container(
-                            width: Get.width,
-                            color: Colors.grey.shade300,
-                            child: Builder(
-                              builder: (context) {
-                                if (AppController.me.isGuest) {
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Get.offAllNamed("/registration");
-                                        },
-                                        child: const Text(
-                                          "REGISTER",
-                                          style: TextStyle(
-                                            color: ROOMY_PURPLE,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Get.offAllNamed("/login");
-                                        },
-                                        child: const Text(
-                                          "LOGIN",
-                                          style: TextStyle(
-                                            color: ROOMY_ORANGE,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(5.0),
-                                    child: Row(
+    final controller = Get.put(_HomeTabController());
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          controller._fetchHommeAds(),
+          controller._fetBlogPost(),
+        ]);
+      },
+      child: GetBuilder<_HomeTabController>(builder: (controller) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(),
+          child: CustomScrollView(
+            slivers: [
+              // const SliverToBoxAdapter(
+              //   child: HomeUserInfo(),
+              // ),
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    Stack(
+                      alignment: Alignment.topCenter,
+                      children: [
+                        Image.asset(
+                          "assets/images/appartment-inner-view.jpg",
+                          width: double.infinity,
+                          height: 300,
+                          fit: BoxFit.cover,
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Account detail
+                            Container(
+                              width: Get.width,
+                              color: Colors.grey.shade300,
+                              child: Builder(
+                                builder: (context) {
+                                  if (AppController.me.isGuest) {
+                                    return Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                const Icon(
-                                                  CupertinoIcons
-                                                      .person_alt_circle_fill,
-                                                  color: ROOMY_ORANGE,
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  AppController.me.fullName,
-                                                  style: const TextStyle(
-                                                    color: ROOMY_PURPLE,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ],
+                                        TextButton(
+                                          onPressed: () {
+                                            Get.offAllNamed("/registration");
+                                          },
+                                          child: const Text(
+                                            "REGISTER",
+                                            style: TextStyle(
+                                              color: ROOMY_PURPLE,
+                                              fontSize: 16,
                                             ),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                const Icon(
-                                                  Icons.key,
-                                                  color: ROOMY_ORANGE,
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Builder(builder: (context) {
-                                                  final type =
-                                                      AppController.me.type;
-                                                  return Text(
-                                                    type.replaceFirst(type[0],
-                                                        type[0].toUpperCase()),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Get.offAllNamed("/login");
+                                          },
+                                          child: const Text(
+                                            "LOGIN",
+                                            style: TextStyle(
+                                              color: ROOMY_ORANGE,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  } else {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(5.0),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  const Icon(
+                                                    CupertinoIcons
+                                                        .person_alt_circle_fill,
+                                                    color: ROOMY_ORANGE,
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Text(
+                                                    AppController.me.fullName,
                                                     style: const TextStyle(
                                                       color: ROOMY_PURPLE,
                                                       fontSize: 16,
                                                     ),
-                                                  );
-                                                }),
-                                              ],
-                                            ),
-                                          ],
+                                                  ),
+                                                ],
+                                              ),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.key,
+                                                    color: ROOMY_ORANGE,
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Builder(builder: (context) {
+                                                    final type =
+                                                        AppController.me.type;
+                                                    return Text(
+                                                      type.replaceFirst(
+                                                        type[0],
+                                                        type[0].toUpperCase(),
+                                                      ),
+                                                      style: const TextStyle(
+                                                        color: ROOMY_PURPLE,
+                                                        fontSize: 16,
+                                                      ),
+                                                    );
+                                                  }),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          AppController.me.ppWidget(size: 25)
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            //  Ads types
+                            Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 10,
+                              ),
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(50),
+                                color: ROOMY_PURPLE,
+                              ),
+                              child: Row(
+                                children: ["Roommate", "Room", "All"].map((e) {
+                                  return Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        controller._targetAds(e);
+                                        controller.update();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 10,
                                         ),
-                                        AppController.me.ppWidget(size: 25)
-                                      ],
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          //  Ads types
-                          Container(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(50),
-                              color: ROOMY_PURPLE,
-                            ),
-                            child: Row(
-                              children: ["Roommate", "Room", "All"].map((e) {
-                                return Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      controller._targetAds(e);
-                                      controller.update();
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(50),
-                                        color: controller._targetAds.value == e
-                                            ? Colors.white
-                                            : ROOMY_PURPLE,
-                                      ),
-                                      child: Text(
-                                        e,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(50),
                                           color:
                                               controller._targetAds.value == e
-                                                  ? ROOMY_PURPLE
-                                                  : Colors.white,
+                                                  ? Colors.white
+                                                  : ROOMY_PURPLE,
+                                        ),
+                                        child: Text(
+                                          e,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color:
+                                                controller._targetAds.value == e
+                                                    ? ROOMY_PURPLE
+                                                    : Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            // Search box
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  fillColor: Colors.white,
+                                  hintText: "Search",
+                                  suffixIcon: SizedBox(
+                                    child: IconButton(
+                                      onPressed: () {
+                                        switch (controller._targetAds.value) {
+                                          case "Room":
+                                            Get.to(() {
+                                              return const FindPropertiesAdsScreen();
+                                            });
+                                            break;
+                                          default:
+                                        }
+                                      },
+                                      icon: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: ROOMY_PURPLE,
+                                        ),
+                                        child: const Icon(
+                                          Icons.search,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          // Search box
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: TextField(
-                              decoration: InputDecoration(
-                                fillColor: Colors.white,
-                                hintText: "Search",
-                                suffixIcon: SizedBox(
-                                  child: IconButton(
-                                    onPressed: () {
-                                      switch (controller._targetAds.value) {
-                                        case "Room":
-                                          Get.to(() {
-                                            return const FindPropertiesAdsScreen();
-                                          });
-                                          break;
-                                        default:
-                                      }
-                                    },
-                                    icon: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: ROOMY_PURPLE,
-                                      ),
-                                      child: const Icon(
-                                        Icons.search,
-                                        color: Colors.white,
-                                      ),
-                                    ),
+                                  contentPadding:
+                                      const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(50),
                                   ),
                                 ),
-                                contentPadding:
-                                    const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(50),
+                                textInputAction: TextInputAction.search,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            // Post ad button
+                            SizedBox(
+                              width: Get.width * 0.4,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (AppController.me.isGuest) {
+                                    Get.offAllNamed('/login');
+                                  } else if (AppController.me.isLandlord) {
+                                    Get.to(() => const PostPropertyAdScreen());
+                                  } else if (AppController.me.isRoommate) {
+                                    Get.to(() {
+                                      return const PostRoommateAdScreen(
+                                        isPremium: true,
+                                      );
+                                    });
+                                  }
+                                },
+                                child: DefaultTextStyle(
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: ROOMY_ORANGE,
+                                  ),
+                                  child: Builder(
+                                    builder: (context) {
+                                      if (AppController.me.isGuest) {
+                                        return const Text("Post Ad");
+                                      }
+                                      if (AppController.me.isLandlord) {
+                                        return const Text("Post Property");
+                                      }
+                                      return const Text("Post Roommate");
+                                    },
+                                  ),
                                 ),
                               ),
-                              textInputAction: TextInputAction.search,
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
+                    if (controller._targetAds.value == "Room" ||
+                        controller._targetAds.value == "All") ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Properties",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: ROOMY_ORANGE,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          // Post ad button
-                          SizedBox(
-                            width: Get.width * 0.4,
-                            child: ElevatedButton(
+                            TextButton(
                               onPressed: () {
-                                if (AppController.me.isGuest) {
-                                  Get.offAllNamed('/login');
-                                } else if (AppController.me.isLandlord) {
-                                  Get.to(() => const PostPropertyAdScreen());
-                                } else if (AppController.me.isRoommate) {
-                                  Get.to(() {
-                                    return const PostRoommateAdScreen(
-                                      isPremium: true,
-                                    );
-                                  });
-                                }
+                                Get.to(() {
+                                  return const FindPropertiesAdsScreen();
+                                });
                               },
-                              child: DefaultTextStyle(
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: ROOMY_ORANGE,
-                                ),
-                                child: Builder(
-                                  builder: (context) {
-                                    if (AppController.me.isGuest) {
-                                      return const Text("Post Ad");
-                                    }
-                                    if (AppController.me.isLandlord) {
-                                      return const Text("Post Property");
-                                    }
-                                    return const Text("Post Roommate");
-                                  },
-                                ),
-                              ),
+                              child: const Text("See all"),
                             ),
-                          )
-                        ],
+                          ],
+                        ),
+                      ),
+                      GridView.count(
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        children: List.generate(
+                          (controller._homePropertyAds.length ~/ 2) * 2,
+                          (ind) {
+                            if (controller._isLoadingHomeAds.isTrue) {
+                              return const Card(
+                                child: CupertinoActivityIndicator(radius: 30),
+                              );
+                            }
+                            final ad = controller._homePropertyAds[ind];
+                            return PropertyAdMiniWidget(
+                              ad: ad,
+                              onTap: () {
+                                Get.to(() => ViewPropertyAd(ad: ad));
+                              },
+                            );
+                          },
+                        ),
                       ),
                     ],
-                  ),
-                  if (controller._targetAds.value == "Room" ||
-                      controller._targetAds.value == "All") ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Properties",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: ROOMY_ORANGE,
+                    if (controller._targetAds.value == "Roommate" ||
+                        controller._targetAds.value == "All") ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Roommates",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: ROOMY_ORANGE,
+                              ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Get.to(() {
-                                return const FindPropertiesAdsScreen();
-                              });
-                            },
-                            child: const Text("See all"),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GridView.count(
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      children: List.generate(
-                        (controller._homePropertyAds.length ~/ 2) * 2,
-                        (ind) {
-                          if (controller._isLoadingHomeAds.isTrue) {
-                            return const Card(
-                              child: CupertinoActivityIndicator(radius: 30),
-                            );
-                          }
-                          final ad = controller._homePropertyAds[ind];
-                          return PropertyAdMiniWidget(
-                            ad: ad,
-                            onTap: () {
-                              Get.to(() => ViewPropertyAd(ad: ad));
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                  if (controller._targetAds.value == "Roommate" ||
-                      controller._targetAds.value == "All") ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Roommates",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: ROOMY_ORANGE,
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text("See all"),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text("See all"),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    GridView.count(
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      children: List.generate(
-                        (controller._homeRoommateAds.length ~/ 2) * 2,
-                        (ind) {
-                          if (controller._isLoadingHomeAds.isTrue) {
-                            return const Card(
-                              child: CupertinoActivityIndicator(radius: 30),
+                      GridView.count(
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        children: List.generate(
+                          (controller._homeRoommateAds.length ~/ 2) * 2,
+                          (ind) {
+                            if (controller._isLoadingHomeAds.isTrue) {
+                              return const Card(
+                                child: CupertinoActivityIndicator(radius: 30),
+                              );
+                            }
+                            final ad = controller._homeRoommateAds[ind];
+                            return RoommateAdMiniWidget(
+                              ad: ad,
+                              onTap: () {
+                                Get.to(() => ViewRoommateAdScreen(ad: ad));
+                              },
                             );
-                          }
-                          final ad = controller._homeRoommateAds[ind];
-                          return RoommateAdMiniWidget(
-                            ad: ad,
-                            onTap: () {
-                              Get.to(() => ViewRoommateAdScreen(ad: ad));
-                            },
-                          );
-                        },
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 5),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      "Blog posts",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: ROOMY_ORANGE,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: GetBuilder<_HomeTabController>(
-                  id: "blogposts-get-builder",
-                  builder: (controller) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: controller._blogPosts
-                            .map((e) => BlogPostWidget(
-                                  post: e,
-                                  onTap: () {
-                                    Get.to(() => ViewBlogPostScreen(post: e));
-                                  },
-                                ))
-                            .toList(),
+              const SliverToBoxAdapter(child: SizedBox(height: 10)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 5),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        "Blog posts",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: ROOMY_ORANGE,
+                        ),
                       ),
-                    );
-                  }),
-            ),
-          ],
-        ),
-      );
-    });
+                    ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: GetBuilder<_HomeTabController>(
+                    id: "blogposts-get-builder",
+                    builder: (controller) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: controller._blogPosts
+                              .map((e) => BlogPostWidget(
+                                    post: e,
+                                    onTap: () {
+                                      Get.to(() => ViewBlogPostScreen(post: e));
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                      );
+                    }),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   @override

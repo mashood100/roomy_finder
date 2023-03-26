@@ -5,9 +5,10 @@ import 'package:roomy_finder/models/user.dart';
 
 class RoommateAd {
   String id;
-  User poster;
-  String type;
-  String rentType;
+  User poster; // The user who poster the ad
+  String type; // "Studio", "Appartment", "House"
+  String rentType; // Monthly, Weekly, Daily
+  String action; // "NEED ROOM", "HAVE ROOM"
   bool isPremium;
   num budget;
   String description;
@@ -16,8 +17,8 @@ class RoommateAd {
   bool isAvailable;
   DateTime movingDate;
   DateTime createdAt;
-  Map<String, Object> address;
-  Map<String, Object> aboutYou;
+  Map<String, Object> address; // keys : city,location,buildingName
+  Map<String, Object> aboutYou; //
   Map<String, Object> socialPreferences;
 
   RoommateAd({
@@ -25,6 +26,7 @@ class RoommateAd {
     required this.poster,
     required this.type,
     required this.rentType,
+    required this.action,
     required this.budget,
     required this.isPremium,
     required this.isAvailable,
@@ -58,6 +60,7 @@ class RoommateAd {
       'poster': poster.toMap(),
       'type': type,
       'rentType': rentType,
+      'action': action,
       'budget': budget,
       'isPremium': isPremium,
       'isAvailable': isAvailable,
@@ -78,6 +81,7 @@ class RoommateAd {
       poster: User.fromMap(map['poster'] as Map<String, dynamic>),
       type: map['type'] as String,
       rentType: map['rentType'] as String,
+      action: map['action'] as String,
       budget: map['budget'] as num,
       isPremium: map['isPremium'] as bool,
       isAvailable: map['isAvailable'] as bool,

@@ -6,20 +6,21 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_credit_card/flutter_credit_card.dart';
 import 'package:flutter_switch/flutter_switch.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/data/amenities.dart';
+import 'package:roomy_finder/data/roommates_interests.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
@@ -38,9 +39,7 @@ class _PostRoommateAdController extends LoadingController {
 
   final _cityController = TextEditingController();
   final _locationController = TextEditingController();
-  final _movingDateController =
-      TextEditingController(text: "Please choose choose a date");
-  final _cardFormKey = GlobalKey<FormState>();
+  final _movingDateController = TextEditingController();
 
   final _aboutFormKey = GlobalKey<FormState>();
 
@@ -56,18 +55,23 @@ class _PostRoommateAdController extends LoadingController {
   final interests = <String>[].obs;
   final languages = <String>[].obs;
 
+  final amenties = <String>[].obs;
+
   PhoneNumber agentPhoneNumber = PhoneNumber();
 
   final information = <String, Object?>{
     "type": "Studio",
     "rentType": "Monthly",
+    "action": "HAVE ROOM",
     "budget": "",
     "description": "",
     "movingDate": "",
   }.obs;
 
   final aboutYou = <String, Object?>{
+    "nationality": "Arabs",
     "astrologicalSign": "ARIES",
+    "gender": "Male",
     "age": "",
     "occupation": "Student",
   }.obs;
@@ -91,6 +95,7 @@ class _PostRoommateAdController extends LoadingController {
     "gym": false,
     "wifi": false,
     "tv": false,
+    "pet": false,
   }.obs;
 
   final cardDetails = {
@@ -436,478 +441,94 @@ class PostRoommateAdScreen extends StatelessWidget {
                   onPageChanged: (index) => controller._pageIndex(index),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    // Property type
-                    SingleChildScrollView(
-                      child: Column(
-                        children: ["Studio", "Appartment", "House"].map((e) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 5),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(20),
+                    // Action
+                    Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        const Center(
+                          child: Text(
+                            "Please choose your action",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: ROOMY_PURPLE,
                             ),
-                            child: RadioListTile<String>(
-                              value: e,
-                              groupValue:
-                                  controller.information["type"] as String,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  controller.information["type"] = value;
-                                }
+                          ),
+                        ),
+                        const Divider(height: 30),
+                        const Spacer(),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.5,
+                          children: ["HAVE ROOM", "NEED ROOM"].map((e) {
+                            return GestureDetector(
+                              onTap: () {
+                                controller.information["action"] = e;
                               },
-                              title: Text(e),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-
-                    // About
-                    SingleChildScrollView(
-                      child: Form(
-                        key: controller._aboutFormKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-                            // Rent type
-                            Text('rentType'.tr),
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                hintText: 'Rent type',
-                              ),
-                              value:
-                                  controller.information["rentType"] as String,
-                              items: ["Monthly", "Weekly", "Daily"]
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.information["rentType"] =
-                                            val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 10),
-                            // Budget
-                            Text('budget'.tr),
-                            TextFormField(
-                              initialValue:
-                                  controller.information["budget"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'budget'.tr,
-                                suffixText: AppController
-                                    .instance.country.value.currencyCode,
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["budget"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                final numValue = int.tryParse(value);
-
-                                if (numValue == null || numValue < 0) {
-                                  return 'invalidRoommateAdBudgetMessage'.tr;
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(priceRegex)
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-
-                            Text('Moving Date'.tr),
-                            TextFormField(
-                              readOnly: true,
-                              controller: controller._movingDateController,
-                              onChanged: (_) {},
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'Please choose a moving date'.tr,
-                                suffixIcon: const Icon(Icons.calendar_month),
-                              ),
-                              validator: (value) {
-                                final date = DateTime.tryParse(
-                                    "${controller.information["movingDate"]}");
-                                if (date == null) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-
-                                return null;
-                              },
-                              onTap: controller.pickMovingDate,
-                            ),
-                            const SizedBox(height: 10),
-                            // City
-                            Text('city'.tr),
-                            TypeAheadFormField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._cityController,
-                                decoration: InputDecoration(
-                                  hintText:
-                                      AppController.instance.country.value.isUAE
-                                          ? 'Example : Dubai'
-                                          : "Example : Riyadh",
-                                ),
-                              ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["city"] = suggestion;
-                                controller._cityController.text = suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return citiesFromCurrentCountry.where(
-                                  (e) {
-                                    final lowerPattern =
-                                        pattern.toLowerCase().trim();
-                                    final lowerSearch = e.toLowerCase().trim();
-                                    return lowerSearch.contains(lowerPattern) ||
-                                        lowerSearch == lowerPattern;
-                                  },
-                                );
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              onSaved: (newValue) {
-                                if (newValue != null) {
-                                  controller.address["city"] = newValue;
-                                  controller._cityController.text = newValue;
-                                }
-                              },
-                            ),
-
-                            const SizedBox(height: 10),
-                            // Location
-                            Text('location'.tr),
-                            TypeAheadField<String>(
-                              textFieldConfiguration: TextFieldConfiguration(
-                                controller: controller._locationController,
-                                decoration: const InputDecoration(
-                                  hintText: "Search for area",
-                                ),
-                              ),
-                              itemBuilder: (context, itemData) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(itemData),
-                                );
-                              },
-                              onSuggestionSelected: (suggestion) {
-                                controller.address["location"] = suggestion;
-                                controller._locationController.text =
-                                    suggestion;
-                              },
-                              suggestionsCallback: (pattern) {
-                                return getLocationsFromCity(
-                                        controller.address["city"].toString())
-                                    .where(
-                                  (e) => e
-                                      .toLowerCase()
-                                      .toLowerCase()
-                                      .contains(pattern),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Description
-                            Text('description'.tr),
-                            TextFormField(
-                              initialValue: controller
-                                  .information["description"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(
-                                hintText: 'Add your add description here'.tr,
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["description"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              minLines: 2,
-                              maxLines: 5,
-                              maxLength: 500,
-                            ),
-
-                            // GetBuilder<_PostRoommateAdController>(
-                            //     builder: (controller) {
-                            //   return Row(
-                            //     children: [
-                            //       if (controller.cameraPosition == null)
-                            //         Expanded(
-                            //           child: Padding(
-                            //             padding: const EdgeInsets.symmetric(
-                            //                 horizontal: 5),
-                            //             child: ElevatedButton.icon(
-                            //               style: ElevatedButton.styleFrom(
-                            //                 backgroundColor: Colors.blue,
-                            //               ),
-                            //               onPressed: () async {
-                            //                 final pos = await Get.to(
-                            //                   () => FlutterGoogleMapScreen(
-                            //                     initialPosition:
-                            //                         controller.cameraPosition,
-                            //                   ),
-                            //                 );
-
-                            //                 if (pos is CameraPosition) {
-                            //                   controller.cameraPosition = pos;
-                            //                   controller.update();
-                            //                 }
-                            //               },
-                            //               icon: const Icon(
-                            //                 Icons.map,
-                            //                 color: Colors.white,
-                            //               ),
-                            //               label: const Text('Add map location',
-                            //                   style: TextStyle(
-                            //                     color: Colors.white,
-                            //                   )),
-                            //             ),
-                            //           ),
-                            //         ),
-                            //       if (controller.cameraPosition != null)
-                            //         Expanded(
-                            //           child: Padding(
-                            //             padding: const EdgeInsets.symmetric(
-                            //                 horizontal: 5),
-                            //             child: ElevatedButton.icon(
-                            //               style: ElevatedButton.styleFrom(
-                            //                 backgroundColor: Colors.red,
-                            //               ),
-                            //               onPressed: () async {
-                            //                 controller.cameraPosition = null;
-                            //                 controller.update();
-                            //               },
-                            //               icon: const Icon(
-                            //                 Icons.map,
-                            //                 color: Colors.white,
-                            //               ),
-                            //               label: const Text(
-                            //                 "Remove map",
-                            //                 style: TextStyle(
-                            //                   color: Colors.white,
-                            //                 ),
-                            //               ),
-                            //             ),
-                            //           ),
-                            //         ),
-                            //       if (controller.cameraPosition != null)
-                            //         Expanded(
-                            //           child: Padding(
-                            //             padding: const EdgeInsets.symmetric(
-                            //                 horizontal: 5),
-                            //             child: ElevatedButton.icon(
-                            //               style: ElevatedButton.styleFrom(
-                            //                 backgroundColor: Colors.blue,
-                            //               ),
-                            //               onPressed: () {
-                            //                 Get.to(() => FlutterGoogleMapScreen(
-                            //                       initialPosition:
-                            //                           controller.cameraPosition,
-                            //                     ));
-                            //               },
-                            //               icon: const Icon(
-                            //                 Icons.visibility,
-                            //                 color: Colors.white,
-                            //               ),
-                            //               label: GetBuilder<
-                            //                       _PostRoommateAdController>(
-                            //                   builder: (controller) {
-                            //                 return const Text("View location",
-                            //                     style: TextStyle(
-                            //                       color: Colors.white,
-                            //                     ));
-                            //               }),
-                            //             ),
-                            //           ),
-                            //         ),
-                            //     ],
-                            //   );
-                            // }),
-                            // const SizedBox(height: 10),
-
-                            /// Address
-                            Center(child: Text("aboutYou".tr)),
-                            const SizedBox(height: 20),
-
-                            /// About you
-                            // astrologicalSign
-                            Text('astrologicalSign'.tr),
-                            DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                hintText: 'astrologicalSign'.tr,
-                              ),
-                              value: controller.aboutYou["astrologicalSign"]
-                                  .toString(),
-                              items: astrologicalSigns
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller
-                                            .aboutYou["astrologicalSign"] = val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Age
-                            Text('age'.tr),
-                            TextFormField(
-                              initialValue:
-                                  controller.aboutYou["age"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              decoration: InputDecoration(hintText: 'age'.tr),
-                              onChanged: (value) {
-                                controller.aboutYou["age"] = value;
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                final numValue = int.tryParse(value);
-
-                                if (numValue == null || numValue < 1) {
-                                  return 'invalidPropertyAdQuantityMessage'.tr;
-                                }
-                                if (numValue > 80) {
-                                  return 'The maximum age is 80'.tr;
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d*'))
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Occupation
-                            Text('occupation'.tr),
-                            DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                hintText: 'occupation'.tr,
-                              ),
-                              value:
-                                  controller.aboutYou["occupation"].toString(),
-                              items: ["Student", "Professional", "Other"]
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.aboutYou["occupation"] = val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 20),
-
-                            Text('Languages you speak'.tr),
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 5),
-                              // padding: const EdgeInsets.all(10),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
+                              child: Card(
+                                child: Stack(
+                                  alignment: Alignment.topRight,
                                   children: [
-                                    ...controller.languages.map((e) {
-                                      return Container(
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 5),
-                                          padding:
-                                              const EdgeInsets.only(left: 15),
-                                          decoration: BoxDecoration(
-                                            border:
-                                                Border.all(color: Colors.grey),
-                                            borderRadius:
-                                                BorderRadius.circular(25),
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      alignment: Alignment.center,
+                                      decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(10)),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            blurRadius: 3,
+                                            blurStyle: BlurStyle.outer,
+                                            color: Colors.black54,
+                                            spreadRadius: -1,
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(e),
-                                              SizedBox(
-                                                height: 35,
-                                                child: IconButton(
-                                                  onPressed: () {
-                                                    controller.languages
-                                                        .remove(e);
-                                                  },
-                                                  icon: const Icon(
-                                                    Icons.cancel,
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                              )
-                                            ],
-                                          ));
-                                    }).toList(),
-                                    IconButton(
-                                      onPressed: () async {
-                                        FocusScope.of(context).unfocus();
-                                        final result = await filterListData(
-                                          allLanguages,
-                                          excluded: controller.languages,
-                                        );
-                                        controller.languages.addAll(result);
-                                      },
-                                      icon: const Icon(Icons.add_circle),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        e,
+                                        style: const TextStyle(
+                                          color: ROOMY_PURPLE,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      controller.information["action"] == e
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
                                     )
                                   ],
                                 ),
                               ),
-                            ),
-
-                            const SizedBox(height: 50),
-                          ],
+                            );
+                          }).toList(),
                         ),
-                      ),
+                        const Spacer(),
+                      ],
                     ),
 
                     // Images/Videos
-
                     SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-                          Center(
+                          const Center(
                             child: Text(
-                              "Images and videos".tr,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                              "Please add IMAGES/VIDEOS",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
                                 fontSize: 18,
+                                color: ROOMY_PURPLE,
                               ),
                             ),
                           ),
+                          const Divider(height: 30),
                           if (controller.images.isEmpty &&
                               controller.oldImages.isEmpty &&
                               controller.videos.isEmpty &&
@@ -1188,6 +809,742 @@ class PostRoommateAdScreen extends StatelessWidget {
                       ),
                     ),
 
+                    // About roomate
+                    SingleChildScrollView(
+                      child: Form(
+                        key: controller._aboutFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "About your property",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: ROOMY_PURPLE,
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 30),
+                            // Roommate type
+                            InlineDropdown<String>(
+                              labelText: 'Property type'.tr,
+                              value: controller.information["type"] as String,
+                              items: const ["Studio", "Appartment", "House"],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.information["type"] = val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            // Rent type
+                            InlineDropdown<String>(
+                              labelText: 'rentType'.tr,
+                              value:
+                                  controller.information["rentType"] as String,
+                              items: const ["Monthly", "Weekly", "Daily"],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.information["rentType"] =
+                                            val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            // Budget
+                            InlineTextField(
+                              labelText: 'budget'.tr,
+                              suffixText: AppController
+                                  .instance.country.value.currencyCode,
+                              hintText:
+                                  'Example 5000 ${AppController.instance.country.value.currencyCode}',
+                              initialValue:
+                                  controller.information["budget"] as String,
+                              enabled: controller.isLoading.isFalse,
+                              onChanged: (value) =>
+                                  controller.information["budget"] = value,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                final numValue = int.tryParse(value);
+
+                                if (numValue == null || numValue < 0) {
+                                  return 'invalidRoommateAdBudgetMessage'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(priceRegex)
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            InlineTextField(
+                              labelText: 'Moving Date'.tr,
+                              hintText: 'Choose a moving date'.tr,
+                              suffixIcon: const Icon(Icons.calendar_month),
+                              readOnly: true,
+                              controller: controller._movingDateController,
+                              onChanged: (_) {},
+                              enabled: controller.isLoading.isFalse,
+                              validator: (value) {
+                                final date = DateTime.tryParse(
+                                    "${controller.information["movingDate"]}");
+                                if (date == null) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+
+                                return null;
+                              },
+                              onTap: controller.pickMovingDate,
+                            ),
+                            const Divider(height: 40),
+                            // City
+                            InlineDropdown<String>(
+                              labelText: 'City',
+                              hintText:
+                                  AppController.instance.country.value.isUAE
+                                      ? 'Example : Dubai'
+                                      : "Example : Riyadh",
+                              value: controller.address["city"]!.isEmpty
+                                  ? null
+                                  : controller.address["city"],
+                              items: citiesFromCurrentCountry,
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.address["location"] = "";
+                                        controller.address["city"] = val;
+                                      }
+                                    },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            // Area
+                            InlineDropdown<String>(
+                              labelText: 'Area',
+                              hintText: "Select for area",
+                              value: controller.address["location"]!.isEmpty
+                                  ? null
+                                  : controller.address["location"],
+                              items: getLocationsFromCity(
+                                controller.address["city"].toString(),
+                              ),
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.address["location"] = val;
+                                      }
+                                    },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            // Building Name
+                            InlineTextField(
+                              labelText: "Tower name",
+                              enabled: controller.isLoading.isFalse,
+                              initialValue: controller.address["buildingName"],
+                              onChanged: (value) {
+                                controller.address["buildingName"] = value;
+                              },
+                              labelStyle: const TextStyle(
+                                fontSize: 15,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Appartment number
+                            InlineTextField(
+                              labelText: "Appartment number",
+                              enabled: controller.isLoading.isFalse,
+                              initialValue:
+                                  controller.address["appartmentNumber"],
+                              onChanged: (value) {
+                                controller.address["appartmentNumber"] = value;
+                              },
+                              labelStyle: const TextStyle(
+                                fontSize: 15,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*'),
+                                )
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Amenities
+                    SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please choose AMENITIES of your property",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 30),
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            shrinkWrap: true,
+                            crossAxisCount: 3,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            children: allAmenties
+                                .map(
+                                  (e) => GestureDetector(
+                                    onTap: () {
+                                      if (controller.amenties
+                                          .contains(e["value"])) {
+                                        controller.amenties.remove(e["value"]);
+                                      } else {
+                                        controller.amenties
+                                            .add("${e["value"]}");
+                                      }
+                                    },
+                                    child: Card(
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            alignment: Alignment.center,
+                                            child: Column(
+                                              children: [
+                                                const SizedBox(height: 10),
+                                                Expanded(
+                                                  child: Image.asset(
+                                                      "${e["asset"]}"),
+                                                ),
+                                                Text(
+                                                  "${e["value"]}",
+                                                  style: const TextStyle(
+                                                    color: ROOMY_PURPLE,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Icon(
+                                            controller.amenties
+                                                    .contains(e["value"])
+                                                ? Icons
+                                                    .check_circle_outline_outlined
+                                                : Icons.circle_outlined,
+                                            color: ROOMY_ORANGE,
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // property preferences
+                    SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please fill in the details of your PREFERRED ROOMMATE",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 30),
+
+                          // People Count
+                          InlineDropdown<String>(
+                            // labelWidth: Get.width * 0.3,
+                            labelText: 'numberOfPeople'.tr,
+                            value: controller
+                                .socialPreferences["numberOfPeople"] as String,
+                            items: const ["1", "2"],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences[
+                                          "numberOfPeople"] = val;
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 20),
+                          // Gender
+                          InlineDropdown<String>(
+                            labelText: 'gender'.tr,
+                            value: controller.socialPreferences["gender"]
+                                as String,
+                            items: const ["Male", "Female", "Mix"],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences["gender"] =
+                                          val;
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 20),
+                          // Nationalities
+                          InlineDropdown<String>(
+                            labelText: 'nationality'.tr,
+                            value: controller.socialPreferences["nationality"]
+                                as String,
+                            items: const [
+                              "Arabs",
+                              "Pakistani",
+                              "Indian",
+                              "European",
+                              "Filipinos",
+                              "African",
+                              "Russian",
+                              "Mix",
+                            ],
+                            onChanged: controller.isLoading.isTrue
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      controller.socialPreferences[
+                                          "nationality"] = val;
+                                    }
+                                  },
+                          ),
+                          const Divider(height: 40),
+
+                          const Center(
+                            child: Text(
+                              "Comfortable with :",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            children: [
+                              {
+                                "value": "smoking",
+                                "label": "Smoking",
+                                "asset": "assets/icons/cigarette.png",
+                              },
+                              {
+                                "value": "drinking",
+                                "label": "Drinking",
+                                "asset": "assets/icons/drink.png",
+                              },
+                              {
+                                "value": "visitors",
+                                "label": "Visitors",
+                                "asset": "assets/icons/people.png",
+                              },
+                              {
+                                "value": "friendParty",
+                                "label": "Party",
+                                "asset": "assets/icons/party.png",
+                              },
+                              {
+                                "value": "pet",
+                                "label": "Pets",
+                                "asset": "assets/icons/dog_foot.png",
+                              },
+                            ].map((e) {
+                              return GestureDetector(
+                                onTap: () {
+                                  if (controller
+                                          .socialPreferences[e["value"]] ==
+                                      true) {
+                                    controller.socialPreferences[
+                                        "${e["value"]}"] = false;
+                                  } else {
+                                    controller.socialPreferences[
+                                        "${e["value"]}"] = true;
+                                  }
+                                },
+                                child: Card(
+                                  child: Stack(
+                                    alignment: Alignment.topRight,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          children: [
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              child:
+                                                  Image.asset("${e["asset"]}"),
+                                            ),
+                                            Text(
+                                              "${e["label"]}",
+                                              style: const TextStyle(
+                                                color: ROOMY_PURPLE,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        controller.socialPreferences[
+                                                    e["value"]] ==
+                                                true
+                                            ? Icons
+                                                .check_circle_outline_outlined
+                                            : Icons.circle_outlined,
+                                        color: ROOMY_ORANGE,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // About You
+                    SingleChildScrollView(
+                      child: Form(
+                        key: controller._aboutFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "Please tell us about you",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: ROOMY_PURPLE,
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 30),
+                            // Gender
+                            InlineDropdown<String>(
+                              labelText: 'gender'.tr,
+                              value: controller.aboutYou["gender"] as String,
+                              items: const ["Male", "Female"],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.aboutYou["gender"] = val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            // Age
+                            InlineTextField(
+                              labelText: 'age'.tr,
+                              initialValue:
+                                  controller.aboutYou["age"] as String,
+                              enabled: controller.isLoading.isFalse,
+                              onChanged: (value) {
+                                controller.aboutYou["age"] = value;
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                final numValue = int.tryParse(value);
+
+                                if (numValue == null || numValue < 1) {
+                                  return 'invalidPropertyAdQuantityMessage'.tr;
+                                }
+                                if (numValue > 80) {
+                                  return 'The maximum age is 80'.tr;
+                                }
+                                return null;
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*'))
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Occupation
+                            InlineDropdown<String>(
+                              labelText: 'occupation'.tr,
+                              value:
+                                  controller.aboutYou["occupation"].toString(),
+                              items: const ["Student", "Professional", "Other"],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.aboutYou["occupation"] = val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            // Nationalities
+                            InlineDropdown<String>(
+                              labelText: 'nationality'.tr,
+                              value:
+                                  controller.aboutYou["nationality"] as String,
+                              items: const [
+                                "Arabs",
+                                "Pakistani",
+                                "Indian",
+                                "European",
+                                "Filipinos",
+                                "African",
+                                "Russian",
+                                "Mix",
+                              ],
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.aboutYou["nationality"] =
+                                            val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            // astrologicalSign
+                            InlineDropdown<String>(
+                              labelText: 'astrologicalSign'.tr,
+                              value: controller.aboutYou["astrologicalSign"]
+                                  .toString(),
+                              items: astrologicalSigns,
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller
+                                            .aboutYou["astrologicalSign"] = val;
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 20),
+                            Text('Languages you speak'.tr),
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 5),
+                              // padding: const EdgeInsets.all(10),
+                              child: Wrap(
+                                children: [
+                                  ...controller.languages.map((e) {
+                                    return Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
+                                        padding:
+                                            const EdgeInsets.only(left: 15),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(25),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(e),
+                                            SizedBox(
+                                              height: 35,
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  controller.languages
+                                                      .remove(e);
+                                                },
+                                                icon: const Icon(
+                                                  Icons.cancel,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            )
+                                          ],
+                                        ));
+                                  }).toList(),
+                                  IconButton(
+                                    onPressed: () async {
+                                      FocusScope.of(context).unfocus();
+                                      final result = await filterListData(
+                                        allLanguages,
+                                        excluded: controller.languages,
+                                      );
+                                      controller.languages.addAll(result);
+                                    },
+                                    icon: const Icon(Icons.add_circle),
+                                  )
+                                ],
+                              ),
+                            ),
+
+                            const Divider(height: 40),
+
+                            // Description
+                            InlineTextField(
+                              hintText: 'Add description here'.tr,
+                              initialValue: controller
+                                  .information["description"] as String,
+                              enabled: controller.isLoading.isFalse,
+                              onChanged: (value) =>
+                                  controller.information["description"] = value,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'thisFieldIsRequired'.tr;
+                                }
+                                return null;
+                              },
+                              minLines: 5,
+                              maxLines: 10,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Interests
+                    SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          const Center(
+                            child: Text(
+                              "Please choose your HOBBIES/INTERESTS",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 30),
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            shrinkWrap: true,
+                            crossAxisCount: 3,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            children: roommateInterests
+                                .map(
+                                  (e) => GestureDetector(
+                                    onTap: () {
+                                      if (controller.interests
+                                          .contains(e["value"])) {
+                                        controller.interests.remove(e["value"]);
+                                      } else {
+                                        controller.interests
+                                            .add("${e["value"]}");
+                                      }
+                                    },
+                                    child: Card(
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            alignment: Alignment.center,
+                                            child: Column(
+                                              children: [
+                                                const SizedBox(height: 10),
+                                                Expanded(
+                                                  child: Image.asset(
+                                                      "${e["asset"]}"),
+                                                ),
+                                                Text(
+                                                  "${e["value"]}",
+                                                  style: const TextStyle(
+                                                    color: ROOMY_PURPLE,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Icon(
+                                            controller.interests
+                                                    .contains(e["value"])
+                                                ? Icons
+                                                    .check_circle_outline_outlined
+                                                : Icons.circle_outlined,
+                                            color: ROOMY_ORANGE,
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     // Preference preferences
                     SingleChildScrollView(
                       child: Column(
@@ -1318,82 +1675,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-
-                    //  Present payment
-                    SingleChildScrollView(
-                      child: Column(children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset("assets/images/premium.png"),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 5,
-                          ),
-                          child: Text(
-                            "Pay 200 AED to publish premium roommate AD",
-                            style: TextStyle(fontSize: 20),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ]),
-                    ),
-
-                    //  Make payment
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Payment details",
-                            style: TextStyle(fontSize: 18),
-                          ),
-                          const Label(label: "Ad fee", value: '200 AED'),
-                          const Label(label: "VAT", value: '5%'),
-                          const Label(label: "Admin fee", value: '3%'),
-                          const Label(label: "Total", value: 'AED xxx'),
-                          CreditCardForm(
-                            formKey: controller._cardFormKey,
-                            cardNumber: controller.cardDetails["cardNumber"]!,
-                            expiryDate: controller.cardDetails["expiryDate"]!,
-                            cardHolderName:
-                                controller.cardDetails["cardHolderName"]!,
-                            cvvCode: controller.cardDetails["cvvCode"]!,
-                            onCreditCardModelChange: (card) {
-                              controller.cardDetails["cardNumber"] =
-                                  card.cardNumber;
-                              controller.cardDetails["cvvCode"] = card.cvvCode;
-                              controller.cardDetails["expiryDate"] =
-                                  card.expiryDate;
-                              controller.cardDetails["cardHolderName"] =
-                                  card.cardHolderName;
-                            },
-                            themeColor: Colors.purple,
-                            textColor:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                          ),
-                          const SizedBox(height: 10),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                final isValid = controller
-                                    ._cardFormKey.currentState
-                                    ?.validate();
-
-                                if (isValid == true) {
-                                  controller.saveAd();
-                                }
-                              },
-                              child: const Text("Pay to publish"),
-                            ),
-                          ),
-                          const SizedBox(height: 50),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1435,6 +1716,9 @@ class PostRoommateAdScreen extends StatelessWidget {
                         onPressed: controller.isLoading.isTrue
                             ? null
                             : () {
+                                controller._moveToNextPage();
+                                return;
+                                // ignore: dead_code
                                 switch (controller._pageIndex.value) {
                                   case 0:
                                     controller._moveToNextPage();

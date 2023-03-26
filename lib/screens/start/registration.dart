@@ -97,7 +97,7 @@ class _RegistrationController extends LoadingController {
 
   void resetSmsTimer() {
     secondsLeftTimer?.cancel();
-    secondsLeft(59);
+    secondsLeft(59 * 5);
   }
 
   Future<void> sendSmsCode() async {
@@ -443,7 +443,7 @@ class RegistrationScreen extends StatelessWidget {
                                 GestureDetector(
                                   onTap: () {
                                     controller
-                                        .accountType(UserAccountType.tenant);
+                                        .accountType(UserAccountType.roommate);
                                   },
                                   child: Icon(
                                     !controller.isLandlord
@@ -455,10 +455,10 @@ class RegistrationScreen extends StatelessWidget {
                                 GestureDetector(
                                   onTap: () {
                                     controller
-                                        .accountType(UserAccountType.tenant);
+                                        .accountType(UserAccountType.roommate);
                                   },
                                   child: const Text(
-                                    "Tenant",
+                                    "Roommate",
                                     style: TextStyle(
                                       color: ROOMY_PURPLE,
                                       fontWeight: FontWeight.bold,
@@ -523,7 +523,7 @@ class RegistrationScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 10),
-                            InlineDropDown<String>(
+                            InlineDropdown<String>(
                               labelText: 'gender'.tr,
                               value: controller.information["gender"],
                               items: const ["Male", "Female"],
@@ -613,7 +613,7 @@ class RegistrationScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 10),
-                            InlineDropDown<String>(
+                            InlineDropdown<String>(
                               labelText: 'country'.tr,
                               value: controller.information["country"],
                               items: allCountriesNames,
