@@ -39,9 +39,7 @@ class User {
   String get fullName => "$firstName $lastName";
   bool get isMe => AppController.instance.user.value.id == id;
   bool get isLandlord => type == "landlord";
-  bool get isTenant => type == "tenant";
   bool get isRoommate => type == "roommate";
-  bool get isFreelancer => type == "freelancer";
   bool get isGuest => this == GUEST_USER;
 
   Future<String> get formattedPhoneNumber async {
@@ -173,7 +171,7 @@ class User {
   // ignore: non_constant_identifier_names
   static User GUEST_USER = User(
     id: "010101010101010101010101",
-    type: "",
+    type: "geust",
     email: "",
     phone: "",
     firstName: "",

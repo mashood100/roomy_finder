@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/blog_post.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
@@ -19,11 +20,13 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/blog_post/view_post.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class _HomeTabController extends LoadingController {
   final List<BlogPost> _blogPosts = [];
@@ -354,42 +357,86 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 10),
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  fillColor: Colors.white,
-                                  hintText: "Search",
-                                  suffixIcon: SizedBox(
-                                    child: IconButton(
-                                      onPressed: () {
-                                        switch (controller._targetAds.value) {
-                                          case "Room":
-                                            Get.to(() {
-                                              return const FindPropertiesAdsScreen();
-                                            });
-                                            break;
-                                          default:
-                                        }
-                                      },
-                                      icon: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: ROOMY_PURPLE,
-                                        ),
-                                        child: const Icon(
-                                          Icons.search,
-                                          color: Colors.white,
+                              child: TypeAheadField<String>(
+                                itemBuilder: (ctx, suggestion) {
+                                  return ListTile(
+                                    title: Text(suggestion),
+                                    dense: true,
+                                  );
+                                },
+                                onSuggestionSelected: (suggestion) {
+                                  FocusManager.instance.primaryFocus?.unfocus();
+
+                                  switch (controller._targetAds.value) {
+                                    case "Room":
+                                      Get.to(() {
+                                        return FindPropertiesAdsScreen(
+                                          city: suggestion,
+                                        );
+                                      });
+                                      break;
+                                    case "Roommate":
+                                      Get.to(() {
+                                        return FindRoommatesScreen(
+                                          filter: {"city": suggestion},
+                                        );
+                                      });
+                                      break;
+                                    default:
+                                  }
+                                },
+                                suggestionsCallback: (pattern) {
+                                  pattern = pattern.trim().toLowerCase();
+                                  return CITIES_FROM_CURRENT_COUNTRY.where((e) {
+                                    e = e.trim().toLowerCase();
+
+                                    return e.startsWith(pattern) ||
+                                        e.contains(pattern);
+                                  });
+                                },
+                                suggestionsBoxDecoration:
+                                    const SuggestionsBoxDecoration(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(10),
+                                  ),
+                                ),
+                                textFieldConfiguration: TextFieldConfiguration(
+                                  decoration: InputDecoration(
+                                    fillColor: Colors.white,
+                                    hintText: "Search by city",
+                                    suffixIcon: SizedBox(
+                                      child: IconButton(
+                                        onPressed: () {
+                                          switch (controller._targetAds.value) {
+                                            case "Room":
+                                              Get.to(() {
+                                                return const FindPropertiesAdsScreen();
+                                              });
+                                              break;
+                                            default:
+                                          }
+                                        },
+                                        icon: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: ROOMY_PURPLE,
+                                          ),
+                                          child: const Icon(
+                                            Icons.search,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ),
+                                    contentPadding: const EdgeInsets.fromLTRB(
+                                        12, 10, 12, 12),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(50),
+                                    ),
                                   ),
-                                  contentPadding:
-                                      const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
+                                  textInputAction: TextInputAction.search,
                                 ),
-                                textInputAction: TextInputAction.search,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -496,7 +543,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Get.to(() {
+                                  return const FindRoommatesScreen();
+                                });
+                              },
                               child: const Text("See all"),
                             ),
                           ],
@@ -553,14 +604,14 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: controller._blogPosts
-                              .map((e) => BlogPostWidget(
-                                    post: e,
-                                    onTap: () {
-                                      Get.to(() => ViewBlogPostScreen(post: e));
-                                    },
-                                  ))
-                              .toList(),
+                          children: controller._blogPosts.map((e) {
+                            return BlogPostWidget(
+                              post: e,
+                              onTap: () {
+                                Get.to(() => ViewBlogPostScreen(post: e));
+                              },
+                            );
+                          }).toList(),
                         ),
                       );
                     }),
@@ -824,75 +875,6 @@ class HomeCard extends StatelessWidget {
                 size: 25,
                 color: Colors.white,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class BlogPostWidget extends StatelessWidget {
-  final BlogPost post;
-  final void Function()? onTap;
-
-  const BlogPostWidget({
-    super.key,
-    required this.post,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        child: Container(
-          width: 200,
-          height: 240,
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(10)),
-                child: CachedNetworkImage(
-                  imageUrl: post.imageUrl ?? "",
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorWidget: (ctx, e, trace) {
-                    return const Center();
-                  },
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(
-                    post.content,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              if (post.createdAt != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Text(
-                      Jiffy(post.createdAt!).yMEd,
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

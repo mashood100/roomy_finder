@@ -1,26 +1,26 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
-const _defaultColor = Color.fromRGBO(255, 123, 77, 1);
-
-class _FindRoommateMatchController extends LoadingController {
-  final Map<String, String>? budget;
+class _FindRoommatesController extends LoadingController {
+  final RxMap<String, String> filter;
   final List<String>? locations;
-  final String? type;
 
   final RxList<String> interest = <String>[].obs;
-
-  final RxString gender;
 
   final canSeeDetails = AppController.me.isPremium.obs;
 
@@ -36,12 +36,10 @@ class _FindRoommateMatchController extends LoadingController {
     update();
   }
 
-  _FindRoommateMatchController({
-    this.budget,
-    String? gender,
-    this.type,
+  _FindRoommatesController({
+    Map<String, String>? filter,
     this.locations,
-  }) : gender = (gender ?? "Mix").obs;
+  }) : filter = (filter ?? {}).obs;
 
   final RxList<RoommateAd> ads = <RoommateAd>[].obs;
   @override
@@ -56,12 +54,8 @@ class _FindRoommateMatchController extends LoadingController {
     try {
       isLoading(true);
       hasFetchError(false);
-      final requestBody = <String, dynamic>{"skip": _skip};
+      final requestBody = <String, dynamic>{"skip": _skip, ...filter};
 
-      if (budget != null) requestBody["minBudget"] = budget!["min"];
-      if (budget != null) requestBody["maxBudget"] = budget!["max"];
-      requestBody["gender"] = gender.value;
-      if (type != null) requestBody["type"] = type;
       if (locations != null) requestBody["locations"] = locations;
 
       final res = await ApiService.getDio.post(
@@ -87,106 +81,108 @@ class _FindRoommateMatchController extends LoadingController {
   }
 }
 
-class FindRoommateMatchsScreen extends StatelessWidget {
-  const FindRoommateMatchsScreen({
+class FindRoommatesScreen extends StatelessWidget {
+  const FindRoommatesScreen({
     super.key,
-    this.budget,
-    this.type,
+    this.filter,
     this.locations,
-    this.gender,
   });
-  final Map<String, String>? budget;
-  final String? type;
+  final Map<String, String>? filter;
+
   final List<String>? locations;
-  final String? gender;
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_FindRoommateMatchController(
-      gender: gender,
-      type: type,
-      budget: budget,
-      locations: locations,
-    ));
+    final controller = Get.put(_FindRoommatesController(filter: filter));
     return RefreshIndicator(
       onRefresh: controller._fetchData,
-      child: Obx(() {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text("Roommates Match"),
-            toolbarHeight: controller.showFilter.isTrue ? 0 : kToolbarHeight,
-            actions: [
-              IconButton(
-                onPressed: () {
-                  controller.showFilter(true);
-                },
-                icon: const Icon(Icons.filter_list),
-              ),
-            ],
-          ),
-          body: GetBuilder<_FindRoommateMatchController>(
-            builder: (controller) {
-              if (controller.showFilter.isTrue) {
-                return const RommateAdFilter();
-              }
-              if (controller.isLoading.isTrue) {
-                return const Center(child: CupertinoActivityIndicator());
-              }
-              if (controller.hasFetchError.isTrue) {
-                return Center(
-                  child: Column(
-                    children: [
-                      const Text("Failed to fetch data"),
-                      OutlinedButton(
-                        onPressed: controller._fetchData,
-                        child: const Text("Refresh"),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              if (controller.ads.isEmpty) {
-                return Center(
-                  child: Column(
-                    children: [
-                      const Text("No data."),
-                      OutlinedButton(
-                        onPressed: controller._fetchData,
-                        child: const Text("Refresh"),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return ListView.builder(
-                itemBuilder: (context, index) {
-                  if (index == controller.ads.length) {
-                    if (controller.ads.length.remainder(100) == 0) {
-                      return GetMoreButton(
-                        getMore: () {
-                          controller._skip += 100;
-                          controller._fetchData();
-                        },
-                      );
-                    } else {
-                      return const SizedBox();
-                    }
-                  }
-                  final ad = controller.ads[index];
-                  return RoommateMatchWidget(
-                    ad: ad,
-                    onSeeDetails: () =>
-                        Get.to(() => ViewRoommateAdScreen(ad: ad)),
-                    canSeeDetails: controller.canSeeDetails.value,
-                    onUpgrade: () => controller.changeCanSeeAds(ad),
-                  );
-                },
-                itemCount: controller.ads.length + 1,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Roommates"),
+          actions: [
+            IconButton(
+              onPressed: () {
+                controller.showFilter(true);
+                controller.update();
+              },
+              icon: const Icon(Icons.filter_list),
+            ),
+          ],
+        ),
+        body: GetBuilder<_FindRoommatesController>(
+          builder: (controller) {
+            if (controller.showFilter.isTrue) {
+              return const RommateAdFilter();
+            }
+            if (controller.isLoading.isTrue) {
+              return const Center(child: CupertinoActivityIndicator());
+            }
+            if (controller.hasFetchError.isTrue) {
+              return Center(
+                child: Column(
+                  children: [
+                    const Text("Failed to fetch data"),
+                    OutlinedButton(
+                      onPressed: controller._fetchData,
+                      child: const Text("Refresh"),
+                    ),
+                  ],
+                ),
               );
-            },
-          ),
-        );
-      }),
+            }
+            if (controller.ads.isEmpty) {
+              return Center(
+                child: Column(
+                  children: [
+                    const Text("No data."),
+                    OutlinedButton(
+                      onPressed: controller._fetchData,
+                      child: const Text("Refresh"),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar.large(
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: 0,
+                  collapsedHeight: 0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Image.asset(
+                      "assets/images/premium_roommate.png",
+                      width: Get.width,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                SliverGrid.count(
+                  crossAxisCount: 2,
+                  children: controller.ads.map((e) {
+                    return RoommateAdMiniWidget(
+                      ad: e,
+                      onTap: () {
+                        Get.to(() => ViewRoommateAdScreen(ad: e));
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (controller.ads.length.remainder(100) == 0)
+                  SliverToBoxAdapter(
+                    child: GetMoreButton(
+                      getMore: () {
+                        controller._skip += 100;
+                        controller._fetchData();
+                      },
+                    ),
+                  )
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -196,7 +192,7 @@ class RommateAdFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_FindRoommateMatchController());
+    final controller = Get.put(_FindRoommatesController());
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: SingleChildScrollView(
@@ -214,13 +210,13 @@ class RommateAdFilter extends StatelessWidget {
                   icon: const Icon(
                     Icons.chevron_left,
                     size: 40,
-                    color: _defaultColor,
+                    color: ROOMY_ORANGE,
                   ),
                 ),
                 const Text(
                   "Find roommates",
                   style: TextStyle(
-                    color: _defaultColor,
+                    color: ROOMY_ORANGE,
                     fontSize: 25,
                   ),
                 )
@@ -242,7 +238,7 @@ class RommateAdFilter extends StatelessWidget {
                           suffixIcon: Icon(
                             Icons.search,
                             size: 25,
-                            color: _defaultColor,
+                            color: ROOMY_ORANGE,
                           ),
                         ),
                         onChanged: (val) {},
@@ -255,7 +251,7 @@ class RommateAdFilter extends StatelessWidget {
                     onPressed: () {},
                     icon: const Icon(
                       Icons.room_outlined,
-                      color: _defaultColor,
+                      color: ROOMY_ORANGE,
                     ),
                   ),
                 ),
@@ -271,11 +267,12 @@ class RommateAdFilter extends StatelessWidget {
                     (e) {
                       return GestureDetector(
                         onTap: () {
-                          controller.gender(e);
+                          controller.filter["gender"] = (e);
+                          controller.update();
                         },
                         child: Card(
                           elevation: 0,
-                          color: controller.gender.value == e
+                          color: controller.filter["gender"] == e
                               ? Get.theme.appBarTheme.backgroundColor
                               : null,
                           child: Container(
@@ -293,7 +290,7 @@ class RommateAdFilter extends StatelessWidget {
                                           ? Icons.person_outlined
                                           : Icons.group_outlined,
                                   size: 30,
-                                  color: controller.gender.value == e
+                                  color: controller.filter["gender"] == e
                                       ? Colors.white
                                       : Get.theme.appBarTheme.backgroundColor,
                                 ),
@@ -302,7 +299,7 @@ class RommateAdFilter extends StatelessWidget {
                                   e,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: controller.gender.value == e
+                                    color: controller.filter["gender"] == e
                                         ? Colors.white
                                         : null,
                                   ),
@@ -318,54 +315,47 @@ class RommateAdFilter extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Interest
             const SizedBox(height: 10),
-            const Text("Interest", style: TextStyle(fontSize: 18)),
-            GridView.count(
-              crossAxisCount: 3,
-              childAspectRatio: 2.5,
-              crossAxisSpacing: 10,
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
+            const Text("Budget", style: TextStyle(fontSize: 18)),
+            Row(
               children: [
-                ..._allInterests.map(
-                  (e) {
-                    return GestureDetector(
-                      onTap: () {
-                        if (controller.interest.contains(e)) {
-                          controller.interest.remove(e);
-                        } else {
-                          controller.interest.add(e);
-                        }
-                      },
-                      child: Card(
-                        color: controller.interest.contains(e)
-                            ? _defaultColor
-                            : null,
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.only(
-                            right: 10,
-                            left: 5,
-                          ),
-                          child: Text(
-                            e,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: controller.interest.contains(e)
-                                  ? Colors.white
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                Expanded(
+                  child: InlineTextField(
+                    labelWidth: 0,
+                    suffixText:
+                        AppController.instance.country.value.currencyCode,
+                    hintText: 'Minimum',
+                    initialValue: controller.filter["minBudget"],
+                    enabled: controller.isLoading.isFalse,
+                    onChanged: (value) =>
+                        controller.filter["minBudget"] = value,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(priceRegex)
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: InlineTextField(
+                    labelWidth: 0,
+                    suffixText:
+                        AppController.instance.country.value.currencyCode,
+                    hintText: 'Maximum',
+                    initialValue: controller.filter["maxBudget"],
+                    enabled: controller.isLoading.isFalse,
+                    onChanged: (value) {
+                      controller.filter["maxBudget"] = value;
+                    },
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(priceRegex)
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -374,7 +364,7 @@ class RommateAdFilter extends StatelessWidget {
                   controller._fetchData();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _defaultColor,
+                  backgroundColor: ROOMY_ORANGE,
                 ),
                 child: const Text(
                   "Search",
@@ -502,27 +492,3 @@ class RoommateMatchWidget extends StatelessWidget {
     );
   }
 }
-
-const _allInterests = [
-  "Music",
-  "Reading",
-  "Art",
-  "Dance",
-  "Yoga",
-  "Sports",
-  "Travel",
-  "Shopping",
-  "Learning",
-  "Podcasting",
-  "Blogging",
-  "Marketing",
-  "Writing",
-  "Focus",
-  "Chess",
-  "Design",
-  "Football",
-  "Basketball",
-  "Boardgames",
-  "sketching",
-  "Photography",
-];

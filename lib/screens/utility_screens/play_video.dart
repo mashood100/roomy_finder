@@ -35,6 +35,9 @@ class _PlayVideoScreenState extends State<PlayVideoScreen> {
           }),
         );
     }
+
+    _controller.setLooping(true);
+    _controller.addListener(() => setState(() {}));
   }
 
   @override
@@ -47,15 +50,24 @@ class _PlayVideoScreenState extends State<PlayVideoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Video Player")),
-      body: Center(
-        child: _controller.value.isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(
-                  _controller,
-                ),
-              )
-            : const CircularProgressIndicator(),
+      body: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Center(
+            child: _controller.value.isInitialized
+                ? AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(
+                      _controller,
+                    ),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+          VideoProgressIndicator(
+            _controller,
+            allowScrubbing: true,
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

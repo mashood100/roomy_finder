@@ -6,14 +6,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_switch/flutter_switch.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/components/inputs.dart';
-import 'package:roomy_finder/data/amenities.dart';
-import 'package:roomy_finder/data/roommates_interests.dart';
+import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -37,11 +35,10 @@ class _PostRoommateAdController extends LoadingController {
 
   _PostRoommateAdController({required this.isPremium, this.oldData});
 
-  final _cityController = TextEditingController();
-  final _locationController = TextEditingController();
   final _movingDateController = TextEditingController();
 
-  final _aboutFormKey = GlobalKey<FormState>();
+  final _aboutPropertyFormKey = GlobalKey<FormState>();
+  final _aboutYouFormKey = GlobalKey<FormState>();
 
   late final PageController _pageController;
   final _pageIndex = 0.obs;
@@ -55,7 +52,7 @@ class _PostRoommateAdController extends LoadingController {
   final interests = <String>[].obs;
   final languages = <String>[].obs;
 
-  final amenties = <String>[].obs;
+  final amenities = <String>[].obs;
 
   PhoneNumber agentPhoneNumber = PhoneNumber();
 
@@ -74,12 +71,16 @@ class _PostRoommateAdController extends LoadingController {
     "gender": "Male",
     "age": "",
     "occupation": "Student",
+    "lifeStyle": "Early Bird",
   }.obs;
 
   final address = <String, String>{
     "country": "",
     "city": "",
     "location": "",
+    "buildingName": "",
+    "appartmentNumber": "",
+    "floorNumber": "",
   }.obs;
 
   final socialPreferences = {
@@ -98,13 +99,6 @@ class _PostRoommateAdController extends LoadingController {
     "pet": false,
   }.obs;
 
-  final cardDetails = {
-    "cardNumber": "",
-    "expiryDate": "",
-    "cardHolderName": "",
-    "cvvCode": "",
-  }.obs;
-
   @override
   void onInit() {
     _pageController = PageController();
@@ -115,27 +109,34 @@ class _PostRoommateAdController extends LoadingController {
 
       information["type"] = oldData!.type;
       information["rentType"] = oldData!.rentType;
+      information["action"] = oldData!.action;
       information["isPremium"] = oldData!.isPremium;
       information["budget"] = oldData!.budget.toString();
       information["description"] = oldData!.description;
-      information["description"] = oldData!.description;
       _movingDateController.text =
-          information["movingDate"] = oldData!.movingDate.toIso8601String();
+          _movingDateController.text = Jiffy(oldData!.movingDate).yMEd;
+      information["movingDate"] = oldData!.movingDate.toIso8601String();
 
-      _cityController.text =
-          address["country"] = oldData!.address["country"].toString();
-      _locationController.text =
-          address["location"] = oldData!.address["location"].toString();
+      address["country"] = oldData!.address["country"].toString();
+      address["city"] = oldData!.address["city"].toString();
+      address["location"] = oldData!.address["location"].toString();
+      address["buildingName"] = oldData!.address["buildingName"].toString();
+      address["appartmentNumber"] =
+          oldData!.address["appartmentNumber"].toString();
+      address["floorNumber"] = oldData!.address["floorNumber"].toString();
 
+      aboutYou["nationality"] = oldData!.aboutYou["nationality"].toString();
       aboutYou["astrologicalSign"] =
           oldData!.aboutYou["astrologicalSign"].toString();
+      aboutYou["gender"] = oldData!.aboutYou["gender"].toString();
       aboutYou["age"] = oldData!.aboutYou["age"].toString();
       aboutYou["occupation"] = oldData!.aboutYou["occupation"].toString();
+      aboutYou["lifeStyle"] = oldData!.aboutYou["lifeStyle"].toString();
 
       languages.value =
           List<String>.from(oldData!.aboutYou["languages"] as List);
-      interests.value =
-          List<String>.from(oldData!.aboutYou["interests"] as List);
+      amenities.value = List<String>.from(oldData!.amenities);
+      interests.value = List<String>.from(oldData!.interests);
 
       socialPreferences.value = oldData!.socialPreferences;
     }
@@ -145,8 +146,6 @@ class _PostRoommateAdController extends LoadingController {
   @override
   void onClose() {
     _pageController.dispose();
-    _locationController.dispose();
-    _cityController.dispose();
     _movingDateController.dispose();
     super.onClose();
   }
@@ -221,7 +220,6 @@ class _PostRoommateAdController extends LoadingController {
     List<String> videosUrls = [];
     try {
       aboutYou["languages"] = languages;
-      aboutYou["interests"] = interests;
       address["country"] = AppController.me.country;
 
       final data = {
@@ -230,6 +228,8 @@ class _PostRoommateAdController extends LoadingController {
         "address": address,
         "aboutYou": aboutYou,
         "socialPreferences": socialPreferences,
+        "amenities": amenities,
+        "interests": interests,
       };
 
       final imagesTaskFuture = images.map((e) async {
@@ -277,11 +277,8 @@ class _PostRoommateAdController extends LoadingController {
         switch (res.statusCode) {
           case 200:
             isLoading(false);
-            await showConfirmDialog(
-              "Ad posted successfully. "
-              "You just made another advertisement journey",
-              isAlert: true,
-            );
+
+            await showSuccessDialog("Your Ad is posted.", isAlert: true);
             Get.offNamedUntil(
               "/my-roommate-ads",
               ModalRoute.withName('/home'),
@@ -304,7 +301,7 @@ class _PostRoommateAdController extends LoadingController {
         switch (res.statusCode) {
           case 200:
             isLoading(false);
-            await showConfirmDialog("Ad updated successfully.", isAlert: true);
+            await showSuccessDialog("Ad updated successfully.", isAlert: true);
 
             deleteManyFilesFromUrl(
               oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
@@ -418,14 +415,7 @@ class PostRoommateAdScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              oldData != null
-                  ? isPremium
-                      ? "Update Premium Ad"
-                      : "Update Roommate Match"
-                  : isPremium
-                      ? "Post Premium Roommate Ad"
-                      : "Post Roommate Match",
-            ),
+                oldData == null ? "Post Roommate Ad" : "Update Roommate Ad"),
           ),
           body: Stack(
             children: [
@@ -447,7 +437,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         const Center(
                           child: Text(
-                            "Please choose your action",
+                            "Please choose what you want",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -467,7 +457,9 @@ class PostRoommateAdScreen extends StatelessWidget {
                           children: ["HAVE ROOM", "NEED ROOM"].map((e) {
                             return GestureDetector(
                               onTap: () {
+                                if (controller.oldData != null) return;
                                 controller.information["action"] = e;
+                                controller.images.clear();
                               },
                               child: Card(
                                 child: Stack(
@@ -513,94 +505,177 @@ class PostRoommateAdScreen extends StatelessWidget {
                     ),
 
                     // Images/Videos
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 10),
-                          const Center(
-                            child: Text(
-                              "Please add IMAGES/VIDEOS",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: ROOMY_PURPLE,
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 30),
-                          if (controller.images.isEmpty &&
-                              controller.oldImages.isEmpty &&
-                              controller.videos.isEmpty &&
-                              controller.oldVideos.isEmpty)
-                            Card(
-                              child: Container(
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.all(10),
-                                height: 150,
-                                child: const Text(
-                                  "Please upload your photos",
-                                  textAlign: TextAlign.center,
+                    if (controller.information["action"] == "HAVE ROOM")
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 10),
+                            const Center(
+                              child: Text(
+                                "Please add IMAGES/VIDEOS",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: ROOMY_PURPLE,
                                 ),
                               ),
                             ),
-                          if (controller.images.length +
-                                  controller.oldImages.length !=
-                              0)
-                            GridView.count(
-                              crossAxisCount: Get.width > 370 ? 4 : 2,
-                              crossAxisSpacing: 10,
-                              physics: const NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              children: [
-                                ...controller.oldImages.map((e) {
-                                  return {
-                                    "onTap": () =>
-                                        controller.oldImages.remove(e),
-                                    "imageUrl": e,
-                                    "isFile": false,
-                                    "onViewImage": () {
-                                      showModalBottomSheet(
-                                        isScrollControlled: true,
-                                        context: Get.context!,
-                                        builder: (context) {
-                                          return SafeArea(
-                                            child: CachedNetworkImage(
-                                              imageUrl: e,
+                            const Divider(height: 30),
+                            if (controller.images.isEmpty &&
+                                controller.oldImages.isEmpty &&
+                                controller.videos.isEmpty &&
+                                controller.oldVideos.isEmpty)
+                              Card(
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.all(10),
+                                  height: 150,
+                                  child: const Text(
+                                    "Please upload your photos",
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            if (controller.images.length +
+                                    controller.oldImages.length !=
+                                0)
+                              GridView.count(
+                                crossAxisCount: Get.width > 370 ? 4 : 2,
+                                crossAxisSpacing: 10,
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                children: [
+                                  ...controller.oldImages.map((e) {
+                                    return {
+                                      "onTap": () =>
+                                          controller.oldImages.remove(e),
+                                      "imageUrl": e,
+                                      "isFile": false,
+                                      "onViewImage": () {
+                                        showModalBottomSheet(
+                                          isScrollControlled: true,
+                                          context: Get.context!,
+                                          builder: (context) {
+                                            return SafeArea(
+                                              child: CachedNetworkImage(
+                                                imageUrl: e,
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      }
+                                    };
+                                  }),
+                                  ...controller.images.map((e) {
+                                    return {
+                                      "onTap": () =>
+                                          controller.images.remove(e),
+                                      "imageUrl": e.path,
+                                      "isFile": true,
+                                      "onViewImage": () {
+                                        showModalBottomSheet(
+                                          isScrollControlled: true,
+                                          context: Get.context!,
+                                          builder: (context) {
+                                            return SafeArea(
+                                              child: Image.file(File(e.path)),
+                                            );
+                                          },
+                                        );
+                                      }
+                                    };
+                                  }),
+                                ]
+                                    .map(
+                                      (e) => Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: e["onViewImage"] as void
+                                                Function()?,
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                  color: Colors.grey,
+                                                  width: 1,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                              margin: const EdgeInsets.all(5),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                                child:
+                                                    Builder(builder: (context) {
+                                                  if (e["isFile"] == true) {
+                                                    return Image.file(
+                                                      File("${e["imageUrl"]}"),
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  }
+                                                  return CachedNetworkImage(
+                                                    imageUrl:
+                                                        "${e["imageUrl"]}",
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                }),
+                                              ),
                                             ),
-                                          );
-                                        },
-                                      );
-                                    }
-                                  };
-                                }),
-                                ...controller.images.map((e) {
-                                  return {
-                                    "onTap": () => controller.images.remove(e),
-                                    "imageUrl": e.path,
-                                    "isFile": true,
-                                    "onViewImage": () {
-                                      showModalBottomSheet(
-                                        isScrollControlled: true,
-                                        context: Get.context!,
-                                        builder: (context) {
-                                          return SafeArea(
-                                            child: Image.file(File(e.path)),
-                                          );
-                                        },
-                                      );
-                                    }
-                                  };
-                                }),
-                              ]
-                                  .map(
-                                    (e) => Stack(
-                                      alignment: Alignment.topRight,
-                                      children: [
-                                        GestureDetector(
-                                          onTap: e["onViewImage"] as void
-                                              Function()?,
-                                          child: Container(
+                                          ),
+                                          GestureDetector(
+                                            onTap:
+                                                e["onTap"] as void Function()?,
+                                            child: const Icon(
+                                              Icons.remove_circle,
+                                              color: Colors.red,
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            if (controller.videos.length +
+                                    controller.oldVideos.length !=
+                                0)
+                              GridView.count(
+                                crossAxisCount: Get.width > 370 ? 4 : 2,
+                                crossAxisSpacing: 10,
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                children: [
+                                  ...controller.oldVideos.map((e) {
+                                    return {
+                                      "onTap": () =>
+                                          controller.oldVideos.remove(e),
+                                      "onPlayVideo": () {
+                                        controller._playVideo(e, false);
+                                      },
+                                      "url": e,
+                                      "isFile": false,
+                                    };
+                                  }),
+                                  ...controller.videos.map((e) {
+                                    return {
+                                      "onTap": () =>
+                                          controller.videos.remove(e),
+                                      "onPlayVideo": () {
+                                        controller._playVideo(e.path, false);
+                                      },
+                                      "url": e.path,
+                                      "isFile": true,
+                                    };
+                                  }),
+                                ]
+                                    .map(
+                                      (e) => Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Container(
                                             width: double.infinity,
                                             height: double.infinity,
                                             decoration: BoxDecoration(
@@ -618,88 +693,29 @@ class PostRoommateAdScreen extends StatelessWidget {
                                               child:
                                                   Builder(builder: (context) {
                                                 if (e["isFile"] == true) {
-                                                  return Image.file(
-                                                    File("${e["imageUrl"]}"),
-                                                    fit: BoxFit.cover,
+                                                  return FutureBuilder(
+                                                    builder: (ctx, asp) {
+                                                      if (asp.hasData) {
+                                                        return Image.memory(
+                                                          asp.data!,
+                                                          fit: BoxFit.cover,
+                                                          alignment:
+                                                              Alignment.center,
+                                                        );
+                                                      }
+                                                      return Container();
+                                                    },
+                                                    future: VideoThumbnail
+                                                        .thumbnailData(
+                                                      video: "${e["url"]}",
+                                                    ),
                                                   );
                                                 }
-                                                return CachedNetworkImage(
-                                                  imageUrl: "${e["imageUrl"]}",
-                                                  fit: BoxFit.cover,
-                                                );
-                                              }),
-                                            ),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: e["onTap"] as void Function()?,
-                                          child: const Icon(
-                                            Icons.remove_circle,
-                                            color: Colors.red,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          if (controller.videos.length +
-                                  controller.oldVideos.length !=
-                              0)
-                            GridView.count(
-                              crossAxisCount: Get.width > 370 ? 4 : 2,
-                              crossAxisSpacing: 10,
-                              physics: const NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              children: [
-                                ...controller.oldVideos.map((e) {
-                                  return {
-                                    "onTap": () =>
-                                        controller.oldVideos.remove(e),
-                                    "onPlayVideo": () {
-                                      controller._playVideo(e, false);
-                                    },
-                                    "url": e,
-                                    "isFile": false,
-                                  };
-                                }),
-                                ...controller.videos.map((e) {
-                                  return {
-                                    "onTap": () => controller.videos.remove(e),
-                                    "onPlayVideo": () {
-                                      controller._playVideo(e.path, false);
-                                    },
-                                    "url": e.path,
-                                    "isFile": true,
-                                  };
-                                }),
-                              ]
-                                  .map(
-                                    (e) => Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Container(
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: Colors.grey,
-                                              width: 1,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(5),
-                                          ),
-                                          margin: const EdgeInsets.all(5),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(5),
-                                            child: Builder(builder: (context) {
-                                              if (e["isFile"] == true) {
                                                 return FutureBuilder(
                                                   builder: (ctx, asp) {
                                                     if (asp.hasData) {
-                                                      return Image.memory(
-                                                        asp.data!,
+                                                      return Image.file(
+                                                        File("${asp.data}"),
                                                         fit: BoxFit.cover,
                                                         alignment:
                                                             Alignment.center,
@@ -708,111 +724,93 @@ class PostRoommateAdScreen extends StatelessWidget {
                                                     return Container();
                                                   },
                                                   future: VideoThumbnail
-                                                      .thumbnailData(
+                                                      .thumbnailFile(
                                                     video: "${e["url"]}",
                                                   ),
                                                 );
-                                              }
-                                              return FutureBuilder(
-                                                builder: (ctx, asp) {
-                                                  if (asp.hasData) {
-                                                    return Image.file(
-                                                      File("${asp.data}"),
-                                                      fit: BoxFit.cover,
-                                                      alignment:
-                                                          Alignment.center,
-                                                    );
-                                                  }
-                                                  return Container();
-                                                },
-                                                future: VideoThumbnail
-                                                    .thumbnailFile(
-                                                  video: "${e["url"]}",
-                                                ),
-                                              );
-                                            }),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: e["onPlayVideo"] as void
-                                              Function()?,
-                                          child: const Icon(
-                                            Icons.play_arrow,
-                                            size: 40,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 10,
-                                          right: 10,
-                                          child: GestureDetector(
-                                            onTap:
-                                                e["onTap"] as void Function()?,
-                                            child: const Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red,
+                                              }),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          GestureDetector(
+                                            onTap: e["onPlayVideo"] as void
+                                                Function()?,
+                                            child: const Icon(
+                                              Icons.play_arrow,
+                                              size: 40,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 10,
+                                            right: 10,
+                                            child: GestureDetector(
+                                              onTap: e["onTap"] as void
+                                                  Function()?,
+                                              child: const Icon(
+                                                Icons.remove_circle,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 35,
+                                    child: ElevatedButton.icon(
+                                      onPressed: controller.images.length >= 10
+                                          ? null
+                                          : () => controller._pickPicture(),
+                                      icon: const Icon(Icons.image),
+                                      label: Text("Images".tr),
                                     ),
-                                  )
-                                  .toList(),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 35,
+                                    child: ElevatedButton.icon(
+                                      onPressed: controller.images.length >= 10
+                                          ? null
+                                          : () => controller._pickPicture(
+                                              gallery: false),
+                                      icon: const Icon(Icons.camera),
+                                      label: Text("camera".tr),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 35,
+                                    child: ElevatedButton.icon(
+                                      onPressed: controller.images.length >= 10
+                                          ? null
+                                          : controller._pickVideo,
+                                      icon: const Icon(Icons.video_camera_back),
+                                      label: Text("Videos".tr),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  height: 35,
-                                  child: ElevatedButton.icon(
-                                    onPressed: controller.images.length >= 10
-                                        ? null
-                                        : () => controller._pickPicture(),
-                                    icon: const Icon(Icons.image),
-                                    label: Text("Images".tr),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 35,
-                                  child: ElevatedButton.icon(
-                                    onPressed: controller.images.length >= 10
-                                        ? null
-                                        : () => controller._pickPicture(
-                                            gallery: false),
-                                    icon: const Icon(Icons.camera),
-                                    label: Text("camera".tr),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 35,
-                                  child: ElevatedButton.icon(
-                                    onPressed: controller.images.length >= 10
-                                        ? null
-                                        : controller._pickVideo,
-                                    icon: const Icon(Icons.video_camera_back),
-                                    label: Text("Videos".tr),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          const SizedBox(height: 50),
-                        ],
+                            const SizedBox(height: 20),
+                            const SizedBox(height: 50),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // About roomate
+                    // About roommate
                     SingleChildScrollView(
                       child: Form(
-                        key: controller._aboutFormKey,
+                        key: controller._aboutPropertyFormKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -859,6 +857,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             // Budget
+
                             InlineTextField(
                               labelText: 'budget'.tr,
                               suffixText: AppController
@@ -918,7 +917,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                               value: controller.address["city"]!.isEmpty
                                   ? null
                                   : controller.address["city"],
-                              items: citiesFromCurrentCountry,
+                              items: CITIES_FROM_CURRENT_COUNTRY,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -961,50 +960,81 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             // Building Name
-                            InlineTextField(
-                              labelText: "Tower name",
-                              enabled: controller.isLoading.isFalse,
-                              initialValue: controller.address["buildingName"],
-                              onChanged: (value) {
-                                controller.address["buildingName"] = value;
-                              },
-                              labelStyle: const TextStyle(
-                                fontSize: 15,
+                            if (controller.information["action"] == "HAVE ROOM")
+                              InlineTextField(
+                                labelText: "Tower name",
+                                enabled: controller.isLoading.isFalse,
+                                initialValue:
+                                    controller.address["buildingName"],
+                                onChanged: (value) {
+                                  controller.address["buildingName"] = value;
+                                },
+                                labelStyle: const TextStyle(
+                                  fontSize: 15,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
                             const SizedBox(height: 20),
 
                             // Appartment number
-                            InlineTextField(
-                              labelText: "Appartment number",
-                              enabled: controller.isLoading.isFalse,
-                              initialValue:
-                                  controller.address["appartmentNumber"],
-                              onChanged: (value) {
-                                controller.address["appartmentNumber"] = value;
-                              },
-                              labelStyle: const TextStyle(
-                                fontSize: 15,
+                            if (controller.information["action"] == "HAVE ROOM")
+                              InlineTextField(
+                                labelText: "Appartment number",
+                                enabled: controller.isLoading.isFalse,
+                                initialValue:
+                                    controller.address["appartmentNumber"],
+                                onChanged: (value) {
+                                  controller.address["appartmentNumber"] =
+                                      value;
+                                },
+                                labelStyle: const TextStyle(
+                                  fontSize: 15,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*'),
+                                  )
+                                ],
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d*'),
-                                )
-                              ],
-                            ),
+                            const SizedBox(height: 20),
+
+                            // Floor number
+                            if (controller.information["action"] == "HAVE ROOM")
+                              InlineTextField(
+                                labelText: "Floor number",
+                                enabled: controller.isLoading.isFalse,
+                                initialValue: controller.address["floorNumber"],
+                                onChanged: (value) {
+                                  controller.address["floorNumber"] = value;
+                                },
+                                labelStyle: const TextStyle(
+                                  fontSize: 15,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*'),
+                                  )
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -1037,11 +1067,11 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 .map(
                                   (e) => GestureDetector(
                                     onTap: () {
-                                      if (controller.amenties
+                                      if (controller.amenities
                                           .contains(e["value"])) {
-                                        controller.amenties.remove(e["value"]);
+                                        controller.amenities.remove(e["value"]);
                                       } else {
-                                        controller.amenties
+                                        controller.amenities
                                             .add("${e["value"]}");
                                       }
                                     },
@@ -1072,7 +1102,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                                             ),
                                           ),
                                           Icon(
-                                            controller.amenties
+                                            controller.amenities
                                                     .contains(e["value"])
                                                 ? Icons
                                                     .check_circle_outline_outlined
@@ -1185,33 +1215,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                             crossAxisCount: 3,
                             mainAxisSpacing: 10,
                             crossAxisSpacing: 10,
-                            children: [
-                              {
-                                "value": "smoking",
-                                "label": "Smoking",
-                                "asset": "assets/icons/cigarette.png",
-                              },
-                              {
-                                "value": "drinking",
-                                "label": "Drinking",
-                                "asset": "assets/icons/drink.png",
-                              },
-                              {
-                                "value": "visitors",
-                                "label": "Visitors",
-                                "asset": "assets/icons/people.png",
-                              },
-                              {
-                                "value": "friendParty",
-                                "label": "Party",
-                                "asset": "assets/icons/party.png",
-                              },
-                              {
-                                "value": "pet",
-                                "label": "Pets",
-                                "asset": "assets/icons/dog_foot.png",
-                              },
-                            ].map((e) {
+                            children: allSocialPreferences.map((e) {
                               return GestureDetector(
                                 onTap: () {
                                   if (controller
@@ -1270,7 +1274,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                     // About You
                     SingleChildScrollView(
                       child: Form(
-                        key: controller._aboutFormKey,
+                        key: controller._aboutYouFormKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1303,6 +1307,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                             // Age
                             InlineTextField(
                               labelText: 'age'.tr,
+                              suffixText: "Years old",
                               initialValue:
                                   controller.aboutYou["age"] as String,
                               enabled: controller.isLoading.isFalse,
@@ -1444,21 +1449,35 @@ class PostRoommateAdScreen extends StatelessWidget {
                             const Divider(height: 40),
 
                             // Description
-                            InlineTextField(
-                              hintText: 'Add description here'.tr,
-                              initialValue: controller
-                                  .information["description"] as String,
-                              enabled: controller.isLoading.isFalse,
-                              onChanged: (value) =>
-                                  controller.information["description"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                              minLines: 5,
-                              maxLines: 10,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: (controller.information["action"] ==
+                                          "NEED ROOM")
+                                      ? "Please tell us more about yourself, your"
+                                          " preferred roommate & housing details"
+                                      : 'Add description here'.tr,
+                                  fillColor: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.grey
+                                      : Colors.grey.shade200,
+                                ),
+                                initialValue: controller
+                                    .information["description"] as String,
+                                enabled: controller.isLoading.isFalse,
+                                onChanged: (value) => controller
+                                    .information["description"] = value,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
+                                minLines: 5,
+                                maxLines: 10,
+                              ),
                             ),
                           ],
                         ),
@@ -1545,135 +1564,82 @@ class PostRoommateAdScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Preference preferences
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (isPremium) ...[
-                            const SizedBox(height: 10),
-
-                            // People Count
-                            Text('numberOfPeople'.tr),
-                            DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                hintText: 'numberOfPeople'.tr,
-                              ),
-                              value:
-                                  controller.socialPreferences["numberOfPeople"]
-                                      as String?,
-                              items: ["1", "2"]
-                                  .map((e) => DropdownMenuItem<String>(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.socialPreferences[
-                                            "numberOfPeople"] = val;
-                                      }
-                                    },
+                    // lifestyle
+                    Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        const Center(
+                          child: Text(
+                            "Your LIFESTYLE",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: ROOMY_PURPLE,
                             ),
-                          ],
-                          const SizedBox(height: 20),
-                          // Nationalities
-                          Text('nationality'.tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'nationality'.tr,
-                            ),
-                            value: controller.socialPreferences["nationality"]
-                                as String,
-                            items: [
-                              "Arabs",
-                              "Pakistani",
-                              "Indian",
-                              "European",
-                              "Filipinos",
-                              "African",
-                              "Russian",
-                              "Mix",
-                            ]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences[
-                                          "nationality"] = val;
-                                    }
-                                  },
                           ),
-                          const SizedBox(height: 20),
-                          // Gender
-                          Text('gender'.tr),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              hintText: 'gender'.tr,
-                            ),
-                            value: controller.socialPreferences["gender"]
-                                as String,
-                            items: ["Male", "Female", "Mix"]
-                                .map((e) => DropdownMenuItem<String>(
-                                    value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: controller.isLoading.isTrue
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      controller.socialPreferences["gender"] =
-                                          val;
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 20),
-                          for (final item in [
-                            "smoking",
-                            "cooking",
-                            "drinking",
-                            "swimming",
-                            "friendParty",
-                            "gym",
-                            "wifi",
-                            "tv"
-                          ])
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 5),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  width: 1,
-                                  color: Colors.grey.shade400,
+                        ),
+                        const Divider(height: 30),
+                        const Spacer(),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          children: [
+                            {
+                              "value": "Early Brird",
+                              "label": "Bed Space",
+                              "asset": "assets/icons/bird.png",
+                            },
+                            {
+                              "value": "Night Owl",
+                              "asset": "assets/icons/owl.png",
+                            },
+                          ].map((e) {
+                            return GestureDetector(
+                              onTap: () {
+                                controller.aboutYou["lifeStyle"] =
+                                    "${e["value"]}";
+                              },
+                              child: Card(
+                                child: Stack(
+                                  alignment: Alignment.topRight,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(height: 20),
+                                          Expanded(
+                                              child:
+                                                  Image.asset("${e["asset"]}")),
+                                          Text(
+                                            "${e["value"]}",
+                                            style: const TextStyle(
+                                              color: ROOMY_PURPLE,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      controller.aboutYou["lifeStyle"] ==
+                                              e["value"]
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
+                                    )
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(item.tr,
-                                      style: const TextStyle(fontSize: 16)),
-                                  FlutterSwitch(
-                                    value: controller.socialPreferences[item]
-                                        as bool,
-                                    onToggle: (value) {
-                                      controller.socialPreferences[item] =
-                                          value;
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-
-                          const SizedBox(height: 50),
-                        ],
-                      ),
+                            );
+                          }).toList(),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
                   ],
                 ),
@@ -1685,100 +1651,171 @@ class PostRoommateAdScreen extends StatelessWidget {
               FloatingActionButtonLocation.centerDocked,
           floatingActionButton: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
-            child: Builder(builder: (context) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LinearProgressIndicator(
-                    color: const Color.fromRGBO(255, 123, 77, 1),
-                    value: (controller._pageIndex.value + 1) / 4,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: GetBuilder<_PostRoommateAdController>(
+                id: 'bottom-progress',
+                builder: (controller) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // const SizedBox(width: 10),
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () {
-                                if (controller._pageIndex.value == 0) {
-                                  Get.back();
-                                } else {
-                                  controller._moveToPreviousPage();
-                                }
-                              },
-                        // icon: const Icon(Icons.arrow_left),
-                        child: controller._pageIndex.value == 0
-                            ? Text("back".tr)
-                            : Text("previous".tr),
+                      LinearProgressIndicator(
+                        color: const Color.fromRGBO(255, 123, 77, 1),
+                        value: (controller._pageIndex.value + 1) / 4,
                       ),
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () {
-                                controller._moveToNextPage();
-                                return;
-                                // ignore: dead_code
-                                switch (controller._pageIndex.value) {
-                                  case 0:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 1:
-                                    final isValid = controller
-                                        ._aboutFormKey.currentState
-                                        ?.validate();
-
-                                    if (isValid != true) return;
-
-                                    if (controller.languages.isEmpty) {
-                                      showGetSnackbar(
-                                        "You need to chose atleast one langue",
-                                        severity: Severity.error,
-                                      );
-                                      return;
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // const SizedBox(width: 10),
+                          TextButton(
+                            onPressed: controller.isLoading.isTrue
+                                ? null
+                                : () {
+                                    if (controller._pageIndex.value == 0) {
+                                      Get.back();
+                                    } else {
+                                      controller._moveToPreviousPage();
                                     }
+                                    controller.update();
+                                  },
+                            // icon: const Icon(Icons.arrow_left),
+                            child: controller._pageIndex.value == 0
+                                ? Text("back".tr)
+                                : Text("previous".tr),
+                          ),
+                          // Text("${controller._pageIndex}"),
+                          TextButton(
+                            onPressed: controller.isLoading.isTrue
+                                ? null
+                                : () {
+                                    if (controller.information["action"] ==
+                                        "HAVE ROOM") {
+                                      switch (controller._pageIndex.value) {
+                                        case 0:
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 1:
+                                          if (controller.images.isEmpty &&
+                                              controller.oldImages.isEmpty) {
+                                            showToast(
+                                              "You need at least one image",
+                                              severity: Severity.error,
+                                            );
+                                            return;
+                                          }
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 2:
+                                          final isValid = controller
+                                              ._aboutPropertyFormKey
+                                              .currentState
+                                              ?.validate();
 
-                                    controller._moveToNextPage();
+                                          if (isValid != true) return;
 
-                                    break;
-                                  case 2:
-                                    if (controller.images.isEmpty &&
-                                        controller.oldImages.isEmpty) {
-                                      showGetSnackbar(
-                                        "You need atleast one image",
-                                        severity: Severity.error,
-                                      );
-                                      return;
+                                          controller._moveToNextPage();
+
+                                          break;
+                                        case 3:
+                                        case 4:
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 5:
+                                          final isValid = controller
+                                              ._aboutYouFormKey.currentState
+                                              ?.validate();
+
+                                          if (isValid != true) return;
+
+                                          if (controller.languages.isEmpty) {
+                                            showToast(
+                                              "Please choose at least one language",
+                                            );
+                                            return;
+                                          }
+
+                                          controller._moveToNextPage();
+
+                                          break;
+                                        case 6:
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 7:
+                                          controller.saveAd();
+                                          break;
+                                        default:
+                                      }
+                                    } else if (controller
+                                            .information["action"] ==
+                                        "NEED ROOM") {
+                                      switch (controller._pageIndex.value) {
+                                        case 0:
+                                          controller._moveToNextPage();
+                                          break;
+
+                                        case 1:
+                                          final isValid = controller
+                                              ._aboutPropertyFormKey
+                                              .currentState
+                                              ?.validate();
+
+                                          if (isValid != true) return;
+
+                                          controller._moveToNextPage();
+
+                                          break;
+                                        case 2:
+                                        case 3:
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 4:
+                                          final isValid = controller
+                                              ._aboutYouFormKey.currentState
+                                              ?.validate();
+
+                                          if (isValid != true) return;
+
+                                          if (controller.languages.isEmpty) {
+                                            showToast(
+                                              "Please choose at least one language",
+                                            );
+                                            return;
+                                          }
+
+                                          controller._moveToNextPage();
+
+                                          break;
+                                        case 5:
+                                          controller._moveToNextPage();
+                                          break;
+                                        case 6:
+                                          controller.saveAd();
+                                          break;
+                                        default:
+                                      }
                                     }
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 3:
-                                    // if (isPremium) {
-                                    //   controller._moveToNextPage();
-                                    // } else {
-                                    // }
-                                    controller.saveAd();
-                                    break;
-                                  case 4:
-                                    controller._moveToNextPage();
-                                    break;
-                                  case 5:
-                                    // controller.saveAd();
-                                    break;
-
-                                  default:
+                                    controller.update();
+                                  },
+                            child: Builder(builder: (context) {
+                              if (controller.information["action"] ==
+                                  "HAVE ROOM") {
+                                if (controller._pageIndex.value == 7) {
+                                  return Text("save".tr);
                                 }
-                              },
-                        child: controller._pageIndex.value == 3
-                            ? Text("save".tr)
-                            : Text("next".tr),
+                              }
+                              if (controller.information["action"] ==
+                                  "NEED ROOM") {
+                                if (controller._pageIndex.value == 6) {
+                                  return Text("save".tr);
+                                }
+                              }
+                              return Text("next".tr);
+                            }),
+                          ),
+                          // const Icon(Icons.arrow_right),
+                        ],
                       ),
-                      // const Icon(Icons.arrow_right),
                     ],
-                  ),
-                ],
-              );
-            }),
+                  );
+                }),
           ),
         );
       }),
@@ -1799,30 +1836,6 @@ const astrologicalSigns = [
   "CAPRICORN",
   "AQUARIUS",
   "PISCES",
-];
-
-const allInterests = [
-  "Music",
-  "Reading",
-  "Art",
-  "Dance",
-  "Yoga",
-  "Sports",
-  "Travel",
-  "Shopping",
-  "Learning",
-  "Podcasting",
-  "Blogging",
-  "Marketing",
-  "Writing",
-  "Focus",
-  "Chess",
-  "Design",
-  "Football",
-  "Basketball",
-  "Boardgames",
-  "sketching",
-  "Photography",
 ];
 
 const allLanguages = [

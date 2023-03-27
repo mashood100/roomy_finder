@@ -17,9 +17,11 @@ class RoommateAd {
   bool isAvailable;
   DateTime movingDate;
   DateTime createdAt;
-  Map<String, Object> address; // keys : city,location,buildingName
-  Map<String, Object> aboutYou; //
+  Map<String, Object?> address; // keys : city,location,buildingName
+  Map<String, Object?> aboutYou; //
   Map<String, Object> socialPreferences;
+  List<String> amenities;
+  List<String> interests;
 
   RoommateAd({
     required this.id,
@@ -38,9 +40,13 @@ class RoommateAd {
     required this.address,
     required this.aboutYou,
     required this.socialPreferences,
+    required this.amenities,
+    required this.interests,
   });
 
   bool get isMine => poster.isMe;
+  bool get isHaveRoom => action == "HAVE ROOM";
+  bool get isNeedRoom => action == "NEED ROOM";
 
   @override
   bool operator ==(covariant RoommateAd other) {
@@ -72,6 +78,8 @@ class RoommateAd {
       'address': address,
       'aboutYou': aboutYou,
       'socialPreferences': socialPreferences,
+      'amenities': amenities,
+      'interests': interests,
     };
   }
 
@@ -90,10 +98,12 @@ class RoommateAd {
       videos: List<String>.from((map['videos'] as List)),
       createdAt: DateTime.parse(map['createdAt'] as String),
       movingDate: DateTime.parse(map['movingDate'] as String),
-      address: Map<String, Object>.from((map['address'] as Map)),
-      aboutYou: Map<String, Object>.from((map['aboutYou'] as Map)),
+      address: Map<String, Object?>.from((map['address'] as Map)),
+      aboutYou: Map<String, Object?>.from((map['aboutYou'] as Map)),
       socialPreferences:
           Map<String, Object>.from((map['socialPreferences'] as Map)),
+      amenities: List<String>.from((map['amenities'] as List)),
+      interests: List<String>.from((map['interests'] as List)),
     );
   }
 

@@ -24,7 +24,7 @@ class PropertyAd {
   String? description;
   List<String> images;
   List<String> videos;
-  List<String> amenties;
+  List<String> amenities;
   DateTime createdAt;
   Map<String, Object> address;
   Map<String, Object> socialPreferences;
@@ -56,19 +56,19 @@ class PropertyAd {
   }
 
   List<String> get technologyAmenities {
-    return amenties.where((e) {
+    return amenities.where((e) {
       return ["WIFI", "TV"].contains(e);
     }).toList();
   }
 
   List<String> get homeAppliancesAmenities {
-    return amenties.where((e) {
+    return amenities.where((e) {
       return ["Washer", "Cleaning included", "Kitchen appliances"].contains(e);
     }).toList();
   }
 
   List<String> get utilitiesAmenities {
-    return amenties.where((e) {
+    return amenities.where((e) {
       return [
         "Close to metro",
         "Balcony",
@@ -98,7 +98,7 @@ class PropertyAd {
     this.description,
     required this.images,
     required this.videos,
-    required this.amenties,
+    required this.amenities,
     required this.createdAt,
     required this.address,
     required this.socialPreferences,
@@ -125,7 +125,7 @@ class PropertyAd {
       'description': description,
       'images': images,
       'videos': videos,
-      'amenties': amenties,
+      'amenities': amenities,
       'createdAt': createdAt.toIso8601String(),
       'address': address,
       'socialPreferences': socialPreferences,
@@ -153,7 +153,7 @@ class PropertyAd {
           map["description"] == null ? null : map['description'] as String,
       images: List<String>.from((map['images'] as List)),
       videos: List<String>.from((map['videos'] as List)),
-      amenties: List<String>.from((map['amenties'] as List)),
+      amenities: List<String>.from((map['amenities'] as List)),
       createdAt: DateTime.parse(map['createdAt'] as String),
       address: Map<String, Object>.from((map['address'] as Map)),
       agentInfo: map["agentInfo"] == null
@@ -193,7 +193,7 @@ class PropertyAd {
     String? description,
     List<String>? images,
     List<String>? videos,
-    List<String>? amenties,
+    List<String>? amenities,
     DateTime? createdAt,
     Map<String, Object>? address,
     Map<String, Object>? socialPreferences,
@@ -214,7 +214,7 @@ class PropertyAd {
       description: description ?? this.description,
       images: images ?? this.images,
       videos: videos ?? this.videos,
-      amenties: amenties ?? this.amenties,
+      amenities: amenities ?? this.amenities,
       createdAt: createdAt ?? this.createdAt,
       address: address ?? this.address,
       socialPreferences: socialPreferences ?? this.socialPreferences,
@@ -223,7 +223,7 @@ class PropertyAd {
 
   @override
   String toString() {
-    return 'PropertyAd(id: $id, poster: $poster, type: $type, quantity: $quantity, quantityTaken: $quantityTaken, preferedRentType: $preferedRentType, monthlyPrice: $monthlyPrice, weeklyPrice: $weeklyPrice, dailyPrice: $dailyPrice, deposit: $deposit, depositPrice: $depositPrice, posterType: $posterType, description: $description, images: $images, videos: $videos, amenties: $amenties, createdAt: $createdAt, address: $address, socialPreferences: $socialPreferences)';
+    return 'PropertyAd(id: $id, poster: $poster, type: $type, quantity: $quantity, quantityTaken: $quantityTaken, preferedRentType: $preferedRentType, monthlyPrice: $monthlyPrice, weeklyPrice: $weeklyPrice, dailyPrice: $dailyPrice, deposit: $deposit, depositPrice: $depositPrice, posterType: $posterType, description: $description, images: $images, videos: $videos, amenties: $amenities, createdAt: $createdAt, address: $address, socialPreferences: $socialPreferences)';
   }
 
   @override
@@ -245,7 +245,7 @@ class PropertyAd {
         other.description == description &&
         listEquals(other.images, images) &&
         listEquals(other.videos, videos) &&
-        listEquals(other.amenties, amenties) &&
+        listEquals(other.amenities, amenities) &&
         other.createdAt == createdAt &&
         mapEquals(other.address, address) &&
         mapEquals(other.socialPreferences, socialPreferences);
@@ -268,7 +268,7 @@ class PropertyAd {
         description.hashCode ^
         images.hashCode ^
         videos.hashCode ^
-        amenties.hashCode ^
+        amenities.hashCode ^
         createdAt.hashCode ^
         address.hashCode ^
         socialPreferences.hashCode ^

@@ -4,21 +4,26 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
+import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ignore: unused_element
 class _FavoriteTabController extends LoadingController {
-  final ads = <PropertyAd>[];
+  final propertyAds = <PropertyAd>[];
+  final roommateAds = <RoommateAd>[];
 
   @override
   void onInit() {
     super.onInit();
-    _loadFavoritePropertyAd();
+    _loadFavoritePropertyAds();
+    _loadFavoriteRoommateAds();
   }
 
-  Future<void> _loadFavoritePropertyAd() async {
+  Future<void> _loadFavoritePropertyAds() async {
     try {
       isLoading(true);
       update();
@@ -27,8 +32,8 @@ class _FavoriteTabController extends LoadingController {
       final favorites = pref.getStringList("favorites-property-ads") ?? [];
 
       if (favorites.isEmpty) return;
-      ads.clear();
-      ads.addAll(favorites.map((e) => PropertyAd.fromJson(e)));
+      propertyAds.clear();
+      propertyAds.addAll(favorites.map((e) => PropertyAd.fromJson(e)));
     } catch (_) {
     } finally {
       isLoading(false);
@@ -36,19 +41,20 @@ class _FavoriteTabController extends LoadingController {
     }
   }
 
-  _removeFromFavorite(PropertyAd ad) async {
+  Future<void> _loadFavoriteRoommateAds() async {
     try {
+      isLoading(true);
       update();
       final pref = await SharedPreferences.getInstance();
 
-      final favorites = pref.getStringList("favorites-property-ads") ?? [];
-      favorites.remove(ad.toJson());
-      pref.setStringList("favorites-property-ads", favorites);
+      final favorites = pref.getStringList("favorites-roommate-ads") ?? [];
 
-      ads.remove(ad);
-    } catch (e, trace) {
-      Get.log("$e\n$trace");
+      if (favorites.isEmpty) return;
+      roommateAds.clear();
+      roommateAds.addAll(favorites.map((e) => RoommateAd.fromJson(e)));
+    } catch (_) {
     } finally {
+      isLoading(false);
       update();
     }
   }
@@ -70,20 +76,20 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
             children: [
               const Text("Failed to fetch data"),
               OutlinedButton(
-                onPressed: controller._loadFavoritePropertyAd,
+                onPressed: controller._loadFavoritePropertyAds,
                 child: const Text("Refresh"),
               ),
             ],
           ),
         );
       }
-      if (controller.ads.isEmpty) {
+      if (controller.propertyAds.isEmpty) {
         return Center(
           child: Column(
             children: [
               const Text("No data."),
               OutlinedButton(
-                onPressed: controller._loadFavoritePropertyAd,
+                onPressed: controller._loadFavoritePropertyAds,
                 child: const Text("Refresh"),
               ),
             ],
@@ -92,17 +98,20 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
       }
       return ListView.builder(
         itemBuilder: (context, index) {
-          final ad = controller.ads[index];
+          final ad = controller.propertyAds[index];
           return PropertyAdWidget(
             ad: ad,
-            onFavoriteTap: () => controller._removeFromFavorite(ad),
+            onFavoriteTap: () async {
+              removeAdFromFavorite(ad.toJson(), "favorites-property-ads");
+              showToast("Removed from favorite");
+            },
             onTap: () async {
               await Get.to(() => ViewPropertyAd(ad: ad));
               controller.update();
             },
           );
         },
-        itemCount: controller.ads.length,
+        itemCount: controller.propertyAds.length,
       );
     });
   }
@@ -112,13 +121,12 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
     final controller = Get.put(_FavoriteTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      automaticallyImplyLeading: false,
       title: const Text('Favorites'),
       centerTitle: false,
       elevation: 0,
       actions: [
         IconButton(
-          onPressed: controller._loadFavoritePropertyAd,
+          onPressed: controller._loadFavoritePropertyAds,
           icon: const Icon(Icons.refresh),
         )
       ],

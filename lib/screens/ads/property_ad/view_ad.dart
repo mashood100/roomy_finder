@@ -7,10 +7,12 @@ import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -621,145 +623,176 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
 
                   const Divider(height: 20),
-                  DefaultTextStyle(
-                    style: const TextStyle(
-                      color: ROOMY_ORANGE,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Image.asset("assets/icons/washing_2.png", height: 30),
-                        const Text("APPLIANCES"),
-                        const Spacer(),
-                        Image.asset("assets/icons/wifi.png", height: 30),
-                        const Text("TECH"),
-                        const Spacer(),
-                        const Icon(Icons.widgets, color: ROOMY_ORANGE),
-                        const Text("UTILITIES"),
-                      ],
+                  // DefaultTextStyle(
+                  //   style: const TextStyle(
+                  //     color: ROOMY_ORANGE,
+                  //     fontWeight: FontWeight.bold,
+                  //     fontSize: 12,
+                  //   ),
+                  //   child: Row(
+                  //     crossAxisAlignment: CrossAxisAlignment.center,
+                  //     children: [
+                  //       Image.asset("assets/icons/washing_2.png", height: 30),
+                  //       const Text("APPLIANCES"),
+                  //       const Spacer(),
+                  //       Image.asset("assets/icons/wifi.png", height: 30),
+                  //       const Text("TECH"),
+                  //       const Spacer(),
+                  //       const Icon(Icons.widgets, color: ROOMY_ORANGE),
+                  //       const Text("UTILITIES"),
+                  //     ],
+                  //   ),
+                  // ),
+                  // DefaultTextStyle.merge(
+                  //   style: const TextStyle(
+                  //     fontSize: 12,
+                  //   ),
+                  //   child: Row(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Column(
+                  //         crossAxisAlignment: CrossAxisAlignment.start,
+                  //         mainAxisSize: MainAxisSize.min,
+                  //         children: ad.homeAppliancesAmenities
+                  //             .map((e) => Text(e))
+                  //             .toList(),
+                  //       ),
+                  //       const Spacer(),
+                  //       Column(
+                  //         crossAxisAlignment: CrossAxisAlignment.center,
+                  //         mainAxisSize: MainAxisSize.min,
+                  //         children: ad.technologyAmenities
+                  //             .map((e) => Text(e, textAlign: TextAlign.center))
+                  //             .toList(),
+                  //       ),
+                  //       const Spacer(),
+                  //       Column(
+                  //         crossAxisAlignment: CrossAxisAlignment.end,
+                  //         mainAxisSize: MainAxisSize.min,
+                  //         children: ad.utilitiesAmenities
+                  //             .map(
+                  //               (e) => Text(e, textAlign: TextAlign.end),
+                  //             )
+                  //             .toList(),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  const Center(
+                    child: Text(
+                      "SHARING/HOUSING PREFERENCES",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
                     ),
                   ),
-                  DefaultTextStyle(
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: ad.homeAppliancesAmenities
-                              .map((e) => Text(e))
-                              .toList(),
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: ad.technologyAmenities
-                              .map((e) => Text(e, textAlign: TextAlign.center))
-                              .toList(),
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: ad.utilitiesAmenities
-                              .map(
-                                (e) => Text(e, textAlign: TextAlign.end),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 20),
                   GridView.count(
-                    crossAxisCount: 2,
+                    crossAxisCount: 3,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    childAspectRatio: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.5,
                     children: [
-                      PropertyAdOverviewItemWidget(
-                        icon: const Icon(Icons.group),
-                        label: "Number of people",
-                        value:
-                            "${ad.socialPreferences["numberOfPeople"]} peoples",
+                      SocialPreferenceWidget(
+                        icon: const Icon(Icons.group, color: ROOMY_ORANGE),
+                        label: "People",
+                        value: "${ad.socialPreferences["numberOfPeople"]}",
                       ),
-                      PropertyAdOverviewItemWidget(
-                        icon: const Icon(Icons.smoking_rooms_rounded),
-                        label: "Smoking",
-                        value: ad.socialPreferences["smoking"] == true
-                            ? "Allowed"
-                            : "Not allowed",
-                      ),
-                      PropertyAdOverviewItemWidget(
-                        icon: const Icon(Icons.public),
+                      SocialPreferenceWidget(
+                        icon: const Icon(Icons.public, color: ROOMY_ORANGE),
                         label: "Nationality",
                         value: "${ad.socialPreferences["nationality"]}",
                       ),
-                      PropertyAdOverviewItemWidget(
-                        icon: Icon(ad.socialPreferences["drinking"] == true
-                            ? Icons.local_drink_sharp
-                            : Icons.no_drinks),
-                        label: "Drinking",
-                        value: ad.socialPreferences["drinking"] == true
-                            ? "Allowed"
-                            : "Not allowed",
-                      ),
-                      PropertyAdOverviewItemWidget(
-                        icon: Icon(ad.socialPreferences["gender"] == "Male"
-                            ? Icons.male
-                            : Icons.female),
+                      SocialPreferenceWidget(
+                        icon: Icon(
+                            ad.socialPreferences["gender"] == "Male"
+                                ? Icons.male
+                                : Icons.female,
+                            color: ROOMY_ORANGE),
                         label: "Gender",
                         value: "${ad.socialPreferences["gender"]}",
                       ),
-                      PropertyAdOverviewItemWidget(
-                        icon: const Icon(Icons.family_restroom),
-                        label: "Visitors",
-                        value: ad.socialPreferences["visitors"] == true
-                            ? "Allowed"
-                            : "Not allowed",
-                      ),
                     ],
                   ),
-
-                  const Divider(height: 20),
-                  const Text("Amenities", style: TextStyle(fontSize: 14)),
-                  const SizedBox(height: 5),
                   GridView.count(
-                    crossAxisCount: 2,
-                    physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    childAspectRatio: 5,
-                    children: ad.amenties.map((e) {
-                      final icondata = _getIconDataFromAmenties(e);
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icondata),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                e,
-                                style: const TextStyle(fontSize: 12),
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 4,
+                    childAspectRatio: 1.2,
+                    children: allSocialPreferences
+                        .where((e) => ad.socialPreferences[e["value"]] == true)
+                        .map((e) {
+                      return Card(
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Image.asset("${e["asset"]}"),
                               ),
-                            ),
-                          ],
+                              Text(
+                                "${e["label"]}",
+                                style: TextStyle(
+                                  color: Get.isDarkMode
+                                      ? Colors.white
+                                      : ROOMY_ORANGE,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
                   const Divider(height: 20),
+                  const Center(
+                    child: Text(
+                      "AMENITIES",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ),
+                  if (ad.amenities.isNotEmpty)
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.2,
+                      children: allAmenties
+                          .where((e) => ad.amenities.contains(e["value"]))
+                          .map((e) {
+                        return Card(
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            alignment: Alignment.center,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Image.asset("${e["asset"]}"),
+                                ),
+                                Text(
+                                  "${e["value"]}",
+                                  style: TextStyle(
+                                    color: Get.isDarkMode
+                                        ? Colors.white
+                                        : ROOMY_ORANGE,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  const Divider(height: 20),
+
                   // Google map representing the location of the properrty
                   if (ad.cameraPosition != null)
                     const Text("Map location", style: TextStyle(fontSize: 14)),
@@ -785,15 +818,10 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text('Which rent type do you want?'.tr),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        hintText: 'Rent type',
-                      ),
+                    InlineDropdown<String>(
+                      labelWidth: 0,
                       value: controller.rentType.value,
-                      items: ["Monthly", "Weekly", "Daily"]
-                          .map((e) => DropdownMenuItem<String>(
-                              value: e, child: Text(e)))
-                          .toList(),
+                      items: const ["Monthly", "Weekly", "Daily"],
                       onChanged: controller.isLoading.isTrue
                           ? null
                           : (val) {
@@ -939,36 +967,5 @@ class ViewPropertyAd extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-IconData _getIconDataFromAmenties(String search) {
-  switch (search) {
-    case "Close to metro":
-      return Icons.car_repair;
-    case "Balcony":
-      return Icons.window;
-    case "Kitchen appliances":
-      return Icons.kitchen;
-    case "Barking":
-      return Icons.bakery_dining;
-    case "WIFI":
-      return Icons.wifi;
-    case "TV":
-      return Icons.tv;
-    case "Shared gym":
-      return Icons.sports_gymnastics;
-    case "Washer":
-      return Icons.wash;
-    case "Cleaning included":
-      return Icons.cleaning_services;
-    case "Near to supermarket":
-      return Icons.shopify;
-    case "Shared swimming pool":
-      return Icons.water;
-    case "Near to pharmacy":
-      return Icons.health_and_safety;
-    default:
-      return Icons.widgets;
   }
 }

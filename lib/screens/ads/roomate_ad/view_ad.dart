@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
+import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
@@ -17,18 +19,20 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class _ViewRoommateAdController extends LoadingController {
   final RoommateAd ad;
+  final _showAllDescription = false.obs;
 
   _ViewRoommateAdController(this.ad);
 
-  Future<void> editAd(RoommateAd ad) async {
+  Future<void> editAd() async {
     Get.to(() => PostRoommateAdScreen(oldData: ad, isPremium: ad.isPremium));
   }
 
-  Future<void> deleteAd(RoommateAd ad) async {
+  Future<void> deleteAd() async {
     final shouldContinue = await showConfirmDialog(
       "Do you really want to delete this ad",
     );
@@ -87,9 +91,12 @@ class _ViewRoommateAdController extends LoadingController {
 
   void _viewImage(String source) {
     showModalBottomSheet(
+      isScrollControlled: true,
       context: Get.context!,
       builder: (context) {
-        return CachedNetworkImage(imageUrl: source);
+        return SafeArea(
+          child: CachedNetworkImage(imageUrl: source),
+        );
       },
     );
   }
@@ -102,322 +109,500 @@ class ViewRoommateAdScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final controller = Get.put(_ViewRoommateAdController(ad));
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 0),
+      appBar: AppBar(
+        title: Text("${ad.type} Roommate"),
+        backgroundColor: ROOMY_PURPLE,
+        actions: [
+          if (!ad.isMine)
+            IconButton(
+              onPressed: () async {
+                await addAdToFavorite(ad.toJson(), "favorites-roommate-ads");
+                showToast("Added to favorite");
+              },
+              icon: const Icon(Icons.favorite, color: ROOMY_ORANGE),
+            )
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                CachedNetworkImage(
-                  imageUrl: ad.poster.profilePicture,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  height: 200,
-                  // errorWidget: (ctx, e, trace) {
-                  //   return const SizedBox(
-                  //     width: double.infinity,
-                  //     height: 150,
-                  //     child: Icon(Icons.broken_image, size: 50),
-                  //   );
-                  // },
-                ),
-                const BackButton(),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(5),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Loooking for roomate",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(ad.description),
-                  const Divider(height: 10),
-                  const Text("About me", style: TextStyle(fontSize: 14)),
-                  Text(
-                    "${ad.aboutYou["occupation"]}, "
-                    "${ad.poster.gender}(${ad.aboutYou["age"]})",
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  GridView.count(
-                    crossAxisCount: 1,
-                    childAspectRatio: 7,
-                    crossAxisSpacing: 10,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
+            const SizedBox(height: 1),
+            Card(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
                     children: [
-                      DataLabel(
-                        icon: Icons.contact_mail,
-                        label: "Name",
-                        value: ad.poster.fullName,
-                      ),
-                      DataLabel(
-                        icon: Icons.home,
-                        label: "Property",
-                        value: ad.type,
-                      ),
-                      DataLabel(
-                        icon: Icons.mail_outline,
-                        label: "Email",
-                        value: ad.poster.email,
-                      ),
-                      DataLabel(
-                        icon: Icons.ac_unit_outlined,
-                        label: "Astrological sign",
-                        value: "${ad.aboutYou["astrologicalSign"]}",
-                      ),
-                      DataLabel(
-                        icon: Icons.language,
-                        label: "Languages",
-                        value: (ad.aboutYou['languages'] as List).join(', '),
-                      ),
-                      DataLabel(
-                        icon: Icons.room,
-                        label: "Location",
-                        value:
-                            '${ad.address['country']}, ${ad.address['location']}',
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  const Text(
-                    "Interests & Features",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 5),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    childAspectRatio: screenWidth > 370 ? 4 : 3,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    crossAxisSpacing: 10,
-                    children: [
-                      DataLabel(
-                        icon: Icons.calendar_month,
-                        label: "Moving date",
-                        value: Jiffy(ad.movingDate).yMMMEd,
-                      ),
-                      DataLabel(
-                        icon: Icons.tv,
-                        label: "TV",
-                        value:
-                            ad.socialPreferences["tv"] == true ? "Yes" : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.money,
-                        label: "Budget",
-                        value: "${ad.budget} AED",
-                      ),
-                      DataLabel(
-                        icon: ad.socialPreferences["drinking"] == true
-                            ? Icons.local_drink_sharp
-                            : Icons.no_drinks,
-                        label: "Drinking",
-                        value: ad.socialPreferences["drinking"] == true
-                            ? "Yes"
-                            : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.family_restroom,
-                        label: "Friend party",
-                        value: ad.socialPreferences["friendParty"] == true
-                            ? "Yes"
-                            : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.family_restroom,
-                        label: "Cooking",
-                        value: ad.socialPreferences["cooking"] == true
-                            ? "Yes"
-                            : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.smoking_rooms_rounded,
-                        label: "Smoking",
-                        value: ad.socialPreferences["smoking"] == true
-                            ? "Yes"
-                            : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.smoking_rooms_rounded,
-                        label: "Swimming",
-                        value: ad.socialPreferences["swimming"] == true
-                            ? "Yes"
-                            : "No",
-                      ),
-                      DataLabel(
-                        icon: ad.socialPreferences["gender"] == "Male"
-                            ? Icons.male
-                            : Icons.female,
-                        label: "Gender preferred",
-                        value: "${ad.socialPreferences["gender"]}",
-                      ),
-                      if (ad.isPremium)
-                        DataLabel(
-                          icon: Icons.group,
-                          label: "People",
-                          value:
-                              "${ad.socialPreferences["numberOfPeople"]} peoples",
-                        ),
-                      DataLabel(
-                        icon: Icons.sports_gymnastics,
-                        label: "Gym",
-                        value:
-                            ad.socialPreferences["gym"] == true ? "Yes" : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.wifi,
-                        label: "WIFI",
-                        value:
-                            ad.socialPreferences["wifi"] == true ? "Yes" : "No",
-                      ),
-                      DataLabel(
-                        icon: Icons.public,
-                        label: "Nationality preferred",
-                        value: "${ad.socialPreferences["nationality"]}",
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 10),
-                  Builder(builder: (context) {
-                    if (ad.isMine) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: controller.isLoading.isTrue
-                                    ? null
-                                    : () => controller.editAd(ad),
-                                child: const Text("Edit"),
+                      ...ad.images.map(
+                        (e) => GestureDetector(
+                          onTap: () => controller._viewImage(e),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(5),
                               ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red),
-                                onPressed: controller.isLoading.isTrue
-                                    ? null
-                                    : () => controller.deleteAd(ad),
-                                child: const Text(
-                                  "Delete",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () => controller.chatWithUser(),
-                        child: Text("Chat with ${ad.poster.fullName}"),
-                      ),
-                    );
-                  }),
-                  const Divider(height: 10),
-                  const Text("Images", style: TextStyle(fontSize: 14)),
-                  GridView.count(
-                    crossAxisCount: screenWidth > 370 ? 4 : 2,
-                    crossAxisSpacing: 10,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    children: ad.images
-                        .map(
-                          (e) => GestureDetector(
-                            onTap: () => controller._viewImage(e),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2.5),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: CachedNetworkImage(
-                                  imageUrl: e,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
+                              child: CachedNetworkImage(
+                                imageUrl: e,
+                                height: 250,
+                                fit: BoxFit.fitHeight,
+                                errorWidget: (ctx, e, trace) {
+                                  return const SizedBox(
+                                    child: CupertinoActivityIndicator(
+                                      radius: 30,
+                                    ),
+                                  );
+                                },
+                                progressIndicatorBuilder:
+                                    (context, url, downloadProgress) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: CircularProgressIndicator(
+                                      value: downloadProgress.progress,
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text("Videos", style: TextStyle(fontSize: 14)),
-                  if (controller.ad.videos.isNotEmpty)
-                    GridView.count(
-                      crossAxisCount: screenWidth > 370 ? 4 : 2,
-                      crossAxisSpacing: 10,
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      children: ad.videos
-                          .map(
-                            (e) => GestureDetector(
-                              onTap: () => Get.to(() {
-                                return PlayVideoScreen(
-                                    source: e, isAsset: false);
-                              }),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    height: double.infinity,
-                                    width: double.infinity,
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
+                        ),
+                      ),
+                      ...ad.videos.map(
+                        (e) => GestureDetector(
+                          onTap: () => Get.to(() {
+                            return PlayVideoScreen(source: e, isAsset: false);
+                          }),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 1),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(5),
+                                  child: FutureBuilder(
+                                    builder: (ctx, asp) {
+                                      if (asp.hasData) {
+                                        return Image.file(
+                                          File(asp.data!),
+                                          alignment: Alignment.center,
+                                          height: 250,
+                                          fit: BoxFit.fitHeight,
+                                        );
+                                      }
+                                      return Container();
+                                    },
+                                    future: VideoThumbnail.thumbnailFile(
+                                      video: e,
+                                      quality: 50,
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: FutureBuilder(
-                                        builder: (ctx, asp) {
-                                          if (asp.hasData) {
-                                            return Image.file(
-                                              File(asp.data!),
-                                              fit: BoxFit.cover,
-                                            );
-                                          }
-                                          return Container();
-                                        },
-                                        future: VideoThumbnail.thumbnailFile(
-                                          video: e,
-                                          quality: 50,
-                                        ),
+                                  ),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Icon(
+                                  Icons.play_arrow,
+                                  size: 40,
+                                  color: Color.fromARGB(255, 2, 3, 2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${ad.poster.fullName}, ${ad.aboutYou["age"]}',
+                            style: const TextStyle(
+                              color: ROOMY_ORANGE,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                          Text(
+                            ad.action,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      if (ad.isMine)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ROOMY_PURPLE,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            side: const BorderSide(color: ROOMY_PURPLE),
+                          ),
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : controller.deleteAd,
+                          child: const Text(
+                            "Delete",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ROOMY_ORANGE,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            side: const BorderSide(color: ROOMY_ORANGE),
+                          ),
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : controller.chatWithUser,
+                          child: const Text(
+                            "Chat",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      if (ad.isMine) const SizedBox(width: 10),
+                      if (ad.isMine)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ROOMY_ORANGE,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            side: const BorderSide(color: ROOMY_ORANGE),
+                          ),
+                          onPressed: controller.isLoading.isTrue
+                              ? null
+                              : controller.editAd,
+                          child: const Text(
+                            "Edit",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      const Icon(Icons.room, color: ROOMY_ORANGE),
+                      Text(
+                        "${ad.address["city"]}, ${ad.address["location"]}",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    ],
+                  ),
+                  if (ad.isHaveRoom)
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: "       ${ad.address["buildingName"]}, ",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const TextSpan(text: "Appartment number : "),
+                          TextSpan(
+                            text: "${ad.address["appartmentNumber"]}, ",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const TextSpan(text: "Floor number : "),
+                          TextSpan(
+                            text: "${ad.address["floorNumber"]}, ",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  Text(
+                    ad.description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: controller._showAllDescription.isTrue ? null : 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Divider(height: 20),
+                  DefaultTextStyle(
+                    style: const TextStyle(
+                      color: ROOMY_ORANGE,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.person, color: ROOMY_ORANGE),
+                        SizedBox(width: 5),
+                        Text("ABOUT ME"),
+                        Spacer(),
+                      ],
+                    ),
+                  ),
+                  DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontSize: 14,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            {
+                              "label": "Age : ",
+                              "value": '${ad.aboutYou["age"]} years',
+                            },
+                            {
+                              "label": "Occupation : ",
+                              "value": '${ad.aboutYou["occupation"]}',
+                            },
+                            {
+                              "label": "Gender : ",
+                              "value": '${ad.aboutYou["gender"]}',
+                            },
+                            {
+                              "label": "Life style : ",
+                              "value": '${ad.aboutYou["lifeStyle"]}',
+                            },
+                            {
+                              "label": "Nationality : ",
+                              "value": '${ad.aboutYou["nationality"]}',
+                            },
+                            {
+                              "label": "Astrological sign : ",
+                              "value": '${ad.aboutYou["astrologicalSign"]}',
+                            },
+                            {
+                              "label": "Languages : ",
+                              "value":
+                                  (ad.aboutYou["languages"] as List).join(", "),
+                            },
+                          ].map((e) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              width: Get.width - 20,
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: e["label"],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ),
-                                  const Icon(
-                                    Icons.play_arrow,
-                                    size: 40,
-                                    color: Colors.green,
-                                  ),
-                                ],
+                                    TextSpan(text: e["value"]),
+                                  ],
+                                ),
                               ),
+                            );
+                          }).toList(),
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 20),
+                  const Center(
+                    child: Text(
+                      "SHARING/HOUSING PREFERENCES",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ),
+                  GridView.count(
+                    crossAxisCount: 3,
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    childAspectRatio: 1.5,
+                    children: [
+                      SocialPreferenceWidget(
+                        icon: const Icon(Icons.group, color: ROOMY_ORANGE),
+                        label: "People",
+                        value: "${ad.socialPreferences["numberOfPeople"]}",
+                      ),
+                      SocialPreferenceWidget(
+                        icon: const Icon(Icons.public, color: ROOMY_ORANGE),
+                        label: "Nationality",
+                        value: "${ad.socialPreferences["nationality"]}",
+                      ),
+                      SocialPreferenceWidget(
+                        icon: Icon(
+                            ad.socialPreferences["gender"] == "Male"
+                                ? Icons.male
+                                : Icons.female,
+                            color: ROOMY_ORANGE),
+                        label: "Gender",
+                        value: "${ad.socialPreferences["gender"]}",
+                      ),
+                    ],
+                  ),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 4,
+                    childAspectRatio: 1.2,
+                    children: allSocialPreferences
+                        .where((e) => ad.socialPreferences[e["value"]] == true)
+                        .map((e) {
+                      return Card(
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Image.asset("${e["asset"]}"),
+                              ),
+                              Text(
+                                "${e["label"]}",
+                                style: TextStyle(
+                                  color: Get.isDarkMode
+                                      ? Colors.white
+                                      : ROOMY_ORANGE,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const Divider(height: 20),
+                  const Center(
+                    child: Text(
+                      "AMENITIES",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ),
+                  if (ad.amenities.isNotEmpty)
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.2,
+                      children: allAmenties
+                          .where((e) => ad.amenities.contains(e["value"]))
+                          .map((e) {
+                        return Card(
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            alignment: Alignment.center,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Image.asset("${e["asset"]}"),
+                                ),
+                                Text(
+                                  "${e["value"]}",
+                                  style: TextStyle(
+                                    color: Get.isDarkMode
+                                        ? Colors.white
+                                        : ROOMY_ORANGE,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                          )
-                          .toList(),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   const Divider(height: 20),
+                  const Center(
+                    child: Text(
+                      "INTERESTS",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ),
+                  if (ad.interests.isNotEmpty)
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.2,
+                      children: roommateInterests
+                          .where((e) => ad.interests.contains(e["value"]))
+                          .map((e) {
+                        return Card(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 5),
+                            alignment: Alignment.center,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Image.asset("${e["asset"]}"),
+                                ),
+                                Text(
+                                  "${e["value"]}",
+                                  style: TextStyle(
+                                    color: Get.isDarkMode
+                                        ? Colors.white
+                                        : ROOMY_ORANGE,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                 ],
               ),
             )

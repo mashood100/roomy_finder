@@ -186,8 +186,8 @@ class PropertyAdWidget extends StatelessWidget {
   }
 }
 
-class PropertyAdOverviewItemWidget extends StatelessWidget {
-  const PropertyAdOverviewItemWidget({
+class SocialPreferenceWidget extends StatelessWidget {
+  const SocialPreferenceWidget({
     super.key,
     required this.icon,
     required this.label,
@@ -202,29 +202,23 @@ class PropertyAdOverviewItemWidget extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.all(5),
+        child: Column(
           children: [
-            icon,
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            )
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Expanded(child: icon),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: ROOMY_ORANGE,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
@@ -261,13 +255,13 @@ class PropertyAdMiniWidget extends StatelessWidget {
                   return const SizedBox();
                 },
               ),
-              DefaultTextStyle(
-                style: const TextStyle(
+              DefaultTextStyle.merge(
+                style: TextStyle(
+                  color: Get.isDarkMode ? Colors.white : ROOMY_PURPLE,
                   fontSize: 12,
-                  color: ROOMY_PURPLE,
                 ),
                 child: Container(
-                  color: Colors.white,
+                  color: Get.theme.scaffoldBackgroundColor.withOpacity(0.5),
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -361,9 +355,12 @@ class RoommateAdWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        "Looking for a roommate",
-                        style: TextStyle(fontSize: 14),
+                      Text(
+                        ad.action,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text("${ad.aboutYou["occupation"]},"
                           " Age(${ad.aboutYou["age"]})"),
@@ -469,13 +466,13 @@ class RoommateAdMiniWidget extends StatelessWidget {
                   return const SizedBox();
                 },
               ),
-              DefaultTextStyle(
-                style: const TextStyle(
+              DefaultTextStyle.merge(
+                style: TextStyle(
+                  color: Get.isDarkMode ? Colors.white : ROOMY_PURPLE,
                   fontSize: 12,
-                  color: ROOMY_PURPLE,
                 ),
                 child: Container(
-                  color: Colors.white,
+                  color: Get.theme.scaffoldBackgroundColor.withOpacity(0.5),
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -485,17 +482,30 @@ class RoommateAdMiniWidget extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: ad.type,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                          if (ad.isHaveRoom)
+                            Text.rich(
+                              TextSpan(children: [
+                                TextSpan(
+                                  text: ad.type,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const TextSpan(text: " for rent"),
-                            ]),
-                          ),
+                                const TextSpan(text: " for rent"),
+                              ]),
+                            )
+                          else
+                            Text.rich(
+                              TextSpan(children: [
+                                const TextSpan(text: "Need "),
+                                TextSpan(
+                                  text: ad.type,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ]),
+                            ),
                           SizedBox(
                             width: Get.width * 0.25,
                             child: Text("${ad.address["location"]}"),
@@ -523,18 +533,3 @@ class RoommateAdMiniWidget extends StatelessWidget {
     );
   }
 }
-
-// Future<bool> _addAdToFavorite(String item, String listKey) async {
-//   try {
-//     final pref = await SharedPreferences.getInstance();
-
-//     final favorites = pref.getStringList(listKey) ?? [];
-//     if (!favorites.contains(item)) {
-//       favorites.add(item);
-//     }
-//     pref.setStringList(listKey, favorites);
-//     return true;
-//   } catch (_) {
-//     return false;
-//   }
-// }

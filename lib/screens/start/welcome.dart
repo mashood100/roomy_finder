@@ -5,49 +5,12 @@ import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
-class _WelcomeScreenController extends GetxController {
-  late final PageController _pageController;
-  _WelcomeScreenController(this.pageIndex);
-  final int? pageIndex;
-
-  final _pageIndex = 0.obs;
-
-  @override
-  void onInit() {
-    _pageController = PageController(initialPage: pageIndex ?? 0);
-    super.onInit();
-  }
-
-  @override
-  void onClose() {
-    _pageController.dispose();
-
-    super.onClose();
-  }
-
-  @override
-  void onReady() {
-    precacheImage(
-      const AssetImage("assets/images/dubai-city.jpg"),
-      Get.context!,
-    );
-    super.onReady();
-  }
-
-  // void _toggleThemeMode() {
-  //   AppController.setThemeMode(
-  //       Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
-  //   Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
-  // }
-}
-
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, this.pageIndex});
   final int? pageIndex;
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_WelcomeScreenController(pageIndex));
     return Scaffold(
       appBar: AppBar(toolbarHeight: 0),
       body: Stack(

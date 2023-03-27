@@ -28,8 +28,8 @@ class _ViewPdfScreenState extends State<ViewPdfScreen> {
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
+    _controller.dispose();
   }
 
   @override

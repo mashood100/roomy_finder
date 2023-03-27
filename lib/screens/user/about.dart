@@ -107,10 +107,12 @@ class AboutScreeen extends StatelessWidget {
               Card(
                 child: ListTile(
                   onTap: () {
-                    Get.to(() => const ViewPdfScreen(
-                          title: "Privacy policy",
-                          asset: "assets/pdf/privacy-policy.pdf",
-                        ));
+                    Get.to(() {
+                      return const ViewPdfScreen(
+                        title: "Privacy policy",
+                        asset: "assets/pdf/privacy-policy.pdf",
+                      );
+                    });
                   },
                   leading: const Icon(Icons.privacy_tip),
                   title: const Text('Privacy policy'),
@@ -123,10 +125,12 @@ class AboutScreeen extends StatelessWidget {
               Card(
                 child: ListTile(
                   onTap: () {
-                    Get.to(() => const ViewPdfScreen(
-                          title: "Terms and conditions",
-                          asset: "assets/pdf/terms-and-conditions.pdf",
-                        ));
+                    Get.to(() {
+                      return const ViewPdfScreen(
+                        title: "Terms and conditions",
+                        asset: "assets/pdf/terms-and-conditions.pdf",
+                      );
+                    });
                   },
                   leading: const Icon(Icons.verified_user_rounded),
                   title: const Text('Terms and conditions'),

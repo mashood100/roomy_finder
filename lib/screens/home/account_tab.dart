@@ -11,6 +11,7 @@ import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
 import 'package:roomy_finder/screens/user/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _AccountTabController extends LoadingController {
   Future<void> _logout(BuildContext context) async {
@@ -127,7 +128,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const NotificationsScreen()),
                 leading: const CircleAvatar(
-                  child: Icon(Icons.notifications),
+                  child: Icon(
+                    Icons.notifications,
+                    color: ROOMY_ORANGE,
+                  ),
                 ),
                 title: const Text('Notifications'),
                 subtitle: Text(
@@ -159,7 +163,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 child: ListTile(
                   onTap: () => Get.to(() => const MyPropertyAdsScreen()),
                   leading: const CircleAvatar(
-                    child: Icon(Icons.widgets),
+                    child: Icon(
+                      Icons.widgets,
+                      color: ROOMY_ORANGE,
+                    ),
                   ),
                   title: const Text('My Property Ads'),
                   trailing: IconButton(
@@ -172,9 +179,12 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const MyRoommateAdsScreen()),
                 leading: const CircleAvatar(
-                  child: Icon(Icons.houseboat),
+                  child: Icon(
+                    Icons.houseboat,
+                    color: ROOMY_ORANGE,
+                  ),
                 ),
-                title: const Text('My Premium Ads, Roommate match'),
+                title: const Text('My Roommate ads'),
                 trailing: IconButton(
                   onPressed: () {
                     Get.to(() => const MyRoommateAdsScreen());
@@ -187,7 +197,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const MyBookingsCreen()),
                 leading: const CircleAvatar(
-                  child: Icon(Icons.book),
+                  child: Icon(
+                    Icons.book,
+                    color: ROOMY_ORANGE,
+                  ),
                 ),
                 title: const Text('My Bookings'),
                 trailing: IconButton(
@@ -203,7 +216,11 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 onTap: () {
                   Get.to(() => const AboutScreeen());
                 },
-                leading: const CircleAvatar(child: Icon(Icons.info_outlined)),
+                leading: const CircleAvatar(
+                    child: Icon(
+                  Icons.info_outlined,
+                  color: ROOMY_ORANGE,
+                )),
                 title: const Text('About'),
                 trailing: const IconButton(
                   onPressed: null,
@@ -238,7 +255,6 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
     final controller = Get.put(_AccountTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      automaticallyImplyLeading: false,
       title: const Text('My Account'),
       centerTitle: false,
       elevation: 0,

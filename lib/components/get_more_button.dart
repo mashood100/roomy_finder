@@ -18,7 +18,7 @@ class GetMoreButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       child: StatefulBuilder(builder: (context, setState) {
-        return TextButton.icon(
+        return OutlinedButton.icon(
           onPressed: isGettingMore
               ? null
               : () async {
@@ -29,7 +29,7 @@ class GetMoreButton extends StatelessWidget {
                     setState(() => isGettingMore = false);
                   }
                 },
-          label: Text(text ?? "getMore".tr),
+          label: Text(text ?? "Get More".tr),
           icon: isGettingMore
               ? const CupertinoActivityIndicator()
               : const Icon(Icons.add),

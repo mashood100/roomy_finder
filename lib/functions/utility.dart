@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 String relativeTimeText(DateTime dateTime) {
   if (dateTime.add(const Duration(minutes: 59)).isAfter(DateTime.now())) {
@@ -121,4 +122,64 @@ Future<List<T>> filterListData<T>(
     return result;
   }
   return [];
+}
+
+IconData getIconDataFromAmenties(String search) {
+  switch (search) {
+    case "Close to metro":
+      return Icons.car_repair;
+    case "Balcony":
+      return Icons.window;
+    case "Kitchen appliances":
+      return Icons.kitchen;
+    case "Barking":
+      return Icons.bakery_dining;
+    case "WIFI":
+      return Icons.wifi;
+    case "TV":
+      return Icons.tv;
+    case "Shared gym":
+      return Icons.sports_gymnastics;
+    case "Washer":
+      return Icons.wash;
+    case "Cleaning included":
+      return Icons.cleaning_services;
+    case "Near to supermarket":
+      return Icons.shopify;
+    case "Shared swimming pool":
+      return Icons.water;
+    case "Near to pharmacy":
+      return Icons.health_and_safety;
+    default:
+      return Icons.widgets;
+  }
+}
+
+Future<bool> addAdToFavorite(String item, String listKey) async {
+  try {
+    final pref = await SharedPreferences.getInstance();
+
+    final favorites = pref.getStringList(listKey) ?? [];
+    if (!favorites.contains(item)) {
+      favorites.add(item);
+    }
+    pref.setStringList(listKey, favorites);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> removeAdFromFavorite(String item, String listKey) async {
+  try {
+    final pref = await SharedPreferences.getInstance();
+
+    final favorites = pref.getStringList(listKey) ?? [];
+    favorites.remove(item);
+
+    pref.setStringList(listKey, favorites);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }

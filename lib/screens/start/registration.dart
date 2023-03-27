@@ -160,12 +160,12 @@ class _RegistrationController extends LoadingController {
     }
   }
 
-  void _moveToNextPage() {
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.linear,
-    );
-  }
+  // void _moveToNextPage() {
+  //   _pageController.nextPage(
+  //     duration: const Duration(milliseconds: 200),
+  //     curve: Curves.linear,
+  //   );
+  // }
 
   void _moveToPreviousPage() {
     _pageController.previousPage(

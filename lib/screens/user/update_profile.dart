@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
@@ -94,14 +95,10 @@ class UpdateUserProfile extends StatelessWidget {
                     children: [
                       // information
                       const SizedBox(height: 10),
-                      Text("numberOfPeople".tr),
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(hintText: 'Gender'.tr),
+                      InlineDropdown<String>(
+                        labelText: 'Gender'.tr,
                         value: controller.information["gender"] as String,
-                        items: ["Male", "Female"]
-                            .map((e) => DropdownMenuItem<String>(
-                                value: e, child: Text(e)))
-                            .toList(),
+                        items: const ["Male", "Female"],
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {
@@ -111,14 +108,11 @@ class UpdateUserProfile extends StatelessWidget {
                               },
                       ),
                       const SizedBox(height: 10),
-                      Text("emailAddress".tr),
-                      TextFormField(
+                      InlineTextField(
                         initialValue: controller.information["email"],
+                        labelText: 'emailAddress'.tr,
+                        suffixIcon: const Icon(CupertinoIcons.mail),
                         enabled: controller.isLoading.isFalse,
-                        decoration: InputDecoration(
-                          hintText: 'emailAddress'.tr,
-                          suffixIcon: const Icon(CupertinoIcons.mail),
-                        ),
                         onChanged: (value) =>
                             controller.information["email"] = value,
                         validator: (value) {
@@ -130,14 +124,11 @@ class UpdateUserProfile extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 10),
-                      Text("firstName".tr),
-                      TextFormField(
+                      InlineTextField(
                         initialValue: controller.information["firstName"],
                         enabled: controller.isLoading.isFalse,
-                        decoration: InputDecoration(
-                          hintText: 'firstName'.tr,
-                          suffixIcon: const Icon(CupertinoIcons.person),
-                        ),
+                        labelText: 'firstName'.tr,
+                        suffixIcon: const Icon(CupertinoIcons.person),
                         onChanged: (value) =>
                             controller.information["firstName"] = value,
                         validator: (value) {
@@ -148,14 +139,11 @@ class UpdateUserProfile extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 10),
-                      Text("lastName".tr),
-                      TextFormField(
+                      InlineTextField(
+                        labelText: "lastName".tr,
                         initialValue: controller.information["lastName"],
                         enabled: controller.isLoading.isFalse,
-                        decoration: InputDecoration(
-                          hintText: 'lastName'.tr,
-                          suffixIcon: const Icon(CupertinoIcons.person),
-                        ),
+                        suffixIcon: const Icon(CupertinoIcons.person),
                         onChanged: (value) =>
                             controller.information["lastName"] = value,
                         validator: (value) {
@@ -167,16 +155,10 @@ class UpdateUserProfile extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 10),
-                      Text("country".tr),
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          hintText: 'country'.tr,
-                        ),
+                      InlineDropdown<String>(
+                        labelText: 'country'.tr,
                         value: controller.information["country"],
-                        items: allCountriesNames
-                            .map((e) => DropdownMenuItem<String>(
-                                value: e, child: Text(e)))
-                            .toList(),
+                        items: allCountriesNames,
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {

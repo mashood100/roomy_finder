@@ -31,6 +31,7 @@ class AppController extends GetxController {
   late Rx<AppLocale> appLocale;
 
   String? userPassword;
+  num accountBalance = 0;
 
   final RxBool haveNewMessage = false.obs;
   final RxInt unreadNotificationCount = 0.obs;
@@ -254,11 +255,26 @@ class AppController extends GetxController {
     }
   }
 
+  // Account balance
+  Future<Map<String,dynamic>?> getAccountInfo() async {
+    try {
+      final res =
+          await ApiService.getDio.put("$API_URL/profile/account-details");
+      if (res.statusCode == 200) {
+        accountBalance = res.data['accountBalance'];
+        return res.data;
+      }
+    } catch (e) {
+      log(e);
+    }
+    return null;
+  }
+
   // FCM
   static Future<void> saveTokenToDatabase(String token) async {
     try {
       await ApiService.getDio.put(
-        "$API_URL/auth//update-fcm-token",
+        "$API_URL/auth/update-fcm-token",
         data: {"fcmToken": token},
       );
     } catch (e) {

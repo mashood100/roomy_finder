@@ -21,8 +21,6 @@ class InlineTextField extends StatelessWidget {
     this.inputFormatters,
     this.readOnly,
     this.onTap,
-    this.minLines,
-    this.maxLines,
   });
 
   final String? labelText;
@@ -41,8 +39,6 @@ class InlineTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final void Function()? onTap;
-  final int? minLines;
-  final int? maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -83,8 +79,6 @@ class InlineTextField extends StatelessWidget {
               inputFormatters: inputFormatters,
               keyboardType: keyboardType,
               onTap: onTap,
-              minLines: minLines,
-              maxLines: maxLines,
             ),
           ),
         )
@@ -98,7 +92,7 @@ class InlineDropdown<T> extends StatelessWidget {
     super.key,
     required this.items,
     this.dropDownItemBuilder,
-    required this.labelText,
+    this.labelText,
     this.value,
     this.onChanged,
     this.labelWidth,
@@ -108,7 +102,7 @@ class InlineDropdown<T> extends StatelessWidget {
 
   final List<T> items;
   final DropdownMenuItem<T> Function(T item)? dropDownItemBuilder;
-  final String labelText;
+  final String? labelText;
   final T? value;
   final void Function(T? value)? onChanged;
   final double? labelWidth;
@@ -122,7 +116,7 @@ class InlineDropdown<T> extends StatelessWidget {
         SizedBox(
           width: labelWidth ?? MediaQuery.of(context).size.width * 0.25,
           child: Text(
-            labelText,
+            labelText ?? "",
             style: const TextStyle(fontSize: 15),
           ),
         ),

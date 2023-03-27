@@ -130,7 +130,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
     final controller = Get.put(ChatTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      automaticallyImplyLeading: false,
+
       title: const Text('Chat'),
       centerTitle: false,
       elevation: 0,

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -15,7 +14,7 @@ import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/data/amenities.dart';
+import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/city_location.dart';
@@ -124,7 +123,7 @@ class _PostPropertyAdController extends LoadingController {
       address["floorNumber"] = oldData!.address["floorNumber"].toString();
       address["appartmentNumber"] =
           oldData!.address["appartmentNumber"].toString();
-      amenties.value = oldData!.amenties;
+      amenties.value = oldData!.amenities;
 
       if (oldData!.agentInfo != null) {
         agentBrokerInformation(oldData!.agentInfo!);
@@ -269,43 +268,7 @@ class _PostPropertyAdController extends LoadingController {
 
       switch (res.statusCode) {
         case 200:
-          await showDialog(
-            context: Get.context!,
-            builder: (context) {
-              return CupertinoAlertDialog(
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.check_circle,
-                      size: 40,
-                      color: Colors.green,
-                    ),
-                    Text(
-                      "Congratulations!",
-                      style: TextStyle(
-                        color: ROOMY_PURPLE,
-                      ),
-                    ),
-                    Text(
-                      "Your property is added.",
-                      style: TextStyle(
-                        color: ROOMY_PURPLE,
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  CupertinoDialogAction(
-                    onPressed: () {
-                      Get.back();
-                    },
-                    child: const Text("Ok"),
-                  )
-                ],
-              );
-            },
-          );
+          await showSuccessDialog("Your property is added.", isAlert: true);
 
           Get.offNamedUntil(
             "/my-property-ads",
@@ -387,7 +350,7 @@ class _PostPropertyAdController extends LoadingController {
       switch (res.statusCode) {
         case 200:
           isLoading(false);
-          await showConfirmDialog("Ad updated successfully. ", isAlert: true);
+          await showSuccessDialog("Ad updated successfully. ", isAlert: true);
 
           deleteManyFilesFromUrl(
             oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
@@ -482,7 +445,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               value: controller.address["city"]!.isEmpty
                                   ? null
                                   : controller.address["city"],
-                              items: citiesFromCurrentCountry,
+                              items: CITIES_FROM_CURRENT_COUNTRY,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1759,8 +1722,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                   children: [
                     LinearProgressIndicator(
                       color: const Color.fromRGBO(96, 15, 116, 1),
-                      value: (controller._pageIndex.value + 1) /
-                          (oldData != null ? 7 : 10),
+                      value: (controller._pageIndex.value + 1) / 8,
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -1,8 +1,10 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/cities.dart';
 import 'package:roomy_finder/models/country.dart';
 
-List<String> get citiesFromCurrentCountry {
+List<String> get CITIES_FROM_CURRENT_COUNTRY {
   if (AppController.instance.country.value.code == Country.UAE.code) {
     return [
       "Dubai",

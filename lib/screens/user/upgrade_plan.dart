@@ -168,15 +168,16 @@ class UpgragePlanScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              controller._payRent("SKIP");
-                            },
-                            child: const Text("Skip Payment"),
+                        if (AppController.instance.country.value.isUAE)
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                controller._payRent("SKIP");
+                              },
+                              child: const Text("Skip Payment"),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

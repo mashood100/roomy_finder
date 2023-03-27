@@ -16,7 +16,7 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/utility.dart';
-import 'package:roomy_finder/screens/ads/roomate_ad/find_roommate_match.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 
 class _SearchRoommateMatchController extends LoadingController {
   final _aboutFormKey = GlobalKey<FormState>();
@@ -606,7 +606,7 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                             controller._cityController.text = suggestion;
                           },
                           suggestionsCallback: (pattern) {
-                            return citiesFromCurrentCountry.where(
+                            return CITIES_FROM_CURRENT_COUNTRY.where(
                               (e) {
                                 final lowerPattern =
                                     pattern.toLowerCase().trim();
@@ -805,10 +805,10 @@ class SearchRoommateMatchScreen extends StatelessWidget {
                                         ?.validate();
 
                                     if (isValid != true) return;
-                                    Get.to(() => FindRoommateMatchsScreen(
-                                          type: controller.type.value,
-                                          gender: controller.gender.value,
-                                          budget: {
+                                    Get.to(() => FindRoommatesScreen(
+                                          filter: {
+                                            "type": controller.type.value,
+                                            "gender": controller.gender.value,
                                             "min": controller
                                                 ._minBudgetController.text,
                                             "max": controller

@@ -248,18 +248,40 @@ class LoginScreen extends StatelessWidget {
                                 )
                               ],
                             ),
-                            Center(
-                              child: TextButton(
-                                onPressed: () =>
-                                    Get.off(() => const RegistrationScreen()),
-                                child: const Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                            const Divider(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Get.off(() => const RegistrationScreen()),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
+                                TextButton(
+                                  onPressed: () {
+                                    Get.offAllNamed("/home");
+                                  },
+                                  style: TextButton.styleFrom(
+                                    // backgroundColor: ROOMY_ORANGE,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Skip",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              ],
                             ),
                           ],
                         ),

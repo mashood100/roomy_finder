@@ -16,6 +16,7 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:roomy_finder/screens/user/account_balance.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
@@ -35,6 +36,7 @@ class _ViewProfileController extends LoadingController {
   void onInit() {
     super.onInit();
     _fetchBalance();
+    AppController.instance.getAccountInfo().then((_) => update());
   }
 
   Future<void> _pickProfilePicture({bool gallery = true}) async {
@@ -494,16 +496,20 @@ class ViewProfileScreen extends StatelessWidget {
                         ),
                         Card(
                           child: ListTile(
+                            dense: true,
                             title: Text(
                               "Account balance".tr,
                               style: textTheme.bodySmall!,
                             ),
-                            subtitle: Text(formatMoney(0)),
-                            trailing: IconButton(
-                              onPressed: controller._fetchBalance,
-                              icon: controller.isFectchingBalance.isTrue
-                                  ? const CircularProgressIndicator()
-                                  : const Icon(Icons.refresh),
+                            subtitle: Text(
+                              formatMoney(
+                                  AppController.instance.accountBalance),
+                            ),
+                            trailing: TextButton(
+                              onPressed: () {
+                                Get.to(() => const AccountBalanceScreen());
+                              },
+                              child: const Text('More'),
                             ),
                           ),
                         ),
