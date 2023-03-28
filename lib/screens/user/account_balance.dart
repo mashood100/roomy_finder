@@ -9,6 +9,7 @@ import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AccountBalanceScreen extends StatefulWidget {
@@ -22,11 +23,22 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
   var _amountToWithDraw = AppController.instance.accountBalance;
   var _isLoading = false;
   String? stripeConnectId;
+  String? withdrawMethod;
+
+  final _paypalEmailController = TextEditingController(
+    text: AppController.me.email,
+  );
 
   @override
   void initState() {
     fetchAccountDetails();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _paypalEmailController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchAccountDetails() async {
@@ -41,27 +53,39 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
 
   Future<void> _withdrawMoney(String service) async {
     final amount = _amountToWithDraw * AppController.convertionRate;
+    if (amount < 1000) {
+      showToast(
+        "Amount too small. Minimum is"
+        " ${1000 * AppController.convertionRate} "
+        "${AppController.instance.country.value.currencyCode}",
+      );
+      return;
+    }
+    final shouldContinue = await showConfirmDialog("Please confirm");
+    if (shouldContinue != true) return;
     try {
       _isLoading = (true);
       switch (service) {
-        case "STRIPE":
         case "PAYPAL":
+          if (!_paypalEmailController.text.isEmail) {
+            showToast("Invalid email");
+            return;
+          }
           final String endPoint;
 
           if (service == "STRIPE") {
-            endPoint = "/transactions/payouts/stripe/withdraw";
+            endPoint = "/transactions/payout/stripe/withdraw";
           } else if (service == "PAYPAL") {
-            endPoint = "/transactions/payouts/paypal/withdraw";
+            endPoint = "/transactions/payout/paypal/withdraw";
           } else {
             return;
           }
           try {
             _isLoading = (true);
 
-            // 1. create payment intent on the server
             final res = await ApiService.getDio.post(
               endPoint,
-              data: {"amount": amount},
+              data: {"amount": amount, "email": _paypalEmailController.text},
             );
 
             if (res.statusCode == 200) {
@@ -69,7 +93,8 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
                 "Transaction initiated. You will recieve"
                 " notification after processing.",
               );
-              _isLoading = (false);
+            } else if (res.statusCode == 403) {
+              showToast("Insufficient balance");
             } else {
               showConfirmDialog("Failed to initiate transaction",
                   isAlert: true);
@@ -99,9 +124,8 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
     try {
       _isLoading = (true);
 
-      // 1. create payment intent on the server
       final res = await ApiService.getDio.post(
-        "/transactions/payouts/stripe/connected-account",
+        "/transactions/payout/stripe/connected-account",
       );
 
       if (res.statusCode == 200) {
@@ -114,6 +138,11 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
         if (await canLaunchUrl(uri)) {
           launchUrl(uri, mode: LaunchMode.externalApplication);
         }
+      } else if (res.statusCode == 503) {
+        showToast(
+          res.data["message"] ?? "Gateway error. Please try again",
+        );
+        _isLoading = (false);
       } else {
         showConfirmDialog("Failed to connect stripe account", isAlert: true);
         Get.log("${res.data}}");
@@ -132,67 +161,144 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Account balance"),
+        centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                formatMoney(AppController.instance.accountBalance),
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Column(
+          children: [
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                child: Text(
+                  formatMoney(AppController.instance.accountBalance),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          InlineTextField(
-            labelText: "Withdraw amount",
-            initialValue: _amountToWithDraw.toString(),
-            enabled: !_isLoading,
-            onChanged: (value) {
-              _amountToWithDraw = num.parse(value);
-            },
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.allow(priceRegex)],
-          ),
-          const SizedBox(height: 20),
-          if (stripeConnectId == null)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _connectStripeAccount();
-                },
-                icon: const Icon(Icons.credit_card),
-                label: const Text("Connect Stipe Account"),
-              ),
-            )
-          else
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _withdrawMoney("STRIPE");
-                },
-                icon: const Icon(Icons.credit_card),
-                label: const Text("Withdraw with Stripe"),
-              ),
-            ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                _withdrawMoney("PAYPAL");
+            const SizedBox(height: 20),
+            InlineTextField(
+              labelWidth: Get.width * 0.3,
+              labelText: "Withdraw now",
+              hintText: " Amount to withdraw",
+              suffixText: AppController.instance.country.value.currencyCode,
+              initialValue: _amountToWithDraw.toString(),
+              enabled: !_isLoading,
+              onChanged: (value) {
+                if (value.isEmpty) {
+                  _amountToWithDraw = 0;
+                } else {
+                  _amountToWithDraw = num.parse(value);
+                }
               },
-              icon: const Icon(Icons.paypal, color: Colors.blue),
-              label: const Text("Withdraw with PayPal"),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.allow(priceRegex)],
             ),
-          ),
-        ],
+            const Divider(height: 40),
+            // Withdraw method
+            Row(
+              children: [
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => withdrawMethod = "STRIPE"),
+                  child: Icon(
+                    withdrawMethod == "STRIPE"
+                        ? Icons.check_circle_outline_outlined
+                        : Icons.circle_outlined,
+                    color: ROOMY_ORANGE,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => withdrawMethod = "STRIPE"),
+                  child: const Text(
+                    "Stripe",
+                    style: TextStyle(
+                      color: ROOMY_PURPLE,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => withdrawMethod = "PAYPAL"),
+                  child: Icon(
+                    withdrawMethod == "PAYPAL"
+                        ? Icons.check_circle_outline_outlined
+                        : Icons.circle_outlined,
+                    color: ROOMY_ORANGE,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => withdrawMethod = "PAYPAL"),
+                  child: const Text(
+                    "Paypal",
+                    style: TextStyle(
+                      color: ROOMY_PURPLE,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            if (withdrawMethod == "STRIPE")
+              if (stripeConnectId == null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _connectStripeAccount();
+                    },
+                    icon: const Icon(Icons.credit_card),
+                    label: const Text("Connect Stipe Account"),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            _withdrawMoney("STRIPE");
+                          },
+                    icon: const Icon(Icons.credit_card),
+                    label: const Text("Withdraw with Stripe"),
+                  ),
+                ),
+            if (withdrawMethod == "PAYPAL") ...[
+              InlineTextField(
+                labelWidth: Get.width * 0.3,
+                labelText: "Paypal email",
+                controller: _paypalEmailController,
+                enabled: !_isLoading,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          _withdrawMoney("PAYPAL");
+                        },
+                  icon: const Icon(Icons.paypal, color: Colors.blue),
+                  label: const Text("Withdraw with PayPal"),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

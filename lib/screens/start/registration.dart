@@ -312,8 +312,7 @@ class _RegistrationController extends LoadingController {
       }
       isLoading(true);
 
-      final exist =
-          await ApiService.checkIfUserExist('${phoneNumber.phoneNumber}');
+      final exist = await ApiService.checkIfUserExist(information["email"]!);
 
       if (exist) {
         showGetSnackbar(

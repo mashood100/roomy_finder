@@ -256,10 +256,9 @@ class AppController extends GetxController {
   }
 
   // Account balance
-  Future<Map<String,dynamic>?> getAccountInfo() async {
+  Future<Map<String, dynamic>?> getAccountInfo() async {
     try {
-      final res =
-          await ApiService.getDio.put("$API_URL/profile/account-details");
+      final res = await ApiService.getDio.get("/profile/account-details");
       if (res.statusCode == 200) {
         accountBalance = res.data['accountBalance'];
         return res.data;

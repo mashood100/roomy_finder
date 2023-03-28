@@ -1,12 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
-import 'package:roomy_finder/components/phone_input.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
@@ -18,6 +16,7 @@ class _ResetPasswordScreenController extends LoadingController {
   final _page1Formkey = GlobalKey<FormState>();
   final _page2Formkey = GlobalKey<FormState>();
 
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -28,9 +27,7 @@ class _ResetPasswordScreenController extends LoadingController {
   final _showPassword = false.obs;
   final showConfirmPassword = false.obs;
 
-  String _verificationId = "";
-
-  PhoneNumber _phoneNumber = PhoneNumber(dialCode: "+971", isoCode: "AE");
+  String _code = "";
 
   @override
   void onClose() {
@@ -47,7 +44,7 @@ class _ResetPasswordScreenController extends LoadingController {
       curve: Curves.easeInOut,
     );
     _pageIndex(0);
-    _verificationId = "";
+    _code = "";
   }
 
   void moveToCodeVerification() {
@@ -75,7 +72,7 @@ class _ResetPasswordScreenController extends LoadingController {
         isLoading(true);
 
         final mapData = {
-          "phone": _phoneNumber.phoneNumber,
+          "email": _emailController.text,
           "password": _passwordController.text.trim(),
           "fcmToken": await FirebaseMessaging.instance.getToken(),
         };
@@ -126,46 +123,17 @@ class _ResetPasswordScreenController extends LoadingController {
     isLoading(true);
 
     try {
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: _phoneNumber.phoneNumber,
-        verificationCompleted: (credential) async {},
-        verificationFailed: (e) {
-          Get.log(" Verification failed with code : ${e.code}");
-
-          isLoading(false);
-          switch (e.code) {
-            case "invalid-phone-number":
-              showGetSnackbar(
-                "phoneVerificationInvalidPhoneNumber".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-            case "missing-client-identifier":
-              showGetSnackbar(
-                "phoneVerificationMissingClient".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-
-            default:
-              showGetSnackbar(
-                "phoneVerificationCheckInternet".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-          }
-        },
-        codeSent: (verificationId, forceResendingToken) {
-          isLoading(false);
-          _verificationId = verificationId;
-          moveToCodeVerification();
-        },
-        codeAutoRetrievalTimeout: (verificationId) {},
-        timeout: const Duration(minutes: 1),
+      final res = await Dio().get(
+        '$API_URL/auth/reset-password',
+        queryParameters: {"email": _emailController.text},
       );
+
+      if (res.statusCode == 200) {
+        _code = res.data["code"];
+        moveToCodeVerification();
+      } else {
+        showToast("Something went wrong");
+      }
     } catch (e) {
       isLoading(false);
       showGetSnackbar(
@@ -173,6 +141,8 @@ class _ResetPasswordScreenController extends LoadingController {
         title: 'registration'.tr,
         severity: Severity.error,
       );
+    } finally {
+      isLoading(false);
     }
   }
 
@@ -182,35 +152,16 @@ class _ResetPasswordScreenController extends LoadingController {
     isLoading(true);
 
     try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: smsCode,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      isLoading(false);
-      moveToCredentials();
-    } on FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case "invalid-verification-code":
-          showGetSnackbar(
-            "phoneVerificationIncorrectCode".tr,
-            title: 'registration'.tr,
-            severity: Severity.error,
-          );
-          break;
-
-        default:
-          showGetSnackbar(
-            "phoneVerificationPleaseTryAgain".tr,
-            title: 'registration'.tr,
-            severity: Severity.error,
-          );
-          break;
+      if (_code.isNotEmpty) {
+        return;
+      }
+      if (smsCode != _code) {
+        showToast("Incorrect code");
+        return;
       }
 
       isLoading(false);
-      Get.log("$e");
+      moveToCredentials();
     } catch (e) {
       showGetSnackbar(
         "phoneVerificationPleaseTryAgain".tr,
@@ -247,12 +198,21 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 20),
-                          Text('phoneNumber'.tr),
-                          PhoneNumberInput(
-                            initialValue: controller._phoneNumber,
-                            onChange: (phoneNumber) {
-                              controller._phoneNumber = phoneNumber;
+                          InlineTextField(
+                            labelText: "email".tr,
+                            hintText: "emailAddress".tr,
+                            controller: controller._emailController,
+                            suffixIcon: const Icon(CupertinoIcons.mail),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'thisFieldIsRequired'.tr;
+                              }
+
+                              if (!value.isEmail) return 'invalidEmail'.tr;
+
+                              return null;
                             },
+                            keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 30),
                           Row(
@@ -274,10 +234,10 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: 20),
-                        Text('enterTheVerificationCodeSentTo'.trParams({
-                          "phoneNumber":
-                              '${controller._phoneNumber.phoneNumber}'
-                        })),
+                        Text(
+                          'Enter the verification code sent '
+                          'to ${controller._emailController.text}',
+                        ),
                         const SizedBox(height: 10),
                         Pinput(
                           length: 6,

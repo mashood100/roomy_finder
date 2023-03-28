@@ -371,7 +371,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                     case "Room":
                                       Get.to(() {
                                         return FindPropertiesAdsScreen(
-                                          city: suggestion,
+                                          filter: {"city": suggestion},
                                         );
                                       });
                                       break;
@@ -411,6 +411,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                             case "Room":
                                               Get.to(() {
                                                 return const FindPropertiesAdsScreen();
+                                              });
+                                              break;
+                                            case "Roommate":
+                                              Get.to(() {
+                                                return const FindRoommatesScreen();
                                               });
                                               break;
                                             default:

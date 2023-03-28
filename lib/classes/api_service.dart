@@ -78,9 +78,9 @@ class ApiService {
     );
   }
 
-  static Future<bool> checkIfUserExist(String phone) async {
+  static Future<bool> checkIfUserExist(String email) async {
     final dio = ApiService.getDio;
-    final res = await dio.get('$API_URL/auth/user-exist?phone=$phone');
+    final res = await dio.get('$API_URL/auth/user-exist?email=$email');
     return res.data["exist"] as bool;
   }
 

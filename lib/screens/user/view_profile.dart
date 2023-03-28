@@ -494,25 +494,26 @@ class ViewProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Card(
-                          child: ListTile(
-                            dense: true,
-                            title: Text(
-                              "Account balance".tr,
-                              style: textTheme.bodySmall!,
-                            ),
-                            subtitle: Text(
-                              formatMoney(
-                                  AppController.instance.accountBalance),
-                            ),
-                            trailing: TextButton(
-                              onPressed: () {
-                                Get.to(() => const AccountBalanceScreen());
-                              },
-                              child: const Text('More'),
+                        if (AppController.me.isLandlord)
+                          Card(
+                            child: ListTile(
+                              dense: true,
+                              title: Text(
+                                "Account balance".tr,
+                                style: textTheme.bodySmall!,
+                              ),
+                              subtitle: Text(
+                                formatMoney(
+                                    AppController.instance.accountBalance),
+                              ),
+                              trailing: TextButton(
+                                onPressed: () {
+                                  Get.to(() => const AccountBalanceScreen());
+                                },
+                                child: const Text('More'),
+                              ),
                             ),
                           ),
-                        ),
                         Card(
                           child: Container(
                             padding: const EdgeInsets.symmetric(

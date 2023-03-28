@@ -193,8 +193,10 @@ class PropertyAdSearchQueryScreen extends StatelessWidget {
                     if (controller.location.isNotEmpty) {
                       Get.to(
                         () => FindPropertiesAdsScreen(
-                          city: controller.city.value,
-                          location: controller.location.value,
+                          filter: {
+                            "city": controller.city.value,
+                            "location": controller.location.value,
+                          },
                         ),
                       );
                     } else {

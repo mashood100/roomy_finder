@@ -148,18 +148,23 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               child: CachedNetworkImage(
                                 imageUrl: e,
                                 height: 250,
-                                fit: BoxFit.fitHeight,
+                                width: ad.images.length == 1 ? Get.width : null,
+                                fit: ad.images.length == 1
+                                    ? BoxFit.cover
+                                    : BoxFit.fitHeight,
                                 errorWidget: (ctx, e, trace) {
-                                  return const SizedBox(
-                                    child: CupertinoActivityIndicator(
+                                  return SizedBox(
+                                    width: Get.width,
+                                    child: const CupertinoActivityIndicator(
                                       radius: 30,
                                     ),
                                   );
                                 },
                                 progressIndicatorBuilder:
                                     (context, url, downloadProgress) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(10.0),
+                                  return Container(
+                                    width: Get.width * 0.9,
+                                    padding: const EdgeInsets.all(30),
                                     child: CircularProgressIndicator(
                                       value: downloadProgress.progress,
                                     ),

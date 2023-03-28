@@ -213,6 +213,33 @@ class _PostRoommateAdController extends LoadingController {
     Get.to(() => PlayVideoScreen(source: source, isAsset: isAsset));
   }
 
+  Future<void> _pickNeedRoomPhoto({bool gallery = true}) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image;
+
+      if (gallery) {
+        image = await picker.pickImage(source: ImageSource.gallery);
+      } else {
+        image = await picker.pickImage(source: ImageSource.camera);
+      }
+
+      if (image != null) {
+        images.clear();
+        images.add(image);
+      }
+    } catch (e) {
+      Get.log("$e");
+      showGetSnackbar(
+        'errorPickingProfilePicture'.tr,
+        title: 'credentials'.tr,
+        severity: Severity.error,
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
   Future<void> saveAd() async {
     isLoading(true);
 
@@ -958,7 +985,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 20),
+                            if (controller.information["action"] == "HAVE ROOM")
+                              const SizedBox(height: 20),
                             // Building Name
                             if (controller.information["action"] == "HAVE ROOM")
                               InlineTextField(
@@ -979,7 +1007,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                                   return null;
                                 },
                               ),
-                            const SizedBox(height: 20),
+                            if (controller.information["action"] == "HAVE ROOM")
+                              const SizedBox(height: 20),
 
                             // Appartment number
                             if (controller.information["action"] == "HAVE ROOM")
@@ -1008,7 +1037,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                                   )
                                 ],
                               ),
-                            const SizedBox(height: 20),
+                            if (controller.information["action"] == "HAVE ROOM")
+                              const SizedBox(height: 20),
 
                             // Floor number
                             if (controller.information["action"] == "HAVE ROOM")
@@ -1035,6 +1065,96 @@ class PostRoommateAdScreen extends StatelessWidget {
                                   )
                                 ],
                               ),
+
+                            // Profile picture
+                            if (controller.information["action"] == "NEED ROOM")
+                              const Divider(),
+                            if (controller.information["action"] == "NEED ROOM")
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: Get.context!,
+                                        builder: (context) {
+                                          return SafeArea(
+                                            child: Image.file(
+                                              File(controller.images[0].path),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: controller
+                                              .images.isNotEmpty
+                                          ? FileImage(
+                                              File(controller.images[0].path))
+                                          : null,
+                                      child: controller.images.isNotEmpty
+                                          ? null
+                                          : const Icon(
+                                              Icons.person,
+                                              size: 40,
+                                              color: Colors.white,
+                                            ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: context,
+                                        builder: (context) {
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading:
+                                                    const Icon(Icons.camera),
+                                                title: const Text("Camera"),
+                                                onTap: () {
+                                                  Get.back();
+                                                  controller._pickNeedRoomPhoto(
+                                                      gallery: false);
+                                                },
+                                              ),
+                                              const Divider(),
+                                              ListTile(
+                                                leading:
+                                                    const Icon(Icons.image),
+                                                title: const Text("Gallery"),
+                                                onTap: () {
+                                                  Get.back();
+                                                  controller
+                                                      ._pickNeedRoomPhoto();
+                                                },
+                                              ),
+                                              const Divider(),
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.cancel,
+                                                  color: Colors.red,
+                                                ),
+                                                title: const Text("Cancel"),
+                                                onTap: () {
+                                                  Get.back();
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: const Text("Add Photo"),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 20),
                           ],
                         ),
                       ),
@@ -1758,6 +1878,14 @@ class PostRoommateAdScreen extends StatelessWidget {
                                               ?.validate();
 
                                           if (isValid != true) return;
+                                          if (controller.images.isEmpty &&
+                                              controller.oldImages.isEmpty) {
+                                            showToast(
+                                              "You need at least one image",
+                                              severity: Severity.error,
+                                            );
+                                            return;
+                                          }
 
                                           controller._moveToNextPage();
 
