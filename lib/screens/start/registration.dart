@@ -19,6 +19,7 @@ import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
@@ -41,6 +42,9 @@ class _RegistrationController extends LoadingController {
   final acceptTermsAndConditions = false.obs;
   PhoneNumber phoneNumber = PhoneNumber(dialCode: "971", isoCode: "AE");
 
+  String _emailVerificationCode = "";
+  bool _emailIsVerified = false;
+
   bool get isLandlord => accountType.value == UserAccountType.landlord;
 
   // Information
@@ -62,6 +66,12 @@ class _RegistrationController extends LoadingController {
   Timer? secondsLeftTimer;
 
   final secondsLeft = 59.obs;
+
+  bool get _canVerifyEmail {
+    return isLoading.isFalse &&
+        "${information["email"]}".isEmail &&
+        !_emailIsVerified;
+  }
 
   Future<String> get _formattedPhoneNumber async {
     try {
@@ -98,6 +108,36 @@ class _RegistrationController extends LoadingController {
   void resetSmsTimer() {
     secondsLeftTimer?.cancel();
     secondsLeft(59 * 5);
+  }
+
+  Future<void> _verifyEmail() async {
+    try {
+      if (_emailVerificationCode.isEmpty) {
+        final codeRes = await ApiService.getDio.post(
+          "/auth/send-email-verification-code",
+          queryParameters: {"email": information['email']},
+        );
+
+        await Future.delayed(const Duration(seconds: 5));
+
+        _emailVerificationCode = codeRes.data["code"];
+      }
+
+      final userCode = await showInlineInputBottomSheet(
+        label: "Code",
+        message: "Enter the verification code sent to ${information['email']}",
+      );
+
+      if (userCode == _emailVerificationCode) {
+        _emailIsVerified = true;
+        update();
+      } else {
+        showToast("Incorrect code");
+        return;
+      }
+    } catch (e) {
+      showToast("Email verification failed");
+    }
   }
 
   Future<void> sendSmsCode() async {
@@ -316,7 +356,7 @@ class _RegistrationController extends LoadingController {
 
       if (exist) {
         showGetSnackbar(
-          "This phone number already have an account. Please login instead".tr,
+          "This email address already have an account. Please login instead".tr,
           title: "registration".tr,
           severity: Severity.warning,
         );
@@ -538,7 +578,16 @@ class RegistrationScreen extends StatelessWidget {
                             InlineTextField(
                               labelText: 'email'.tr,
                               initialValue: controller.information["email"],
-                              enabled: controller.isLoading.isFalse,
+                              suffixIcon: IconButton(
+                                onPressed: controller._canVerifyEmail
+                                    ? null
+                                    : () {
+                                        controller._verifyEmail();
+                                      },
+                                icon: const Icon(CupertinoIcons.mail),
+                              ),
+                              enabled: controller.isLoading.isFalse &&
+                                  !controller._emailIsVerified,
                               onChanged: (value) =>
                                   controller.information["email"] = value,
                               validator: (value) {
@@ -869,6 +918,12 @@ class RegistrationScreen extends StatelessWidget {
                             : () async {
                                 switch (controller._pageIndex.value) {
                                   case 0:
+                                    if (controller._canVerifyEmail) {
+                                      if (!controller._emailIsVerified) {
+                                        showToast("Please verify email");
+                                        return;
+                                      }
+                                    }
                                     final isValid =
                                         await controller.validateCredentials();
                                     if (!isValid) return;

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 Future<bool?> showConfirmDialog(
@@ -102,4 +103,72 @@ Future<bool?> showSuccessDialog(
   );
 
   return response == true;
+}
+
+Future<String?> showInlineInputBottomSheet({
+  num? initialPrice,
+  String label = "",
+  String? message,
+}) async {
+  final context = Get.context;
+
+  String? value;
+
+  if (context == null) return null;
+
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(
+        top: 10,
+        right: 10,
+        left: 10,
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (message != null)
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            const SizedBox(height: 10),
+            InlineTextField(
+              labelText: label,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(),
+              onChanged: (val) {
+                value = val;
+              },
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: Text("cancel".tr),
+                ),
+                const SizedBox(width: 10),
+                TextButton(
+                  onPressed: () {
+                    Get.back(result: value);
+                  },
+                  child: Text("ok".tr),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  return value;
 }

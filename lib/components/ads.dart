@@ -311,10 +311,16 @@ class PropertyAdMiniWidget extends StatelessWidget {
 }
 
 class RoommateAdWidget extends StatelessWidget {
-  const RoommateAdWidget({super.key, required this.ad, this.onTap});
+  const RoommateAdWidget({
+    super.key,
+    required this.ad,
+    this.onTap,
+    this.seeInformationLabel = "View Ad",
+  });
 
   final RoommateAd ad;
   final void Function()? onTap;
+  final String seeInformationLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -371,12 +377,16 @@ class RoommateAdWidget extends StatelessWidget {
                     height: 35,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Get.theme.appBarTheme.backgroundColor,
+                        backgroundColor: ROOMY_ORANGE,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        side: const BorderSide(color: ROOMY_ORANGE),
                       ),
                       onPressed: onTap,
-                      child: const Text(
-                        "See Information",
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        seeInformationLabel,
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   )
@@ -482,33 +492,22 @@ class RoommateAdMiniWidget extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (ad.isHaveRoom)
-                            Text.rich(
-                              TextSpan(children: [
-                                TextSpan(
-                                  text: ad.type,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          Text.rich(
+                            TextSpan(children: [
+                              TextSpan(
+                                text: ad.poster.fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const TextSpan(text: " for rent"),
-                              ]),
-                            )
-                          else
-                            Text.rich(
-                              TextSpan(children: [
-                                const TextSpan(text: "Need "),
-                                TextSpan(
-                                  text: ad.type,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ]),
-                            ),
+                              ),
+                            ]),
+                          ),
                           SizedBox(
                             width: Get.width * 0.25,
-                            child: Text("${ad.address["location"]}"),
+                            child: Text(
+                              "${ad.address["city"]},"
+                              " ${ad.address["location"]}",
+                            ),
                           ),
                         ],
                       ),

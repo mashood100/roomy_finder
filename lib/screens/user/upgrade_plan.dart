@@ -7,6 +7,7 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _UpgradePlanController extends LoadingController {
@@ -171,11 +172,20 @@ class UpgragePlanScreen extends StatelessWidget {
                         if (AppController.instance.country.value.isUAE)
                           SizedBox(
                             width: double.infinity,
-                            child: OutlinedButton(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ROOMY_ORANGE,
+                              ),
                               onPressed: () {
                                 controller._payRent("SKIP");
                               },
-                              child: const Text("Skip Payment"),
+                              child: const Text(
+                                "SKIP PAYMENT",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                       ],

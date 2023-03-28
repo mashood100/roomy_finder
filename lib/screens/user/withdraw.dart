@@ -12,14 +12,14 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class AccountBalanceScreen extends StatefulWidget {
-  const AccountBalanceScreen({super.key});
+class WithdrawScreen extends StatefulWidget {
+  const WithdrawScreen({super.key});
 
   @override
-  State<AccountBalanceScreen> createState() => _AccountBalanceScreenState();
+  State<WithdrawScreen> createState() => _WithdrawScreenState();
 }
 
-class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
+class _WithdrawScreenState extends State<WithdrawScreen> {
   var _amountToWithDraw = AppController.instance.accountBalance;
   var _isLoading = false;
   String? stripeConnectId;
@@ -160,7 +160,7 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Account balance"),
+        title: const Text("Withdraw"),
         centerTitle: true,
       ),
       body: Padding(

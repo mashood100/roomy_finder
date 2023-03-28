@@ -45,7 +45,7 @@
                     android:name="android.intent.category.BROWSABLE"/>
                 <data
                     android:host="roomyfinder.page.link"
-                    android:scheme="http"/>
+                    android:scheme="https"/>
             </intent-filter>
 
             <!-- Notification -->
@@ -75,10 +75,8 @@
     <!-- Provide required visibility configuration for API level 30 and above -->
     <queries>
         <intent>
-            <action
-                android:name="android.intent.action.VIEW"/>
-            <data
-                android:scheme="http"/>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
         </intent>
     </queries>
 </manifest>

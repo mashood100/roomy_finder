@@ -13,6 +13,7 @@ import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/functions/share_ad.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
@@ -122,7 +123,13 @@ class ViewRoommateAdScreen extends StatelessWidget {
                 showToast("Added to favorite");
               },
               icon: const Icon(Icons.favorite, color: ROOMY_ORANGE),
-            )
+            ),
+          IconButton(
+            onPressed: () {
+              shareAd(ad);
+            },
+            icon: const Icon(Icons.share),
+          )
         ],
       ),
       body: SingleChildScrollView(
@@ -254,7 +261,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.grey,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 18,
                             ),
                           ),
                         ],
@@ -333,15 +340,25 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
-                      )
+                      ),
+                      const Spacer(),
+                      Text(
+                        "Budget ${formatMoney(ad.budget * AppController.convertionRate)}"
+                        " / ${ad.rentType}",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   if (ad.isHaveRoom)
                     Text.rich(
                       TextSpan(
                         children: [
+                          const TextSpan(text: "Building : "),
                           TextSpan(
-                            text: "       ${ad.address["buildingName"]}, ",
+                            text: "${ad.address["buildingName"]}, ",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
@@ -435,7 +452,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: e["label"],
+                                      text: "•   ${e["label"]}",
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -493,26 +510,36 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 4,
                     childAspectRatio: 1.2,
-                    children: allSocialPreferences
-                        .where((e) => ad.socialPreferences[e["value"]] == true)
-                        .map((e) {
+                    children: allSocialPreferences.map((e) {
                       return Card(
                         child: Container(
                           padding: const EdgeInsets.all(5),
                           alignment: Alignment.center,
-                          child: Column(
+                          child: Row(
                             children: [
                               Expanded(
                                 child: Image.asset("${e["asset"]}"),
                               ),
-                              Text(
-                                "${e["label"]}",
-                                style: TextStyle(
-                                  color: Get.isDarkMode
-                                      ? Colors.white
-                                      : ROOMY_ORANGE,
-                                  fontSize: 12,
-                                ),
+                              Column(
+                                children: [
+                                  Text(
+                                    "${e["label"]}",
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  Builder(builder: (context) {
+                                    final isTrue = ad.socialPreferences
+                                        .containsKey(e["value"]);
+                                    return Text(
+                                      isTrue ? 'Yes' : "No",
+                                      style: TextStyle(
+                                        color: Get.isDarkMode
+                                            ? Colors.white
+                                            : ROOMY_ORANGE,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ),
                             ],
                           ),
@@ -521,49 +548,107 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     }).toList(),
                   ),
                   const Divider(height: 20),
-                  const Center(
-                    child: Text(
-                      "AMENITIES",
-                      style: TextStyle(
-                        fontSize: 14,
+                  // const Center(
+                  //   child: Text(
+                  //     "AMENITIES",
+                  //     style: TextStyle(
+                  //       fontSize: 14,
+                  //       color: ROOMY_ORANGE,
+                  //     ),
+                  //   ),
+                  // ),
+                  if (ad.amenities.isNotEmpty)
+                    DefaultTextStyle(
+                      style: const TextStyle(
                         color: ROOMY_ORANGE,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Image.asset("assets/icons/washing_2.png", height: 30),
+                          const Text("APPLIANCES"),
+                          const Spacer(),
+                          Image.asset("assets/icons/wifi.png", height: 30),
+                          const Text("TECH"),
+                          const Spacer(),
+                          const Icon(Icons.widgets, color: ROOMY_ORANGE),
+                          const Text("UTILITIES"),
+                        ],
                       ),
                     ),
-                  ),
-                  if (ad.amenities.isNotEmpty)
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 4,
-                      childAspectRatio: 1.2,
-                      children: allAmenties
-                          .where((e) => ad.amenities.contains(e["value"]))
-                          .map((e) {
-                        return Card(
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: Image.asset("${e["asset"]}"),
-                                ),
-                                Text(
-                                  "${e["value"]}",
-                                  style: TextStyle(
-                                    color: Get.isDarkMode
-                                        ? Colors.white
-                                        : ROOMY_ORANGE,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                  DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontSize: 12,
                     ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.homeAppliancesAmenities
+                              .map((e) => Text("•  $e"))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.technologyAmenities
+                              .map((e) =>
+                                  Text("•  $e", textAlign: TextAlign.center))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.utilitiesAmenities
+                              .map(
+                                (e) => Text("• $e", textAlign: TextAlign.end),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // if (ad.amenities.isNotEmpty)
+                  //   GridView.count(
+                  //     shrinkWrap: true,
+                  //     physics: const NeverScrollableScrollPhysics(),
+                  //     crossAxisCount: 4,
+                  //     childAspectRatio: 1.2,
+                  //     children: allAmenties
+                  //         .where((e) => ad.amenities.contains(e["value"]))
+                  //         .map((e) {
+                  //       return Card(
+                  //         child: Container(
+                  //           padding: const EdgeInsets.all(5),
+                  //           alignment: Alignment.center,
+                  //           child: Column(
+                  //             children: [
+                  //               Expanded(
+                  //                 child: Image.asset("${e["asset"]}"),
+                  //               ),
+                  //               Text(
+                  //                 "${e["value"]}",
+                  //                 style: TextStyle(
+                  //                   color: Get.isDarkMode
+                  //                       ? Colors.white
+                  //                       : ROOMY_ORANGE,
+                  //                   fontSize: 12,
+                  //                 ),
+                  //                 textAlign: TextAlign.center,
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       );
+                  //     }).toList(),
+                  //   ),
+
                   const Divider(height: 20),
                   const Center(
                     child: Text(

@@ -14,6 +14,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/booking/pay_rent/pay_property_booking.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _ViewPropertyBookingScreenController extends LoadingController {
   final PropertyBooking booking;
@@ -411,6 +412,13 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ROOMY_ORANGE,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              side: const BorderSide(color: ROOMY_ORANGE),
+                            ),
                             onPressed: controller.isLoading.isTrue
                                 ? null
                                 : () {

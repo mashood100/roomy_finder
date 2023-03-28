@@ -24,6 +24,7 @@ import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/blog_post/view_post.dart';
+import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -36,6 +37,8 @@ class _HomeTabController extends LoadingController {
   final _homeRoommateAds = <RoommateAd>[];
   final _isLoadingHomeAds = true.obs;
   final _failedToLoadHomeAds = false.obs;
+
+  final canSeeDetails = AppController.me.isPremium.obs;
 
   @override
   void onInit() {
@@ -157,6 +160,16 @@ class _HomeTabController extends LoadingController {
       AppController.instance.country(country);
     }
   }
+
+  Future<void> upgradeToSeeDetails(RoommateAd ad) async {
+    await Get.to(() => UpgragePlanScreen(
+          skipCallback: () {
+            canSeeDetails(true);
+            Get.to(() => ViewRoommateAdScreen(ad: ad));
+          },
+        ));
+    update();
+  }
 }
 
 class HomeTab extends StatelessWidget implements HomeScreenSupportable {
@@ -187,9 +200,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       alignment: Alignment.topCenter,
                       children: [
                         Image.asset(
-                          "assets/images/appartment-inner-view.jpg",
+                          "assets/images/home_background.jpg",
                           width: double.infinity,
-                          height: 300,
+                          height: (controller._targetAds.value == "All")
+                              ? 250
+                              : 300,
                           fit: BoxFit.cover,
                         ),
                         Column(
@@ -354,96 +369,101 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             ),
                             const SizedBox(height: 10),
                             // Search box
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              child: TypeAheadField<String>(
-                                itemBuilder: (ctx, suggestion) {
-                                  return ListTile(
-                                    title: Text(suggestion),
-                                    dense: true,
-                                  );
-                                },
-                                onSuggestionSelected: (suggestion) {
-                                  FocusManager.instance.primaryFocus?.unfocus();
+                            if (controller._targetAds.value != "All")
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                child: TypeAheadField<String>(
+                                  itemBuilder: (ctx, suggestion) {
+                                    return ListTile(
+                                      title: Text(suggestion),
+                                      dense: true,
+                                    );
+                                  },
+                                  onSuggestionSelected: (suggestion) {
+                                    FocusManager.instance.primaryFocus
+                                        ?.unfocus();
 
-                                  switch (controller._targetAds.value) {
-                                    case "Room":
-                                      Get.to(() {
-                                        return FindPropertiesAdsScreen(
-                                          filter: {"city": suggestion},
-                                        );
-                                      });
-                                      break;
-                                    case "Roommate":
-                                      Get.to(() {
-                                        return FindRoommatesScreen(
-                                          filter: {"city": suggestion},
-                                        );
-                                      });
-                                      break;
-                                    default:
-                                  }
-                                },
-                                suggestionsCallback: (pattern) {
-                                  pattern = pattern.trim().toLowerCase();
-                                  return CITIES_FROM_CURRENT_COUNTRY.where((e) {
-                                    e = e.trim().toLowerCase();
+                                    switch (controller._targetAds.value) {
+                                      case "Room":
+                                        Get.to(() {
+                                          return FindPropertiesAdsScreen(
+                                            filter: {"city": suggestion},
+                                          );
+                                        });
+                                        break;
+                                      case "Roommate":
+                                        Get.to(() {
+                                          return FindRoommatesScreen(
+                                            filter: {"city": suggestion},
+                                          );
+                                        });
+                                        break;
+                                      default:
+                                    }
+                                  },
+                                  suggestionsCallback: (pattern) {
+                                    pattern = pattern.trim().toLowerCase();
+                                    return CITIES_FROM_CURRENT_COUNTRY
+                                        .where((e) {
+                                      e = e.trim().toLowerCase();
 
-                                    return e.startsWith(pattern) ||
-                                        e.contains(pattern);
-                                  });
-                                },
-                                suggestionsBoxDecoration:
-                                    const SuggestionsBoxDecoration(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(10),
+                                      return e.startsWith(pattern) ||
+                                          e.contains(pattern);
+                                    });
+                                  },
+                                  suggestionsBoxDecoration:
+                                      const SuggestionsBoxDecoration(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                   ),
-                                ),
-                                textFieldConfiguration: TextFieldConfiguration(
-                                  decoration: InputDecoration(
-                                    fillColor: Colors.white,
-                                    hintText: "Search by city",
-                                    suffixIcon: SizedBox(
-                                      child: IconButton(
-                                        onPressed: () {
-                                          switch (controller._targetAds.value) {
-                                            case "Room":
-                                              Get.to(() {
-                                                return const FindPropertiesAdsScreen();
-                                              });
-                                              break;
-                                            case "Roommate":
-                                              Get.to(() {
-                                                return const FindRoommatesScreen();
-                                              });
-                                              break;
-                                            default:
-                                          }
-                                        },
-                                        icon: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: ROOMY_PURPLE,
-                                          ),
-                                          child: const Icon(
-                                            Icons.search,
-                                            color: Colors.white,
+                                  textFieldConfiguration:
+                                      TextFieldConfiguration(
+                                    decoration: InputDecoration(
+                                      fillColor: Colors.white,
+                                      hintText: "Search by city",
+                                      suffixIcon: SizedBox(
+                                        child: IconButton(
+                                          onPressed: () {
+                                            switch (
+                                                controller._targetAds.value) {
+                                              case "Room":
+                                                Get.to(() {
+                                                  return const FindPropertiesAdsScreen();
+                                                });
+                                                break;
+                                              case "Roommate":
+                                                Get.to(() {
+                                                  return const FindRoommatesScreen();
+                                                });
+                                                break;
+                                              default:
+                                            }
+                                          },
+                                          icon: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: ROOMY_PURPLE,
+                                            ),
+                                            child: const Icon(
+                                              Icons.search,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ),
+                                      contentPadding: const EdgeInsets.fromLTRB(
+                                          12, 10, 12, 12),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(50),
+                                      ),
                                     ),
-                                    contentPadding: const EdgeInsets.fromLTRB(
-                                        12, 10, 12, 12),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(50),
-                                    ),
+                                    textInputAction: TextInputAction.search,
                                   ),
-                                  textInputAction: TextInputAction.search,
                                 ),
                               ),
-                            ),
                             const SizedBox(height: 10),
                             // Post ad button
                             SizedBox(
@@ -574,7 +594,14 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             return RoommateAdMiniWidget(
                               ad: ad,
                               onTap: () {
-                                Get.to(() => ViewRoommateAdScreen(ad: ad));
+                                if (AppController.me.isGuest) {
+                                  Get.offAllNamed("/login");
+                                }
+                                if (AppController.me.isPremium) {
+                                  Get.to(() => ViewRoommateAdScreen(ad: ad));
+                                } else {
+                                  controller.upgradeToSeeDetails(ad);
+                                }
                               },
                             );
                           },

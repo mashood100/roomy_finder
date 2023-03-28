@@ -16,8 +16,9 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:roomy_finder/screens/user/account_balance.dart';
+import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
@@ -506,11 +507,17 @@ class ViewProfileScreen extends StatelessWidget {
                                 formatMoney(
                                     AppController.instance.accountBalance),
                               ),
-                              trailing: TextButton(
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ROOMY_ORANGE,
+                                ),
                                 onPressed: () {
-                                  Get.to(() => const AccountBalanceScreen());
+                                  Get.to(() => const WithdrawScreen());
                                 },
-                                child: const Text('More'),
+                                child: const Text(
+                                  'WITHDRAW',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
                             ),
                           ),

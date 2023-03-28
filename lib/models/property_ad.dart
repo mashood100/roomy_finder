@@ -32,6 +32,7 @@ class PropertyAd {
 
   CameraPosition? cameraPosition;
   PlaceAutoCompletePredicate? autoCompletePredicate;
+  String? shareLink;
 
   bool get isMine => poster.isMe;
   bool get isAvailable => quantity != quantityTaken;
@@ -105,6 +106,7 @@ class PropertyAd {
     this.cameraPosition,
     this.autoCompletePredicate,
     this.needsPhotograph,
+    this.shareLink,
   }) : assert(images.isNotEmpty);
 
   Map<String, dynamic> toMap() {
@@ -132,6 +134,7 @@ class PropertyAd {
       'cameraPosition': cameraPosition?.toMap(),
       'autoCompletePredicate': autoCompletePredicate?.toMap(),
       'needsPhotograph': needsPhotograph,
+      'shareLink': shareLink,
     };
   }
 
@@ -168,6 +171,7 @@ class PropertyAd {
           ? null
           : PlaceAutoCompletePredicate.fromMap(map["autoCompletePredicate"]),
       needsPhotograph: map["needsPhotograph"] == true,
+      shareLink: map['shareLink'] as String?,
     );
   }
 
@@ -175,51 +179,6 @@ class PropertyAd {
 
   factory PropertyAd.fromJson(String source) =>
       PropertyAd.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  PropertyAd copyWith({
-    String? id,
-    User? poster,
-    String? type,
-    int? quantity,
-    int? quantityTaken,
-    String? preferedRentType,
-    num? monthlyPrice,
-    num? weeklyPrice,
-    num? dailyPrice,
-    bool? deposit,
-    bool? isPostPaid,
-    num? depositPrice,
-    String? posterType,
-    String? description,
-    List<String>? images,
-    List<String>? videos,
-    List<String>? amenities,
-    DateTime? createdAt,
-    Map<String, Object>? address,
-    Map<String, Object>? socialPreferences,
-  }) {
-    return PropertyAd(
-      id: id ?? this.id,
-      poster: poster ?? this.poster,
-      type: type ?? this.type,
-      quantity: quantity ?? this.quantity,
-      quantityTaken: quantityTaken ?? this.quantityTaken,
-      preferedRentType: preferedRentType ?? this.preferedRentType,
-      monthlyPrice: monthlyPrice ?? this.monthlyPrice,
-      weeklyPrice: weeklyPrice ?? this.weeklyPrice,
-      dailyPrice: dailyPrice ?? this.dailyPrice,
-      deposit: deposit ?? this.deposit,
-      depositPrice: depositPrice ?? this.depositPrice,
-      posterType: posterType ?? this.posterType,
-      description: description ?? this.description,
-      images: images ?? this.images,
-      videos: videos ?? this.videos,
-      amenities: amenities ?? this.amenities,
-      createdAt: createdAt ?? this.createdAt,
-      address: address ?? this.address,
-      socialPreferences: socialPreferences ?? this.socialPreferences,
-    );
-  }
 
   @override
   String toString() {

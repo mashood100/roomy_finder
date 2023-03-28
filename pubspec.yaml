@@ -79,6 +79,7 @@ dependencies:
   permission_handler: ^10.2.0
   geolocator: ^9.0.2
   skeletons: ^0.0.3
+  share_plus: ^4.5.3
 
 dev_dependencies:
   flutter_test:

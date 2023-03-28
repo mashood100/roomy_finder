@@ -22,8 +22,8 @@ class _FindRoommatesController extends LoadingController {
 
   final canSeeDetails = AppController.me.isPremium.obs;
 
-  Future<void> changeCanSeeAds(RoommateAd ad) async {
-    Get.to(() => UpgragePlanScreen(
+  Future<void> upgradeToSeeDetails(RoommateAd ad) async {
+    await Get.to(() => UpgragePlanScreen(
           skipCallback: () {
             canSeeDetails(true);
             Get.to(() => ViewRoommateAdScreen(ad: ad));
@@ -409,7 +409,14 @@ class FindRoommatesScreen extends StatelessWidget {
                     return RoommateAdMiniWidget(
                       ad: e,
                       onTap: () {
-                        Get.to(() => ViewRoommateAdScreen(ad: e));
+                        if (AppController.me.isGuest) {
+                          Get.offAllNamed("/login");
+                        }
+                        if (AppController.me.isPremium) {
+                          Get.to(() => ViewRoommateAdScreen(ad: e));
+                        } else {
+                          controller.upgradeToSeeDetails(e);
+                        }
                       },
                     );
                   }).toList(),

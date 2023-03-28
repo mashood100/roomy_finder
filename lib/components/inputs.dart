@@ -21,6 +21,7 @@ class InlineTextField extends StatelessWidget {
     this.inputFormatters,
     this.readOnly,
     this.onTap,
+    this.autofocus = false,
   });
 
   final String? labelText;
@@ -32,6 +33,7 @@ class InlineTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool enabled;
   final bool? readOnly;
+  final bool autofocus;
   final bool obscureText;
   final String? hintText;
   final String? suffixText;
@@ -60,6 +62,7 @@ class InlineTextField extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: TextFormField(
+              autofocus: autofocus,
               enabled: enabled,
               readOnly: readOnly ?? false,
               initialValue: initialValue,

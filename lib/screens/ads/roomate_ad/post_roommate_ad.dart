@@ -854,18 +854,47 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ),
                             const Divider(height: 30),
                             // Roommate type
-                            InlineDropdown<String>(
-                              labelText: 'Property type'.tr,
-                              value: controller.information["type"] as String,
-                              items: const ["Studio", "Appartment", "House"],
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.information["type"] = val;
-                                      }
-                                    },
+                            Row(
+                              children: [
+                                const Text(
+                                  "Property type",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const Spacer(),
+                                ...["Studio", "Appartment", "House"].map((e) {
+                                  return Container(
+                                    margin: const EdgeInsets.only(left: 10),
+                                    padding: const EdgeInsets.all(8.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: controller.information["type"] == e
+                                          ? ROOMY_ORANGE
+                                          : Colors.grey.shade200,
+                                    ),
+                                    child: InkWell(
+                                      onTap: () {
+                                        controller.information["type"] = e;
+                                      },
+                                      child: Text(e),
+                                    ),
+                                  );
+                                }).toList()
+                              ],
                             ),
+                            // InlineDropdown<String>(
+                            //   labelText: 'Property type'.tr,
+                            //   value: controller.information["type"] as String,
+                            //   items: const ["Studio", "Appartment", "House"],
+                            //   onChanged: controller.isLoading.isTrue
+                            //       ? null
+                            //       : (val) {
+                            //           if (val != null) {
+                            //             controller.information["type"] = val;
+                            //           }
+                            //         },
+                            // ),
                             const SizedBox(height: 20),
                             // Rent type
                             InlineDropdown<String>(

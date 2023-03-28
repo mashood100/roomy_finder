@@ -22,6 +22,7 @@ class RoommateAd {
   Map<String, Object> socialPreferences;
   List<String> amenities;
   List<String> interests;
+  String? shareLink;
 
   RoommateAd({
     required this.id,
@@ -42,11 +43,38 @@ class RoommateAd {
     required this.socialPreferences,
     required this.amenities,
     required this.interests,
+    this.shareLink,
   });
 
   bool get isMine => poster.isMe;
   bool get isHaveRoom => action == "HAVE ROOM";
   bool get isNeedRoom => action == "NEED ROOM";
+
+  List<String> get technologyAmenities {
+    return amenities.where((e) {
+      return ["WIFI", "TV"].contains(e);
+    }).toList();
+  }
+
+  List<String> get homeAppliancesAmenities {
+    return amenities.where((e) {
+      return ["Washer", "Cleaning included", "Kitchen appliances"].contains(e);
+    }).toList();
+  }
+
+  List<String> get utilitiesAmenities {
+    return amenities.where((e) {
+      return [
+        "Close to metro",
+        "Balcony",
+        "Parking",
+        "Shared gym",
+        "Near to supermarket",
+        "Shared swimming pool",
+        "Near to pharmacy",
+      ].contains(e);
+    }).toList();
+  }
 
   @override
   bool operator ==(covariant RoommateAd other) {
@@ -80,6 +108,7 @@ class RoommateAd {
       'socialPreferences': socialPreferences,
       'amenities': amenities,
       'interests': interests,
+      'shareLink': shareLink,
     };
   }
 
@@ -104,6 +133,7 @@ class RoommateAd {
           Map<String, Object>.from((map['socialPreferences'] as Map)),
       amenities: List<String>.from((map['amenities'] as List)),
       interests: List<String>.from((map['interests'] as List)),
+      shareLink: map['shareLink'] as String?,
     );
   }
 

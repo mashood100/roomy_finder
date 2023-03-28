@@ -175,24 +175,25 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   ),
                 ),
               ),
-            Card(
-              child: ListTile(
-                onTap: () => Get.to(() => const MyRoommateAdsScreen()),
-                leading: const CircleAvatar(
-                  child: Icon(
-                    Icons.houseboat,
-                    color: ROOMY_ORANGE,
+            if (AppController.me.isRoommate)
+              Card(
+                child: ListTile(
+                  onTap: () => Get.to(() => const MyRoommateAdsScreen()),
+                  leading: const CircleAvatar(
+                    child: Icon(
+                      Icons.houseboat,
+                      color: ROOMY_ORANGE,
+                    ),
+                  ),
+                  title: const Text('My Roommate ads'),
+                  trailing: IconButton(
+                    onPressed: () {
+                      Get.to(() => const MyRoommateAdsScreen());
+                    },
+                    icon: const Icon(Icons.chevron_right),
                   ),
                 ),
-                title: const Text('My Roommate ads'),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => const MyRoommateAdsScreen());
-                  },
-                  icon: const Icon(Icons.chevron_right),
-                ),
               ),
-            ),
             Card(
               child: ListTile(
                 onTap: () => Get.to(() => const MyBookingsCreen()),

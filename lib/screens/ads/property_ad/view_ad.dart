@@ -15,6 +15,7 @@ import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/functions/share_ad.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
@@ -222,6 +223,10 @@ class _VewPropertyController extends LoadingController {
   }
 
   Future<void> bookProperty(PropertyAd ad) async {
+    if (AppController.me.isGuest) {
+      showToast("Please register before booking property");
+      return;
+    }
     try {
       isLoading(true);
 
@@ -344,6 +349,14 @@ class ViewPropertyAd extends StatelessWidget {
       appBar: AppBar(
         title: Text("${ad.type} Property"),
         backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+        actions: [
+          IconButton(
+            onPressed: () {
+              shareAd(ad);
+            },
+            icon: const Icon(Icons.share),
+          )
+        ],
         bottom: ad.isMine
             ? PreferredSize(
                 preferredSize: const Size(double.infinity, 50),
@@ -623,61 +636,61 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
 
                   const Divider(height: 20),
-                  // DefaultTextStyle(
-                  //   style: const TextStyle(
-                  //     color: ROOMY_ORANGE,
-                  //     fontWeight: FontWeight.bold,
-                  //     fontSize: 12,
-                  //   ),
-                  //   child: Row(
-                  //     crossAxisAlignment: CrossAxisAlignment.center,
-                  //     children: [
-                  //       Image.asset("assets/icons/washing_2.png", height: 30),
-                  //       const Text("APPLIANCES"),
-                  //       const Spacer(),
-                  //       Image.asset("assets/icons/wifi.png", height: 30),
-                  //       const Text("TECH"),
-                  //       const Spacer(),
-                  //       const Icon(Icons.widgets, color: ROOMY_ORANGE),
-                  //       const Text("UTILITIES"),
-                  //     ],
-                  //   ),
-                  // ),
-                  // DefaultTextStyle.merge(
-                  //   style: const TextStyle(
-                  //     fontSize: 12,
-                  //   ),
-                  //   child: Row(
-                  //     crossAxisAlignment: CrossAxisAlignment.start,
-                  //     children: [
-                  //       Column(
-                  //         crossAxisAlignment: CrossAxisAlignment.start,
-                  //         mainAxisSize: MainAxisSize.min,
-                  //         children: ad.homeAppliancesAmenities
-                  //             .map((e) => Text(e))
-                  //             .toList(),
-                  //       ),
-                  //       const Spacer(),
-                  //       Column(
-                  //         crossAxisAlignment: CrossAxisAlignment.center,
-                  //         mainAxisSize: MainAxisSize.min,
-                  //         children: ad.technologyAmenities
-                  //             .map((e) => Text(e, textAlign: TextAlign.center))
-                  //             .toList(),
-                  //       ),
-                  //       const Spacer(),
-                  //       Column(
-                  //         crossAxisAlignment: CrossAxisAlignment.end,
-                  //         mainAxisSize: MainAxisSize.min,
-                  //         children: ad.utilitiesAmenities
-                  //             .map(
-                  //               (e) => Text(e, textAlign: TextAlign.end),
-                  //             )
-                  //             .toList(),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
+                  DefaultTextStyle(
+                    style: const TextStyle(
+                      color: ROOMY_ORANGE,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset("assets/icons/washing_2.png", height: 30),
+                        const Text("APPLIANCES"),
+                        const Spacer(),
+                        Image.asset("assets/icons/wifi.png", height: 30),
+                        const Text("TECH"),
+                        const Spacer(),
+                        const Icon(Icons.widgets, color: ROOMY_ORANGE),
+                        const Text("UTILITIES"),
+                      ],
+                    ),
+                  ),
+                  DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontSize: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.homeAppliancesAmenities
+                              .map((e) => Text(e))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.technologyAmenities
+                              .map((e) => Text(e, textAlign: TextAlign.center))
+                              .toList(),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: ad.utilitiesAmenities
+                              .map(
+                                (e) => Text(e, textAlign: TextAlign.end),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const Center(
                     child: Text(
@@ -720,26 +733,36 @@ class ViewPropertyAd extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 4,
                     childAspectRatio: 1.2,
-                    children: allSocialPreferences
-                        .where((e) => ad.socialPreferences[e["value"]] == true)
-                        .map((e) {
+                    children: allSocialPreferences.map((e) {
                       return Card(
                         child: Container(
                           padding: const EdgeInsets.all(5),
                           alignment: Alignment.center,
-                          child: Column(
+                          child: Row(
                             children: [
                               Expanded(
                                 child: Image.asset("${e["asset"]}"),
                               ),
-                              Text(
-                                "${e["label"]}",
-                                style: TextStyle(
-                                  color: Get.isDarkMode
-                                      ? Colors.white
-                                      : ROOMY_ORANGE,
-                                  fontSize: 12,
-                                ),
+                              Column(
+                                children: [
+                                  Text(
+                                    "${e["label"]}",
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  Builder(builder: (context) {
+                                    final isTrue = ad.socialPreferences
+                                        .containsKey(e["value"]);
+                                    return Text(
+                                      isTrue ? 'Yes' : "No",
+                                      style: TextStyle(
+                                        color: Get.isDarkMode
+                                            ? Colors.white
+                                            : ROOMY_ORANGE,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ),
                             ],
                           ),
@@ -748,50 +771,50 @@ class ViewPropertyAd extends StatelessWidget {
                     }).toList(),
                   ),
                   const Divider(height: 20),
-                  const Center(
-                    child: Text(
-                      "AMENITIES",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ROOMY_ORANGE,
-                      ),
-                    ),
-                  ),
-                  if (ad.amenities.isNotEmpty)
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 4,
-                      childAspectRatio: 1.2,
-                      children: allAmenties
-                          .where((e) => ad.amenities.contains(e["value"]))
-                          .map((e) {
-                        return Card(
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: Image.asset("${e["asset"]}"),
-                                ),
-                                Text(
-                                  "${e["value"]}",
-                                  style: TextStyle(
-                                    color: Get.isDarkMode
-                                        ? Colors.white
-                                        : ROOMY_ORANGE,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  const Divider(height: 20),
+                  // const Center(
+                  //   child: Text(
+                  //     "AMENITIES",
+                  //     style: TextStyle(
+                  //       fontSize: 14,
+                  //       color: ROOMY_ORANGE,
+                  //     ),
+                  //   ),
+                  // ),
+                  // if (ad.amenities.isNotEmpty)
+                  //   GridView.count(
+                  //     shrinkWrap: true,
+                  //     physics: const NeverScrollableScrollPhysics(),
+                  //     crossAxisCount: 4,
+                  //     childAspectRatio: 1.2,
+                  //     children: allAmenties
+                  //         .where((e) => ad.amenities.contains(e["value"]))
+                  //         .map((e) {
+                  //       return Card(
+                  //         child: Container(
+                  //           padding: const EdgeInsets.all(5),
+                  //           alignment: Alignment.center,
+                  //           child: Column(
+                  //             children: [
+                  //               Expanded(
+                  //                 child: Image.asset("${e["asset"]}"),
+                  //               ),
+                  //               Text(
+                  //                 "${e["value"]}",
+                  //                 style: TextStyle(
+                  //                   color: Get.isDarkMode
+                  //                       ? Colors.white
+                  //                       : ROOMY_ORANGE,
+                  //                   fontSize: 12,
+                  //                 ),
+                  //                 textAlign: TextAlign.center,
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       );
+                  //     }).toList(),
+                  //   ),
+                  // const Divider(height: 20),
 
                   // Google map representing the location of the properrty
                   if (ad.cameraPosition != null)
@@ -939,8 +962,11 @@ class ViewPropertyAd extends StatelessWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color.fromRGBO(96, 15, 116, 1),
+                            backgroundColor: ROOMY_PURPLE,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            side: const BorderSide(color: ROOMY_PURPLE),
                           ),
                           onPressed: controller.isLoading.isTrue
                               ? null

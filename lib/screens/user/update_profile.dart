@@ -8,6 +8,7 @@ import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 
@@ -16,6 +17,9 @@ class _UpdateProfileController extends LoadingController {
 
   final showPassword = false.obs;
   final showConfirmPassword = false.obs;
+
+  String _emailVerificationCode = "";
+  bool _emailIsVerified = false;
 
   // Information
   final accountType = UserAccountType.landlord.obs;
@@ -26,6 +30,14 @@ class _UpdateProfileController extends LoadingController {
     "lastName": "",
     "country": allCountriesNames[0],
   };
+
+  bool get _canVerifyEmail {
+    return isLoading.isFalse &&
+        AppController.me.email != information["email"] &&
+        "${information["email"]}".isEmail &&
+        !_emailIsVerified;
+  }
+
   @override
   void onInit() {
     information["gender"] = AppController.me.gender;
@@ -36,7 +48,43 @@ class _UpdateProfileController extends LoadingController {
     super.onInit();
   }
 
+  Future<void> _verifyEmail() async {
+    try {
+      if (_emailVerificationCode.isEmpty) {
+        final codeRes = await ApiService.getDio.post(
+          "/auth/send-email-verification-code",
+          queryParameters: {"email": information['email']},
+        );
+
+        await Future.delayed(const Duration(seconds: 5));
+
+        _emailVerificationCode = codeRes.data["code"];
+      }
+
+      final userCode = await showInlineInputBottomSheet(
+        label: "Code",
+        message: "Enter the verification code sent to ${information['email']}",
+      );
+
+      if (userCode == _emailVerificationCode) {
+        _emailIsVerified = true;
+        update();
+      } else {
+        showToast("Incorrect code");
+        return;
+      }
+    } catch (e) {
+      showToast("Email verification failed");
+    }
+  }
+
   Future<void> _saveCredentials() async {
+    if (_canVerifyEmail) {
+      if (!_emailIsVerified) {
+        showToast("Please verify email");
+        return;
+      }
+    }
     try {
       isLoading(true);
 
@@ -57,6 +105,7 @@ class _UpdateProfileController extends LoadingController {
         });
 
         showToast("Info updated successlly");
+        _emailVerificationCode = "";
       } else {
         showToast("Update failed");
       }
@@ -111,8 +160,16 @@ class UpdateUserProfile extends StatelessWidget {
                       InlineTextField(
                         initialValue: controller.information["email"],
                         labelText: 'emailAddress'.tr,
-                        suffixIcon: const Icon(CupertinoIcons.mail),
-                        enabled: controller.isLoading.isFalse,
+                        suffixIcon: IconButton(
+                          onPressed: controller._canVerifyEmail
+                              ? null
+                              : () {
+                                  controller._verifyEmail();
+                                },
+                          icon: const Icon(CupertinoIcons.mail),
+                        ),
+                        enabled: controller.isLoading.isFalse &&
+                            !controller._emailIsVerified,
                         onChanged: (value) =>
                             controller.information["email"] = value,
                         validator: (value) {
