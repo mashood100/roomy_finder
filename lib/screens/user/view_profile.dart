@@ -96,7 +96,7 @@ class _ViewProfileController extends LoadingController {
       final imgRef = FirebaseStorage.instance
           .ref()
           .child('images')
-          .child("profilePicture")
+          .child("profile-pictures")
           .child('/${const Uuid().v4()}${path.extension(_images[0].path)}');
 
       final uploadTask =
@@ -105,7 +105,7 @@ class _ViewProfileController extends LoadingController {
       String imageUrl = await (await uploadTask).ref.getDownloadURL();
 
       final res = await ApiService.getDio.put(
-        '/profile/credentials',
+        '/profile/profile-picture',
         data: {"profilePicture": imageUrl},
       );
 

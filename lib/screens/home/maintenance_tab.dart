@@ -20,7 +20,7 @@ class MaintenanceTab extends StatelessWidget implements HomeScreenSupportable {
   AppBar get appBar {
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      title: const Text('Favorites'),
+      title: const Text('Maintenance'),
       centerTitle: false,
       elevation: 0,
     );

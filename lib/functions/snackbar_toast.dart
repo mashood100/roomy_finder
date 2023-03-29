@@ -7,7 +7,7 @@ import 'package:roomy_finder/data/enums.dart';
 void showGetSnackbar(
   String message, {
   String? title,
-  int seconds = 5,
+  int seconds = 3,
   bool isDismissible = false,
   Severity severity = Severity.suceess,
   SnackBarAction? action,
@@ -32,29 +32,33 @@ void showGetSnackbar(
 
   if (context == null) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(color: Colors.white),
-      ),
-      action: action,
-      duration: Duration(seconds: seconds),
-      backgroundColor: color,
-      // padding: const EdgeInsets.all(5),
-    ),
-  );
-
-  // Get.snackbar(
-  //   title,
-  //   message,
-  //   duration: Duration(seconds: seconds),
-  //   borderRadius: 0,
-  //   padding: const EdgeInsets.all(5),
-  //   margin: const EdgeInsets.all(0),
-  //   backgroundColor: color,
-  //   isDismissible: isDismissible,
+  // ScaffoldMessenger.of(context).showSnackBar(
+  //   SnackBar(
+  //     content: Text(
+  //       message,
+  //       style: const TextStyle(color: Colors.white),
+  //     ),
+  //     action: action,
+  //     duration: Duration(seconds: seconds),
+  //     backgroundColor: color,
+  //     // padding: const EdgeInsets.all(5),
+  //   ),
   // );
+
+  Get.snackbar(
+    title ?? "Alert",
+
+    message,
+    duration: Duration(seconds: seconds),
+    borderRadius: 10,
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    margin: const EdgeInsets.all(5),
+    // backgroundColor: color,
+    isDismissible: isDismissible,
+    snackPosition: SnackPosition.BOTTOM,
+    colorText: color,
+    icon: Icon(Icons.notifications, color: color),
+  );
 }
 
 void showToast(String message, {Severity? severity, int duration = 2}) {

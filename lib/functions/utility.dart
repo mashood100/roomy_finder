@@ -1,10 +1,13 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/models/country.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 String relativeTimeText(DateTime dateTime) {
@@ -21,6 +24,41 @@ String relativeTimeText(DateTime dateTime) {
   }
 
   return Jiffy(dateTime.toUtc()).yMMMEd;
+}
+
+Future<void> changeAppCountry(BuildContext context) async {
+  final country = await showModalBottomSheet<Country?>(
+    context: context,
+    builder: (context) {
+      return CupertinoScrollbar(
+        child: ListView(
+          children: supporttedCountries
+              .map(
+                (e) => ListTile(
+                  leading: CircleAvatar(child: Text(e.flag)),
+                  onTap: () => Get.back(result: e),
+                  title: Text(e.name),
+                  trailing: AppController.instance.country.value == e
+                      ? const Icon(
+                          Icons.check_circle_sharp,
+                          color: Colors.green,
+                        )
+                      : null,
+                ),
+              )
+              .toList(),
+        ),
+      );
+    },
+  );
+  if (country != null) {
+    if (country.code != Country.UAE.code &&
+        country.code != Country.SAUDI_ARABIA.code) {
+      showToast('Comming soon');
+      return;
+    }
+    AppController.instance.country(country);
+  }
 }
 
 String formatMoney(num price) {

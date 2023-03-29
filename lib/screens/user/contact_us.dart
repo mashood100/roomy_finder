@@ -32,16 +32,13 @@ class ContactUsScreen extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      "111 Lawrence street, Brooklyn, New york 11201",
+                      "Location : Global Strategy Catalyst Group LLC\n"
+                      "401 Ryland St, Suite 200-A, Reno, NV, 89502",
                     ),
                   ),
                   Text("Tel"),
                   Text(
-                    "+13053172031",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "+14124033921",
+                    "•  +1 412 403 3921",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -68,16 +65,12 @@ class ContactUsScreen extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      "Dubai inverstment park, metro station, falcon house, 2nd floor",
+                      "Location : Abu Dhabi, 16, misakin st\nAI Danah 22213",
                     ),
                   ),
                   Text("Tel"),
                   Text(
-                    "+971505853921",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "+971589292273",
+                    "• +971 50 585 3921",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -91,12 +84,12 @@ class ContactUsScreen extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 0),
                 leading: const Icon(Icons.mail),
                 title: const Text(
-                  "info@gsccapitalgroup.com",
+                  "Support@roomyfinder.com",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 trailing: IconButton(
                   onPressed: () async {
-                    var url = Uri.parse("mailto:info@gsccapitalgroup.com");
+                    var url = Uri.parse("mailto:Support@roomyfinder.com");
                     if (await canLaunchUrl(url)) {
                       launchUrl(url, mode: LaunchMode.externalApplication);
                     }

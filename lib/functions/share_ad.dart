@@ -1,6 +1,6 @@
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:get/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
@@ -49,33 +49,12 @@ Future<Uri> _createShareChanceLink(ad) async {
 }
 
 Future<void> shareAd(dynamic ad) async {
-  final String adType;
-  final String adId;
-
-  if (ad is PropertyAd) {
-    adType = "property-ad";
-    adId = ad.id;
-  } else if (ad is RoommateAd) {
-    adType = "roommate-ad";
-    adId = ad.id;
-  } else {
-    return;
-  }
-
-  if (ad.shareLink == null) {
+  try {
     final uri = await _createShareChanceLink(ad);
 
-    try {
-      await ApiService.getDio.post(
-        "$API_URL/ads/$adType/share-link",
-        data: {'adId': adId, "link": uri.toString()},
-      );
-    } catch (_) {}
-
-    ad.shareLink = uri.toString();
-
     Share.share('$uri');
-  } else {
-    Share.share("${ad.shareLink}");
+  } catch (e, trace) {
+    Get.log("$e");
+    Get.log("$trace");
   }
 }

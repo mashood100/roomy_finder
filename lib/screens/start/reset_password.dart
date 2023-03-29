@@ -10,10 +10,9 @@ import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:pinput/pinput.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _ResetPasswordScreenController extends LoadingController {
-  final _page1Formkey = GlobalKey<FormState>();
   final _page2Formkey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -27,7 +26,16 @@ class _ResetPasswordScreenController extends LoadingController {
   final _showPassword = false.obs;
   final showConfirmPassword = false.obs;
 
-  String _code = "";
+  String _emailVerificationCode = "";
+  bool _emailIsVerified = false;
+  final _isVerifiyingEmail = false.obs;
+
+  bool get _canVerifyEmail {
+    return isLoading.isFalse &&
+        _isVerifiyingEmail.isFalse &&
+        _emailController.text.isEmail &&
+        !_emailIsVerified;
+  }
 
   @override
   void onClose() {
@@ -35,16 +43,6 @@ class _ResetPasswordScreenController extends LoadingController {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.onClose();
-  }
-
-  void moveToPhoneNumberInput() {
-    pageController.animateToPage(
-      0,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
-    _pageIndex(0);
-    _code = "";
   }
 
   void moveToCodeVerification() {
@@ -64,6 +62,47 @@ class _ResetPasswordScreenController extends LoadingController {
     );
 
     _pageIndex(2);
+  }
+
+  Future<void> _verifyEmail() async {
+    try {
+      _isVerifiyingEmail(true);
+      if (_emailVerificationCode.isEmpty) {
+        final res = await Dio().post(
+          "$API_URL/auth/send-email-verification-code",
+          data: {"email": _emailController.text},
+        );
+
+        if (res.statusCode == 504) {
+          showGetSnackbar(
+            "Email service tempprally unavailable. Please try again later",
+          );
+          return;
+        }
+
+        _emailVerificationCode = res.data["code"].toString();
+      }
+
+      final userCode = await showInlineInputBottomSheet(
+        label: "Code",
+        message: "Enter the verification code sent to ${_emailController.text}",
+      );
+
+      if (userCode == _emailVerificationCode) {
+        _emailIsVerified = true;
+        _emailVerificationCode = "";
+        update();
+      } else {
+        showToast("Incorrect code");
+        return;
+      }
+    } catch (e) {
+      Get.log("$e");
+      showToast("Email verification failed");
+    } finally {
+      _isVerifiyingEmail(false);
+      update();
+    }
   }
 
   Future<void> _resetPasword() async {
@@ -87,15 +126,15 @@ class _ResetPasswordScreenController extends LoadingController {
           );
           isLoading(false);
           return;
-        }
-
-        if (res.statusCode == 200) {
-          isLoading(false);
-
+        } else if (res.statusCode == 200) {
           await showConfirmDialog(
             "Password reseted successfully".tr,
             isAlert: true,
           );
+
+          Get.back();
+        } else if (res.statusCode == 404) {
+          showToast("User not found. Please register");
 
           Get.back();
         } else {
@@ -104,8 +143,8 @@ class _ResetPasswordScreenController extends LoadingController {
       } catch (e, trace) {
         Get.log("$e");
         Get.log("$trace");
-        final message =
-            "operationFailed".tr + "checkInternetConnectionAndTryAgain".tr;
+        const message = "Operation failed. Please check your "
+            "internet connection and try again";
         showGetSnackbar(
           message,
           title: "registration".tr,
@@ -114,62 +153,6 @@ class _ResetPasswordScreenController extends LoadingController {
       } finally {
         isLoading(false);
       }
-    }
-  }
-
-  Future<void> _getVerificationCode() async {
-    if (!_page1Formkey.currentState!.validate()) return;
-
-    isLoading(true);
-
-    try {
-      final res = await Dio().get(
-        '$API_URL/auth/reset-password',
-        queryParameters: {"email": _emailController.text},
-      );
-
-      if (res.statusCode == 200) {
-        _code = res.data["code"];
-        moveToCodeVerification();
-      } else {
-        showToast("Something went wrong");
-      }
-    } catch (e) {
-      isLoading(false);
-      showGetSnackbar(
-        "phoneVerificationCheckInternet".tr,
-        title: 'registration'.tr,
-        severity: Severity.error,
-      );
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  /// Verifies code sents to user and adds the user to **Firebase** if
-  /// the code is correct
-  Future<void> _signinToFireBaseWithPhone(String smsCode) async {
-    isLoading(true);
-
-    try {
-      if (_code.isNotEmpty) {
-        return;
-      }
-      if (smsCode != _code) {
-        showToast("Incorrect code");
-        return;
-      }
-
-      isLoading(false);
-      moveToCredentials();
-    } catch (e) {
-      showGetSnackbar(
-        "phoneVerificationPleaseTryAgain".tr,
-        title: 'registration'.tr,
-        severity: Severity.error,
-      );
-      isLoading(false);
-      Get.log("$e");
     }
   }
 }
@@ -191,29 +174,94 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                 physics: const NeverScrollableScrollPhysics(),
                 controller: controller.pageController,
                 children: [
-                  SingleChildScrollView(
-                    child: Form(
-                      key: controller._page1Formkey,
+                  GetBuilder<_ResetPasswordScreenController>(
+                      builder: (controller) {
+                    return SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 20),
                           InlineTextField(
-                            labelText: "email".tr,
-                            hintText: "emailAddress".tr,
+                            labelText: 'email'.tr,
+                            hintText: 'emailAddress'.tr,
+                            enabled: controller.isLoading.isFalse &&
+                                !controller._emailIsVerified,
+                            onChanged: (value) {
+                              controller.update();
+                            },
                             controller: controller._emailController,
-                            suffixIcon: const Icon(CupertinoIcons.mail),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'thisFieldIsRequired'.tr;
                               }
-
-                              if (!value.isEmail) return 'invalidEmail'.tr;
-
+                              if (!value.isEmail) {
+                                return 'invalidEmail'.tr;
+                              }
                               return null;
                             },
-                            keyboardType: TextInputType.emailAddress,
                           ),
+                          const SizedBox(height: 20),
+                          Builder(builder: (context) {
+                            final color = !controller._canVerifyEmail
+                                ? Colors.grey
+                                : controller._emailIsVerified
+                                    ? Colors.green
+                                    : ROOMY_ORANGE;
+                            return SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: color,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  side: BorderSide(color: color),
+                                ),
+                                onPressed: !controller._canVerifyEmail
+                                    ? null
+                                    : controller._verifyEmail,
+                                child: controller._isVerifiyingEmail.isTrue
+                                    ? const CupertinoActivityIndicator()
+                                    : Text(
+                                        controller._emailIsVerified
+                                            ? "Verified"
+                                            : "Verify",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 20),
+                          Builder(builder: (context) {
+                            if (!controller._emailIsVerified) {
+                              return const SizedBox();
+                            }
+                            return SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ROOMY_ORANGE,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  side: const BorderSide(color: ROOMY_ORANGE),
+                                ),
+                                onPressed: controller.isLoading.isTrue
+                                    ? null
+                                    : controller.moveToCredentials,
+                                child: const Text(
+                                  "Next",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
                           const SizedBox(height: 30),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -227,48 +275,8 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                           )
                         ],
                       ),
-                    ),
-                  ),
-                  SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 20),
-                        Text(
-                          'Enter the verification code sent '
-                          'to ${controller._emailController.text}',
-                        ),
-                        const SizedBox(height: 10),
-                        Pinput(
-                          length: 6,
-                          enabled: !controller.isLoading.isTrue,
-                          onCompleted: controller._signinToFireBaseWithPhone,
-                          defaultPinTheme: PinTheme(
-                            height: 40,
-                            width: 35,
-                            textStyle: const TextStyle(
-                                fontSize: 20,
-                                color: Color.fromARGB(255, 56, 94, 128),
-                                fontWeight: FontWeight.w600),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color.fromRGBO(234, 239, 243, 1),
-                              ),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 50),
-                        Text('didNotReicievedCode'.tr),
-                        TextButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : controller.moveToPhoneNumberInput,
-                          child: Text('resend'.tr),
-                        )
-                      ],
-                    ),
-                  ),
+                    );
+                  }),
                   SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -277,19 +285,16 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('New password'.tr),
-                            TextFormField(
+                            const SizedBox(height: 20),
+                            InlineTextField(
                               obscureText: controller._showPassword.isFalse,
                               controller: controller._passwordController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter new password',
-                                suffixIcon: IconButton(
-                                  onPressed: controller._showPassword.toggle,
-                                  icon: controller._showPassword.isTrue
-                                      ? const Icon(
-                                          CupertinoIcons.eye_slash_fill)
-                                      : const Icon(CupertinoIcons.eye_fill),
-                                ),
+                              hintText: 'Enter new password',
+                              suffixIcon: IconButton(
+                                onPressed: controller._showPassword.toggle,
+                                icon: controller._showPassword.isTrue
+                                    ? const Icon(CupertinoIcons.eye_slash_fill)
+                                    : const Icon(CupertinoIcons.eye_fill),
                               ),
                               validator: (value) {
                                 if (value == null) {
@@ -304,22 +309,18 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 10),
-                            Text('Confirm password'.tr),
-                            TextFormField(
+                            const SizedBox(height: 20),
+                            InlineTextField(
                               obscureText:
                                   controller.showConfirmPassword.isFalse,
                               controller: controller._confirmPasswordController,
-                              decoration: InputDecoration(
-                                hintText: "Confirm your password",
-                                suffixIcon: IconButton(
-                                  onPressed:
-                                      controller.showConfirmPassword.toggle,
-                                  icon: controller.showConfirmPassword.isTrue
-                                      ? const Icon(
-                                          CupertinoIcons.eye_slash_fill)
-                                      : const Icon(CupertinoIcons.eye_fill),
-                                ),
+                              hintText: "Confirm your password",
+                              suffixIcon: IconButton(
+                                onPressed:
+                                    controller.showConfirmPassword.toggle,
+                                icon: controller.showConfirmPassword.isTrue
+                                    ? const Icon(CupertinoIcons.eye_slash_fill)
+                                    : const Icon(CupertinoIcons.eye_fill),
                               ),
                               validator: (value) {
                                 if (value !=
@@ -333,10 +334,23 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ROOMY_ORANGE,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  side: const BorderSide(color: ROOMY_ORANGE),
+                                ),
                                 onPressed: controller.isLoading.isTrue
                                     ? null
                                     : controller._resetPasword,
-                                child: Text("finish".tr),
+                                child: Text(
+                                  "finish".tr,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -349,22 +363,6 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
             ),
             if (controller.isLoading.isTrue) const LinearProgressIndicator(),
           ],
-        ),
-        floatingActionButton: Obx(
-          () {
-            if (controller._pageIndex.value == 0) {
-              return SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: controller.isLoading.isTrue
-                      ? null
-                      : controller._getVerificationCode,
-                  child: Text("getVerificationCode".tr),
-                ),
-              );
-            }
-            return Container();
-          },
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       );

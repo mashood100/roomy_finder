@@ -461,18 +461,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                     // Action
                     Column(
                       children: [
-                        const SizedBox(height: 10),
-                        const Center(
-                          child: Text(
-                            "Please choose what you want",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: ROOMY_PURPLE,
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 30),
                         const Spacer(),
                         GridView.count(
                           shrinkWrap: true,
@@ -844,7 +832,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             const Center(
                               child: Text(
-                                "About your property",
+                                "Please fill in \nPROPERTY DETAILS:",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 18,
@@ -1196,7 +1184,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please choose AMENITIES of your property",
+                              "Please choose AMENITIES \nof your property:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1277,7 +1265,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please fill in the details of your PREFERRED ROOMMATE",
+                              "Please fill in the details of your\n PREFERRED ROOMMATE:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1430,7 +1418,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             const Center(
                               child: Text(
-                                "Please tell us about you",
+                                "Please tell us about yourself:",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 18,
@@ -1640,7 +1628,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please choose your HOBBIES/INTERESTS",
+                              "Please choose your \nHOBBIES/INTERESTS:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1716,19 +1704,23 @@ class PostRoommateAdScreen extends StatelessWidget {
                     // lifestyle
                     Column(
                       children: [
-                        const SizedBox(height: 10),
-                        const Center(
-                          child: Text(
-                            "Your LIFESTYLE",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: ROOMY_PURPLE,
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 30),
                         const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.sunny_snowing, color: ROOMY_PURPLE),
+                            SizedBox(width: 10),
+                            Text(
+                              "Your LIFESTYLE",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_PURPLE,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
                         GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),

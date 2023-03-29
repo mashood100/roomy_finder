@@ -13,6 +13,7 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/property_ad.dart';
@@ -123,42 +124,6 @@ class _HomeTabController extends LoadingController {
     AppController.setThemeMode(
         Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
     Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
-  }
-
-  Future<void> changeAppCountry(BuildContext context) async {
-    final country = await showModalBottomSheet<Country?>(
-      context: context,
-      builder: (context) {
-        return CupertinoScrollbar(
-          child: ListView(
-            children: supporttedCountries
-                .map(
-                  (e) => ListTile(
-                    leading: CircleAvatar(child: Text(e.flag)),
-                    onTap: () => Get.back(result: e),
-                    title: Text(e.name),
-                    trailing: AppController.instance.country.value == e
-                        ? const Icon(
-                            Icons.check_circle_sharp,
-                            color: Colors.green,
-                          )
-                        : null,
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      },
-    );
-
-    if (country != null) {
-      if (country.code != Country.UAE.code &&
-          country.code != Country.SAUDI_ARABIA.code) {
-        showToast('Comming soon');
-        return;
-      }
-      AppController.instance.country(country);
-    }
   }
 
   Future<void> upgradeToSeeDetails(RoommateAd ad) async {
@@ -505,8 +470,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                         ),
                       ],
                     ),
-                    if (controller._targetAds.value == "Room" ||
-                        controller._targetAds.value == "All") ...[
+                    if (controller._targetAds.value == "Room") ...[
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Row(
@@ -546,6 +510,10 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             return PropertyAdMiniWidget(
                               ad: ad,
                               onTap: () {
+                                if (AppController.me.isGuest) {
+                                  showToast("Please register to view the ad");
+                                  return;
+                                }
                                 Get.to(() => ViewPropertyAd(ad: ad));
                               },
                             );
@@ -553,8 +521,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                         ),
                       ),
                     ],
-                    if (controller._targetAds.value == "Roommate" ||
-                        controller._targetAds.value == "All") ...[
+                    if (controller._targetAds.value == "Roommate") ...[
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Row(
@@ -595,7 +562,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                               ad: ad,
                               onTap: () {
                                 if (AppController.me.isGuest) {
-                                  Get.offAllNamed("/login");
+                                  showToast("Please register to view the ad");
+                                  return;
                                 }
                                 if (AppController.me.isPremium) {
                                   Get.to(() => ViewRoommateAdScreen(ad: ad));
@@ -604,6 +572,87 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 }
                               },
                             );
+                          },
+                        ),
+                      ),
+                    ],
+
+                    // Merged grid
+                    if (controller._targetAds.value == "All") ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Row(
+                          children: const [
+                            Text(
+                              "All",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: ROOMY_ORANGE,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GridView.count(
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        children: List.generate(
+                          controller._homePropertyAds.length +
+                                      controller._homeRoommateAds.length >
+                                  0
+                              ? controller._homePropertyAds.length +
+                                  controller._homeRoommateAds.length -
+                                  1
+                              : controller._homePropertyAds.length +
+                                  controller._homeRoommateAds.length,
+                          (index) {
+                            if (controller._isLoadingHomeAds.isTrue) {
+                              return const Card(
+                                child: CupertinoActivityIndicator(radius: 30),
+                              );
+                            }
+                            final ind = index ~/ 2;
+
+                            if (index % 2 == 0) {
+                              if (ind < controller._homePropertyAds.length) {
+                                final ad = controller._homePropertyAds[ind];
+                                return PropertyAdMiniWidget(
+                                  ad: ad,
+                                  onTap: () {
+                                    if (AppController.me.isGuest) {
+                                      showToast(
+                                          "Please register to view the ad");
+                                      return;
+                                    }
+                                    Get.to(() => ViewPropertyAd(ad: ad));
+                                  },
+                                );
+                              }
+                            } else {
+                              if (ind < controller._homeRoommateAds.length) {
+                                final ad = controller._homeRoommateAds[ind];
+
+                                return RoommateAdMiniWidget(
+                                  ad: ad,
+                                  onTap: () {
+                                    if (AppController.me.isGuest) {
+                                      showToast(
+                                          "Please register to view the ad");
+                                      return;
+                                    }
+                                    if (AppController.me.isPremium) {
+                                      Get.to(
+                                          () => ViewRoommateAdScreen(ad: ad));
+                                    } else {
+                                      controller.upgradeToSeeDetails(ad);
+                                    }
+                                  },
+                                );
+                              }
+                            }
+
+                            return const SizedBox();
                           },
                         ),
                       ),
@@ -659,7 +708,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
   AppBar get appBar {
     final controller = Get.put(_HomeTabController());
     return AppBar(
-      backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+      backgroundColor: ROOMY_PURPLE,
       // automaticallyImplyLeading: false,
       leadingWidth: 30,
       title: SizedBox(
@@ -691,7 +740,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
               ),
               Obx(() {
                 return TextButton(
-                  onPressed: () => controller.changeAppCountry(context),
+                  onPressed: () => changeAppCountry(context),
                   // icon: const Icon(Icons.arrow_drop_down, size: 40),
                   child: Text(
                     AppController.instance.country.value.flag,

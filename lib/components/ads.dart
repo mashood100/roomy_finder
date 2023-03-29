@@ -92,7 +92,8 @@ class PropertyAdWidget extends StatelessWidget {
                                 .instance.country.value.aedCurrencyConvertRate,
                       ),
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     );
                   }),
@@ -126,15 +127,13 @@ class PropertyAdWidget extends StatelessWidget {
                     "Available ${ad.quantity - ad.quantityTaken}",
                     style: const TextStyle(
                       color: Colors.green,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     "Taken ${ad.quantityTaken}",
                     style: const TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
+                      color: ROOMY_ORANGE,
                     ),
                   ),
                   const Spacer(),
@@ -203,21 +202,27 @@ class SocialPreferenceWidget extends StatelessWidget {
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(5),
-        child: Column(
+        child: Row(
           children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-              overflow: TextOverflow.ellipsis,
-            ),
             Expanded(child: icon),
-            Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: ROOMY_ORANGE,
-              ),
-              overflow: TextOverflow.ellipsis,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: ROOMY_ORANGE,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ],
         ),
@@ -262,30 +267,32 @@ class PropertyAdMiniWidget extends StatelessWidget {
                 ),
                 child: Container(
                   color: Get.theme.scaffoldBackgroundColor.withOpacity(0.5),
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(5.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: ad.type,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text.rich(
+                              TextSpan(children: [
+                                TextSpan(
+                                  text: ad.type,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const TextSpan(text: " for rent"),
-                            ]),
-                          ),
-                          Text(
-                            "${ad.address["location"]},"
-                            " ${ad.address["city"]}",
-                          ),
-                        ],
+                                const TextSpan(text: " for rent"),
+                              ]),
+                            ),
+                            Text(
+                              "${ad.address["location"]},"
+                              " ${ad.address["city"]}",
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(8),

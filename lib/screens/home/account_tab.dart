@@ -168,7 +168,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                       color: ROOMY_ORANGE,
                     ),
                   ),
-                  title: const Text('My Property Ads'),
+                  title: const Text('My Ads'),
                   trailing: IconButton(
                     onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
                     icon: const Icon(Icons.chevron_right),
@@ -185,7 +185,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                       color: ROOMY_ORANGE,
                     ),
                   ),
-                  title: const Text('My Roommate ads'),
+                  title: const Text('My Ads'),
                   trailing: IconButton(
                     onPressed: () {
                       Get.to(() => const MyRoommateAdsScreen());

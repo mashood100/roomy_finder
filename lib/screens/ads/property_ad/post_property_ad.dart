@@ -426,7 +426,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             const Center(
                               child: Text(
-                                "Please choose your property location",
+                                "Please choose LOCATION \nof your property:",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 18,
@@ -572,7 +572,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please choose your PROPERTY TYPE",
+                              "Please choose \nPROPERTY TYPE:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -601,12 +601,12 @@ class PostPropertyAdScreen extends StatelessWidget {
                               {
                                 "value": "Room",
                                 "label": "Reguler Room",
-                                "asset": "assets/icons/regular_room.png",
+                                "asset": "assets/icons/master_room.png",
                               },
                               {
                                 "value": "Master Room",
                                 "label": "Master Room",
-                                "asset": "assets/icons/master_room.png",
+                                "asset": "assets/icons/regular_room.png",
                               },
                               // "Mix"
                             ].map((e) {
@@ -666,7 +666,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             const SizedBox(height: 10),
                             const Center(
                               child: Text(
-                                "Please fill in RENT DETAILS",
+                                "Please fill in \nRENT DETAILS:",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 18,
@@ -918,7 +918,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please fill in if you are an AGENT or BROKER",
+                              "Please fill in IF you are \nan AGENT or BROKER:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1094,7 +1094,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please specify TENANT details",
+                              "Please specify TENANT details :",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1268,7 +1268,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please choose AMENITIES of your property",
+                              "Please choose AMENITIES \nof your property:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1347,15 +1347,17 @@ class PostPropertyAdScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-                          Center(
+                          const Center(
                             child: Text(
-                              "Images and videos".tr,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                              "IMAGES & VIDEOS:",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
                                 fontSize: 18,
+                                color: ROOMY_PURPLE,
                               ),
                             ),
                           ),
+                          const Divider(height: 30),
                           if (controller.images.isEmpty &&
                               controller.oldImages.isEmpty &&
                               controller.videos.isEmpty &&
@@ -1664,7 +1666,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please add description to your property",
+                              "Please add description to your property:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,

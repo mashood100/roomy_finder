@@ -29,8 +29,8 @@ class WelcomeScreen extends StatelessWidget {
               Center(
                 child: Image.asset(
                   "assets/images/logo.png",
-                  height: 100,
-                  width: 100,
+                  height: 150,
+                  width: 150,
                 ),
               ),
               const SizedBox(height: 10),
@@ -63,7 +63,7 @@ class WelcomeScreen extends StatelessWidget {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                    const EdgeInsets.symmetric(horizontal: 50, vertical: 50),
                 decoration: const BoxDecoration(
                   color: ROOMY_PURPLE,
                   borderRadius: BorderRadius.vertical(
@@ -96,7 +96,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(

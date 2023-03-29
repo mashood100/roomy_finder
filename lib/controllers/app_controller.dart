@@ -248,6 +248,7 @@ class AppController extends GetxController {
       await removeApiToken();
       await removeUserPassword();
       initialLink = null;
+      user(User.GUEST_USER);
     } catch (e, trace) {
       log(e);
       log(trace);

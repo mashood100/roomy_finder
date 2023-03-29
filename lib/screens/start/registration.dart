@@ -32,6 +32,7 @@ class _RegistrationController extends LoadingController {
   final _formkeyCredentials = GlobalKey<FormState>();
 
   final _isVerifyingPhone = false.obs;
+  final _isVerifiyingEmail = false.obs;
 
   late final PageController _pageController;
   final _piniputController = TextEditingController();
@@ -69,6 +70,7 @@ class _RegistrationController extends LoadingController {
 
   bool get _canVerifyEmail {
     return isLoading.isFalse &&
+        _isVerifiyingEmail.isFalse &&
         "${information["email"]}".isEmail &&
         !_emailIsVerified;
   }
@@ -112,15 +114,21 @@ class _RegistrationController extends LoadingController {
 
   Future<void> _verifyEmail() async {
     try {
+      _isVerifiyingEmail(true);
       if (_emailVerificationCode.isEmpty) {
-        final codeRes = await ApiService.getDio.post(
+        final res = await ApiService.getDio.post(
           "/auth/send-email-verification-code",
-          queryParameters: {"email": information['email']},
+          data: {"email": information['email']},
         );
 
-        await Future.delayed(const Duration(seconds: 5));
+        if (res.statusCode == 504) {
+          showGetSnackbar(
+            "Email service tempprally unavailable. Please try again later",
+          );
+          return;
+        }
 
-        _emailVerificationCode = codeRes.data["code"];
+        _emailVerificationCode = res.data["code"].toString();
       }
 
       final userCode = await showInlineInputBottomSheet(
@@ -130,13 +138,18 @@ class _RegistrationController extends LoadingController {
 
       if (userCode == _emailVerificationCode) {
         _emailIsVerified = true;
+        _emailVerificationCode = "";
         update();
       } else {
         showToast("Incorrect code");
         return;
       }
     } catch (e) {
+      Get.log("$e");
       showToast("Email verification failed");
+    } finally {
+      _isVerifiyingEmail(false);
+      update();
     }
   }
 
@@ -199,13 +212,6 @@ class _RegistrationController extends LoadingController {
       _isVerifyingPhone(false);
     }
   }
-
-  // void _moveToNextPage() {
-  //   _pageController.nextPage(
-  //     duration: const Duration(milliseconds: 200),
-  //     curve: Curves.linear,
-  //   );
-  // }
 
   void _moveToPreviousPage() {
     _pageController.previousPage(
@@ -575,28 +581,64 @@ class RegistrationScreen extends StatelessWidget {
                                     },
                             ),
                             const SizedBox(height: 10),
-                            InlineTextField(
-                              labelText: 'email'.tr,
-                              initialValue: controller.information["email"],
-                              suffixIcon: IconButton(
-                                onPressed: controller._canVerifyEmail
-                                    ? null
-                                    : () {
-                                        controller._verifyEmail();
-                                      },
-                                icon: const Icon(CupertinoIcons.mail),
-                              ),
-                              enabled: controller.isLoading.isFalse &&
-                                  !controller._emailIsVerified,
-                              onChanged: (value) =>
-                                  controller.information["email"] = value,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                if (!value.isEmail) return 'invalidEmail'.tr;
-                                return null;
-                              },
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InlineTextField(
+                                    labelText: 'email'.tr,
+                                    hintText: "emailAddress".tr,
+                                    initialValue:
+                                        controller.information["email"],
+                                    enabled: controller.isLoading.isFalse &&
+                                        !controller._emailIsVerified,
+                                    onChanged: (value) {
+                                      controller.information["email"] = value;
+                                      controller.update();
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'thisFieldIsRequired'.tr;
+                                      }
+                                      if (!value.isEmail) {
+                                        return 'invalidEmail'.tr;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                GetBuilder<_RegistrationController>(
+                                    builder: (controller) {
+                                  final color = !controller._canVerifyEmail
+                                      ? Colors.grey
+                                      : controller._emailIsVerified
+                                          ? Colors.green
+                                          : ROOMY_ORANGE;
+                                  return ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: color,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      side: BorderSide(color: color),
+                                    ),
+                                    onPressed: !controller._canVerifyEmail
+                                        ? null
+                                        : controller._verifyEmail,
+                                    child: controller._isVerifiyingEmail.isTrue
+                                        ? const CupertinoActivityIndicator()
+                                        : Text(
+                                            controller._emailIsVerified
+                                                ? "Verified"
+                                                : "Verify",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  );
+                                })
+                              ],
                             ),
                             const SizedBox(height: 10),
                             InlineTextField(
@@ -918,15 +960,15 @@ class RegistrationScreen extends StatelessWidget {
                             : () async {
                                 switch (controller._pageIndex.value) {
                                   case 0:
+                                    final isValid =
+                                        await controller.validateCredentials();
+                                    if (!isValid) return;
                                     if (controller._canVerifyEmail) {
                                       if (!controller._emailIsVerified) {
                                         showToast("Please verify email");
                                         return;
                                       }
                                     }
-                                    final isValid =
-                                        await controller.validateCredentials();
-                                    if (!isValid) return;
                                     controller.sendSmsCode();
                                     break;
                                   default:

@@ -1,8 +1,9 @@
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
@@ -10,12 +11,14 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/city_location.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class _FindPropertiesController extends LoadingController {
   final RxMap<String, String?> filter;
+  final _sortKey = "".obs;
 
   _FindPropertiesController({
     Map<String, String?>? filter,
@@ -32,11 +35,12 @@ class _FindPropertiesController extends LoadingController {
 
   Future<void> _fetchData({bool isReFresh = true}) async {
     try {
+      _sortKey.value = '';
       isLoading(true);
       hasFetchError(false);
       final requestBody = <String, dynamic>{"skip": _skip, ...filter};
-      final res = await ApiService.getDio.post(
-        "/ads/property-ad/available",
+      final res = await Dio().post(
+        "$API_URL/ads/property-ad/available",
         data: requestBody,
       );
 
@@ -265,6 +269,24 @@ class _FindPropertiesController extends LoadingController {
       _fetchData();
     }
   }
+
+  List<PropertyAd> get _matchDocuments {
+    return ads.where((ad) {
+      if (_sortKey.isEmpty) return true;
+      final key = _sortKey.value.toLowerCase();
+      final viewBudget =
+          AppController.convertionRate * ad.prefferedRentDisplayPrice;
+      final bool haveMatch;
+
+      haveMatch =
+          "${ad.socialPreferences["gender"]}".toLowerCase().contains(key) ||
+              "${ad.address["city"]}".toLowerCase().contains(key) ||
+              "${ad.address["location"]}".toLowerCase().contains(key) ||
+              "$viewBudget".contains(key);
+
+      return haveMatch;
+    }).toList();
+  }
 }
 
 class FindPropertiesAdsScreen extends StatelessWidget {
@@ -319,30 +341,147 @@ class FindPropertiesAdsScreen extends StatelessWidget {
               ),
             );
           }
-          return ListView.builder(
-            itemBuilder: (context, index) {
-              if (index == controller.ads.length) {
-                if (controller.ads.length.remainder(100) == 0) {
-                  return GetMoreButton(
+
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar.large(
+                automaticallyImplyLeading: false,
+                toolbarHeight: 0,
+                collapsedHeight: 0,
+                expandedHeight: AppController.me.isGuest ? 300 : 250,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Builder(builder: (context) {
+                    const list = [
+                      "assets/images/roommates_1.jpg",
+                      "assets/images/roommates_2.jpg",
+                      "assets/images/roommates_3.jpg",
+                    ];
+                    return Column(
+                      children: [
+                        if (AppController.me.isGuest)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  Get.offAllNamed("/registration");
+                                },
+                                child: const Text(
+                                  "REGISTER",
+                                  style: TextStyle(
+                                    color: ROOMY_PURPLE,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Get.offAllNamed("/login");
+                                },
+                                child: const Text(
+                                  "LOGIN",
+                                  style: TextStyle(
+                                    color: ROOMY_ORANGE,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        TextField(
+                          decoration: InputDecoration(
+                            fillColor: Colors.white,
+                            hintText: "Filter by gender, budget",
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                controller._showFilter();
+                              },
+                              icon: const Icon(Icons.filter_list),
+                            ),
+                            contentPadding:
+                                const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          textInputAction: TextInputAction.search,
+                          onChanged: (value) {
+                            controller._sortKey(value);
+                            controller.update();
+                          },
+                        ),
+                        Expanded(
+                          child: CarouselSlider(
+                            items: list.map((e) {
+                              return Stack(
+                                alignment: Alignment.bottomCenter,
+                                children: [
+                                  Image.asset(
+                                    e,
+                                    width: Get.width,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(list.length, (ind) {
+                                      return Text(
+                                        "•",
+                                        style: TextStyle(
+                                          color: ind == list.indexOf(e)
+                                              ? ROOMY_PURPLE
+                                              : Colors.grey,
+                                          fontSize: 50,
+                                        ),
+                                      );
+                                    }),
+                                  )
+                                ],
+                              );
+                            }).toList(),
+                            options: CarouselOptions(
+                              autoPlayInterval: const Duration(seconds: 10),
+                              pageSnapping: true,
+                              autoPlay: true,
+                              viewportFraction: 1,
+                            ),
+                            disableGesture: true,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final ad = controller._matchDocuments[index];
+                    return PropertyAdWidget(
+                      ad: ad,
+                      onTap: () async {
+                        if (AppController.me.isGuest) {
+                          showToast("Please register to see ad details");
+                          return;
+                        }
+                        await Get.to(() => ViewPropertyAd(ad: ad));
+                        controller.update();
+                      },
+                    );
+                  },
+                  childCount: controller._matchDocuments.length,
+                ),
+              ),
+              if (controller.ads.length.remainder(100) == 0)
+                SliverToBoxAdapter(
+                  child: GetMoreButton(
                     getMore: () {
                       controller._skip += 100;
                       controller._fetchData();
                     },
-                  );
-                } else {
-                  return const SizedBox();
-                }
-              }
-              final ad = controller.ads[index];
-              return PropertyAdWidget(
-                ad: ad,
-                onTap: () async {
-                  await Get.to(() => ViewPropertyAd(ad: ad));
-                  controller.update();
-                },
-              );
-            },
-            itemCount: controller.ads.length + 1,
+                  ),
+                )
+            ],
           );
         }),
       ),

@@ -337,19 +337,30 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       Text(
                         "${ad.address["city"]}, ${ad.address["location"]}",
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        "Budget ${formatMoney(ad.budget * AppController.convertionRate)}"
-                        " / ${ad.rentType}",
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Builder(builder: (context) {
+                        final String rentDuration;
+                        switch (ad.rentType) {
+                          case "Monthly":
+                            rentDuration = "Month";
+                            break;
+                          case "Weekly":
+                            rentDuration = "Week";
+                            break;
+                          default:
+                            rentDuration = "Day";
+                        }
+                        return Text(
+                          "Budget ${formatMoney(ad.budget * AppController.convertionRate)}"
+                          " / $rentDuration",
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        );
+                      }),
                     ],
                   ),
                   if (ad.isHaveRoom)
@@ -380,7 +391,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Text(
                     ad.description,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -452,7 +463,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: "•   ${e["label"]}",
+                                      text: "   •   ${e["label"]}",
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -520,7 +531,10 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               Expanded(
                                 child: Image.asset("${e["asset"]}"),
                               ),
+                              const SizedBox(width: 2),
                               Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "${e["label"]}",
@@ -548,36 +562,6 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     }).toList(),
                   ),
                   const Divider(height: 20),
-                  // const Center(
-                  //   child: Text(
-                  //     "AMENITIES",
-                  //     style: TextStyle(
-                  //       fontSize: 14,
-                  //       color: ROOMY_ORANGE,
-                  //     ),
-                  //   ),
-                  // ),
-                  if (ad.amenities.isNotEmpty)
-                    DefaultTextStyle(
-                      style: const TextStyle(
-                        color: ROOMY_ORANGE,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Image.asset("assets/icons/washing_2.png", height: 30),
-                          const Text("APPLIANCES"),
-                          const Spacer(),
-                          Image.asset("assets/icons/wifi.png", height: 30),
-                          const Text("TECH"),
-                          const Spacer(),
-                          const Icon(Icons.widgets, color: ROOMY_ORANGE),
-                          const Text("UTILITIES"),
-                        ],
-                      ),
-                    ),
                   DefaultTextStyle.merge(
                     style: const TextStyle(
                       fontSize: 12,
@@ -588,67 +572,58 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
-                          children: ad.homeAppliancesAmenities
-                              .map((e) => Text("•  $e"))
-                              .toList(),
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset("assets/icons/washing_2.png",
+                                    height: 30),
+                                const Text("APPLIANCES"),
+                              ],
+                            ),
+                            ...ad.homeAppliancesAmenities
+                                .map((e) => Text("•  $e"))
+                                .toList()
+                          ],
                         ),
                         const Spacer(),
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
-                          children: ad.technologyAmenities
-                              .map((e) =>
-                                  Text("•  $e", textAlign: TextAlign.center))
-                              .toList(),
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset("assets/icons/wifi.png",
+                                    height: 30),
+                                const Text("TECH"),
+                              ],
+                            ),
+                            ...ad.technologyAmenities
+                                .map((e) =>
+                                    Text("•  $e", textAlign: TextAlign.center))
+                                .toList()
+                          ],
                         ),
                         const Spacer(),
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
-                          children: ad.utilitiesAmenities
-                              .map(
-                                (e) => Text("• $e", textAlign: TextAlign.end),
-                              )
-                              .toList(),
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.widgets, color: ROOMY_ORANGE),
+                                Text("UTILITIES"),
+                              ],
+                            ),
+                            ...ad.utilitiesAmenities
+                                .map(
+                                  (e) => Text("• $e", textAlign: TextAlign.end),
+                                )
+                                .toList()
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  // if (ad.amenities.isNotEmpty)
-                  //   GridView.count(
-                  //     shrinkWrap: true,
-                  //     physics: const NeverScrollableScrollPhysics(),
-                  //     crossAxisCount: 4,
-                  //     childAspectRatio: 1.2,
-                  //     children: allAmenties
-                  //         .where((e) => ad.amenities.contains(e["value"]))
-                  //         .map((e) {
-                  //       return Card(
-                  //         child: Container(
-                  //           padding: const EdgeInsets.all(5),
-                  //           alignment: Alignment.center,
-                  //           child: Column(
-                  //             children: [
-                  //               Expanded(
-                  //                 child: Image.asset("${e["asset"]}"),
-                  //               ),
-                  //               Text(
-                  //                 "${e["value"]}",
-                  //                 style: TextStyle(
-                  //                   color: Get.isDarkMode
-                  //                       ? Colors.white
-                  //                       : ROOMY_ORANGE,
-                  //                   fontSize: 12,
-                  //                 ),
-                  //                 textAlign: TextAlign.center,
-                  //               ),
-                  //             ],
-                  //           ),
-                  //         ),
-                  //       );
-                  //     }).toList(),
-                  //   ),
-
                   const Divider(height: 20),
                   const Center(
                     child: Text(

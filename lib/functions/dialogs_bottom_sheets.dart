@@ -134,10 +134,7 @@ Future<String?> showInlineInputBottomSheet({
             if (message != null)
               Text(
                 message,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontSize: 16),
               ),
             const SizedBox(height: 10),
             InlineTextField(
