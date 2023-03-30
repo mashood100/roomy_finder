@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -29,7 +28,8 @@ class MaintenanceTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      icon: const Icon(CupertinoIcons.settings),
+      activeIcon: Image.asset("assets/icons/maintenance.png", height: 30),
+      icon: Image.asset("assets/icons/maintenance_white.png", height: 30),
       label: 'Maintenance'.tr,
     );
   }

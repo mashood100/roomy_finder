@@ -35,7 +35,8 @@ class ChatTabController extends LoadingController {
   Future<void> _getNotifications() async {
     try {
       isLoading(true);
-      final notifications = await ChatConversation.getAllSavedChats();
+      final notifications =
+          await ChatConversation.getAllSavedChats(AppController.me.id);
       conversations.clear();
       conversations.addAll(notifications);
     } catch (_) {
@@ -174,10 +175,16 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
+      activeIcon: Obx(() {
+        return Badge(
+          showBadge: AppController.instance.haveNewMessage.isTrue,
+          child: Image.asset("assets/icons/chat.png", height: 30),
+        );
+      }),
       icon: Obx(() {
         return Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: const Icon(CupertinoIcons.chat_bubble_2_fill),
+          child: Image.asset("assets/icons/chat_white.png", height: 30),
         );
       }),
       label: 'Chat'.tr,

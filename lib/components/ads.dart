@@ -185,52 +185,6 @@ class PropertyAdWidget extends StatelessWidget {
   }
 }
 
-class SocialPreferenceWidget extends StatelessWidget {
-  const SocialPreferenceWidget({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-  final Widget icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(5),
-        child: Row(
-          children: [
-            Expanded(child: icon),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: ROOMY_ORANGE,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class PropertyAdMiniWidget extends StatelessWidget {
   const PropertyAdMiniWidget({super.key, required this.ad, this.onTap});
 

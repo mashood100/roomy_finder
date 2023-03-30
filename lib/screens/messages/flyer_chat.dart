@@ -49,6 +49,8 @@ class FlyerChatScreenController extends GetxController
   void onInit() {
     super.onInit();
 
+    ChatConversation.currrentChatKey = conversation.key;
+
     WidgetsBinding.instance.addObserver(this);
 
     conversation.loadMessages().then((_) => update());
@@ -83,6 +85,7 @@ class FlyerChatScreenController extends GetxController
   void onClose() {
     _newMessageController.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    ChatConversation.currrentChatKey = null;
     super.onClose();
   }
 

@@ -181,7 +181,9 @@ class NotificationController {
 
   @pragma("vm:entry-point")
   static Future<void> firebaseMessagingHandler(
-      RemoteMessage msg, bool showAndroidMessage) async {
+    RemoteMessage msg,
+    bool showAndroidMessage,
+  ) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
       case "booking-offered":
@@ -287,6 +289,10 @@ class NotificationController {
         notificationMessage = "Sent a voice message";
       } else {
         notificationMessage = "Sent a file";
+      }
+
+      if (ChatConversation.currrentChatKey == conv.key) {
+        return;
       }
 
       if (Platform.isAndroid && showAndroidMessage) {

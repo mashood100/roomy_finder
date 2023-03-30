@@ -54,6 +54,7 @@ class _AllBlogPostsScreenState extends State<AllBlogPostsScreen> {
               final post = _blogPosts[index];
               return BlogPostWidget(
                 post: post,
+                showTitle: true,
                 onTap: () {
                   Get.to(() => ViewBlogPostScreen(post: post));
                 },

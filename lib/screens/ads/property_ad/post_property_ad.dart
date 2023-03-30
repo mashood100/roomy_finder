@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -216,7 +217,7 @@ class _PostPropertyAdController extends LoadingController {
       final data = {
         ...information,
         "address": address,
-        "amenties": amenties,
+        "amenities": amenties,
         "agentInfo": agentBrokerInformation,
         "socialPreferences": socialPreferences,
         "cameraPosition": cameraPosition?.toMap(),
@@ -297,7 +298,7 @@ class _PostPropertyAdController extends LoadingController {
       final data = {
         ...information,
         "address": address,
-        "amenties": amenties,
+        "amenities": amenties,
         "agentInfo": agentBrokerInformation,
         "socialPreferences": socialPreferences,
         "cameraPosition": cameraPosition?.toMap(),
@@ -398,7 +399,7 @@ class PostPropertyAdScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              oldData != null ? "Update Property Ad" : "Post Property Ad",
+              oldData != null ? "Update Property" : "Post Property",
             ),
             backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
           ),
@@ -585,8 +586,8 @@ class PostPropertyAdScreen extends StatelessWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 20,
+                            crossAxisSpacing: 20,
                             children: [
                               {
                                 "value": "Bed",
@@ -615,39 +616,37 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   controller.information["type"] =
                                       "${e["value"]}";
                                 },
-                                child: Card(
-                                  child: Stack(
-                                    alignment: Alignment.topRight,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        alignment: Alignment.center,
-                                        child: Column(
-                                          children: [
-                                            const SizedBox(height: 20),
-                                            Expanded(
-                                                child: Image.asset(
-                                                    "${e["asset"]}")),
-                                            Text(
-                                              "${e["label"]}",
-                                              style: const TextStyle(
-                                                color: ROOMY_PURPLE,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                child: Stack(
+                                  alignment: Alignment.topRight,
+                                  children: [
+                                    Container(
+                                      decoration: shadowedBoxDecoration,
+                                      padding: const EdgeInsets.all(10),
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(height: 20),
+                                          Expanded(
+                                              child:
+                                                  Image.asset("${e["asset"]}")),
+                                          Text(
+                                            "${e["label"]}",
+                                            style: const TextStyle(
+                                              color: ROOMY_PURPLE,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                      Icon(
-                                        controller.information["type"] ==
-                                                e["value"]
-                                            ? Icons
-                                                .check_circle_outline_outlined
-                                            : Icons.circle_outlined,
-                                        color: ROOMY_ORANGE,
-                                      )
-                                    ],
-                                  ),
+                                    ),
+                                    Icon(
+                                      controller.information["type"] ==
+                                              e["value"]
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
+                                    )
+                                  ],
                                 ),
                               );
                             }).toList(),
@@ -1218,41 +1217,38 @@ class PostPropertyAdScreen extends StatelessWidget {
                                         "${e["value"]}"] = true;
                                   }
                                 },
-                                child: Card(
-                                  child: Stack(
-                                    alignment: Alignment.topRight,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        alignment: Alignment.center,
-                                        child: Column(
-                                          children: [
-                                            const SizedBox(height: 10),
-                                            Expanded(
-                                              child:
-                                                  Image.asset("${e["asset"]}"),
+                                child: Stack(
+                                  alignment: Alignment.topRight,
+                                  children: [
+                                    Container(
+                                      decoration: shadowedBoxDecoration,
+                                      padding: const EdgeInsets.all(10),
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(height: 10),
+                                          Expanded(
+                                            child: Image.asset("${e["asset"]}"),
+                                          ),
+                                          Text(
+                                            "${e["label"]}",
+                                            style: const TextStyle(
+                                              color: ROOMY_PURPLE,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            Text(
-                                              "${e["label"]}",
-                                              style: const TextStyle(
-                                                color: ROOMY_PURPLE,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                      Icon(
-                                        controller.socialPreferences[
-                                                    e["value"]] ==
-                                                true
-                                            ? Icons
-                                                .check_circle_outline_outlined
-                                            : Icons.circle_outlined,
-                                        color: ROOMY_ORANGE,
-                                      )
-                                    ],
-                                  ),
+                                    ),
+                                    Icon(
+                                      controller.socialPreferences[
+                                                  e["value"]] ==
+                                              true
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
+                                    )
+                                  ],
                                 ),
                               );
                             }).toList(),
@@ -1296,42 +1292,41 @@ class PostPropertyAdScreen extends StatelessWidget {
                                             .add("${e["value"]}");
                                       }
                                     },
-                                    child: Card(
-                                      child: Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(10),
-                                            alignment: Alignment.center,
-                                            child: Column(
-                                              children: [
-                                                const SizedBox(height: 10),
-                                                Expanded(
-                                                  child: Image.asset(
-                                                      "${e["asset"]}"),
+                                    child: Stack(
+                                      alignment: Alignment.topRight,
+                                      children: [
+                                        Container(
+                                          decoration: shadowedBoxDecoration,
+                                          padding: const EdgeInsets.all(10),
+                                          alignment: Alignment.center,
+                                          child: Column(
+                                            children: [
+                                              const SizedBox(height: 10),
+                                              Expanded(
+                                                child: Image.asset(
+                                                    "${e["asset"]}"),
+                                              ),
+                                              Text(
+                                                "${e["value"]}",
+                                                style: const TextStyle(
+                                                  color: ROOMY_PURPLE,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
                                                 ),
-                                                Text(
-                                                  "${e["value"]}",
-                                                  style: const TextStyle(
-                                                    color: ROOMY_PURPLE,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 10,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
                                           ),
-                                          Icon(
-                                            controller.amenties
-                                                    .contains(e["value"])
-                                                ? Icons
-                                                    .check_circle_outline_outlined
-                                                : Icons.circle_outlined,
-                                            color: ROOMY_ORANGE,
-                                          )
-                                        ],
-                                      ),
+                                        ),
+                                        Icon(
+                                          controller.amenties
+                                                  .contains(e["value"])
+                                              ? Icons
+                                                  .check_circle_outline_outlined
+                                              : Icons.circle_outlined,
+                                          color: ROOMY_ORANGE,
+                                        )
+                                      ],
                                     ),
                                   ),
                                 )
@@ -1666,7 +1661,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           const Center(
                             child: Text(
-                              "Please add description to your property:",
+                              "Please add description to your\n property:",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 18,
@@ -1694,9 +1689,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                               onChanged: (value) =>
                                   controller.information["description"] = value,
                               validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
                                 return null;
                               },
                               minLines: 5,
@@ -1715,128 +1707,89 @@ class PostPropertyAdScreen extends StatelessWidget {
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
           floatingActionButton: Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: GetBuilder<_PostPropertyAdController>(
-              id: 'bottom-progress',
-              builder: (controller) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    LinearProgressIndicator(
-                      color: const Color.fromRGBO(96, 15, 116, 1),
-                      value: (controller._pageIndex.value + 1) / 8,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // const SizedBox(width: 10),
-                        TextButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () {
-                                  if (controller._pageIndex.value == 0) {
-                                    Get.back();
-                                  } else {
-                                    controller._moveToPreviousPage();
-                                  }
-                                  controller.update();
-                                },
-                          // icon: const Icon(Icons.arrow_left),
-                          child: controller._pageIndex.value == 0
-                              ? Text("back".tr)
-                              : Text("previous".tr),
-                        ),
-                        // Slider(
-                        //   value: controller._pageIndex.value + 1,
-                        //   onChanged: (_) {},
-                        //   min: 0,
-                        //   max: 6,
-                        //   divisions: 6,
-                        // ),
-                        // const Spacer(),
-                        // Text('${controller._pageIndex.value + 1}/7'),
+            decoration: const BoxDecoration(
+              color: ROOMY_PURPLE,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.elliptical(30, 10),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Spacer(),
 
-                        TextButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () {
-                                  switch (controller._pageIndex.value) {
-                                    case 0:
-                                      if (controller
-                                              ._addressFormKey.currentState
-                                              ?.validate() ==
-                                          true) {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
+                IconButton(
+                  onPressed: controller.isLoading.isTrue
+                      ? null
+                      : () {
+                          switch (controller._pageIndex.value) {
+                            case 0:
+                              if (controller._addressFormKey.currentState
+                                      ?.validate() ==
+                                  true) {
+                                controller._moveToNextPage();
+                              }
+                              break;
 
-                                    case 1:
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 2:
-                                      if (controller
-                                              ._informationFormKey.currentState
-                                              ?.validate() ==
-                                          true) {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
+                            case 1:
+                              controller._moveToNextPage();
+                              break;
+                            case 2:
+                              if (controller._informationFormKey.currentState
+                                      ?.validate() ==
+                                  true) {
+                                controller._moveToNextPage();
+                              }
+                              break;
 
-                                    case 3:
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 4:
-                                      if (controller
-                                              .information['posterType'] ==
-                                          "Agent/Broker") {
-                                        if (controller._agentBrokerFormKey
-                                                .currentState
-                                                ?.validate() ==
-                                            true) {
-                                          controller._moveToNextPage();
-                                        }
-                                      } else {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
-                                    case 5:
-                                      controller._moveToNextPage();
-                                      break;
-                                    case 6:
-                                      if (controller.images.isEmpty &&
-                                          controller.oldImages.isEmpty) {
-                                        showGetSnackbar(
-                                          "You need atleast one image",
-                                          severity: Severity.error,
-                                        );
-                                      } else {
-                                        controller._moveToNextPage();
-                                      }
-                                      break;
-                                    case 7:
-                                      if (oldData != null) {
-                                        controller._upatePropertyAd();
-                                      } else {
-                                        controller._savePropertyAd();
-                                      }
-                                      break;
-                                    default:
-                                  }
-                                  controller.update();
-                                },
-                          child: Builder(builder: (context) {
-                            if (controller._pageIndex.value == 7) {
-                              return Text("save".tr);
-                            }
-                            return Text("next".tr);
-                          }),
-                        ),
-                        // const Icon(Icons.arrow_right),
-                      ],
-                    ),
-                  ],
-                );
-              },
+                            case 3:
+                              controller._moveToNextPage();
+                              break;
+                            case 4:
+                              if (controller.information['posterType'] ==
+                                  "Agent/Broker") {
+                                if (controller._agentBrokerFormKey.currentState
+                                        ?.validate() ==
+                                    true) {
+                                  controller._moveToNextPage();
+                                }
+                              } else {
+                                controller._moveToNextPage();
+                              }
+                              break;
+                            case 5:
+                              controller._moveToNextPage();
+                              break;
+                            case 6:
+                              if (controller.images.isEmpty &&
+                                  controller.oldImages.isEmpty) {
+                                showGetSnackbar(
+                                  "You need atleast one image",
+                                  severity: Severity.error,
+                                );
+                              } else {
+                                controller._moveToNextPage();
+                              }
+                              break;
+                            case 7:
+                              if (oldData != null) {
+                                controller._upatePropertyAd();
+                              } else {
+                                controller._savePropertyAd();
+                              }
+                              break;
+                            default:
+                          }
+                          controller.update();
+                        },
+                  icon: const Icon(
+                    CupertinoIcons.chevron_right_circle,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                // const Icon(Icons.arrow_right),
+              ],
             ),
           ),
         );

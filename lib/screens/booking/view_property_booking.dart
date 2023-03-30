@@ -429,8 +429,18 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                     }
                                   },
                             child: booking.isMine
-                                ? const Text("Chat with Client")
-                                : const Text("Chat with Landlord"),
+                                ? const Text(
+                                    "Chat with Client",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Chat with Landlord",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
                       if (!booking.isMine &&

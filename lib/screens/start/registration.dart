@@ -23,6 +23,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/screens/start/login.dart';
 // import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
@@ -115,6 +116,8 @@ class _RegistrationController extends LoadingController {
   Future<void> _verifyEmail() async {
     try {
       _isVerifiyingEmail(true);
+      update();
+
       if (_emailVerificationCode.isEmpty) {
         final res = await ApiService.getDio.post(
           "/auth/send-email-verification-code",
@@ -349,12 +352,14 @@ class _RegistrationController extends LoadingController {
       if (_formkeyCredentials.currentState?.validate() != true) return false;
 
       if (acceptTermsAndConditions.isFalse) {
-        showGetSnackbar(
-          "You need to read and accept the terms and conditions before continuing"
-              .tr,
-          severity: Severity.error,
-        );
+        showToast("Please accept terms and conditions");
         return false;
+      }
+      if (_canVerifyEmail) {
+        if (!_emailIsVerified) {
+          showToast("Please verify email");
+          return false;
+        }
       }
       isLoading(true);
 
@@ -465,7 +470,7 @@ class RegistrationScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(
                   left: 10,
-                  top: 40,
+                  top: 30,
                   right: 10,
                   bottom: 60,
                 ),
@@ -592,7 +597,9 @@ class RegistrationScreen extends StatelessWidget {
                                     enabled: controller.isLoading.isFalse &&
                                         !controller._emailIsVerified,
                                     onChanged: (value) {
-                                      controller.information["email"] = value;
+                                      controller.information["email"] =
+                                          value.toLowerCase();
+                                      controller._emailVerificationCode = "";
                                       controller.update();
                                     },
                                     validator: (value) {
@@ -921,64 +928,53 @@ class RegistrationScreen extends StatelessWidget {
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
           floatingActionButton: Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            decoration: const BoxDecoration(
+              color: ROOMY_PURPLE,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.elliptical(30, 10),
+              ),
+            ),
             child: Builder(builder: (context) {
               if (controller._pageIndex.value == 2) {
                 return const SizedBox();
               }
-              return Column(
-                mainAxisSize: MainAxisSize.min,
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  LinearProgressIndicator(
-                      color: ROOMY_PURPLE,
-                      value: (controller._pageIndex.value + 1) / 2),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // const SizedBox(width: 10),
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue ||
-                                controller._isVerifyingPhone.isTrue
-                            ? null
-                            : () {
-                                if (controller._pageIndex.value == 0) {
-                                  Get.back();
-                                } else {
-                                  controller._moveToPreviousPage();
-                                }
-                              },
-                        // icon: const Icon(Icons.arrow_left),
-                        child: controller._pageIndex.value == 0
-                            ? Text("back".tr)
-                            : Text("previous".tr),
+                  TextButton(
+                    onPressed: () => Get.off(() => const LoginScreen()),
+                    child: const Text(
+                      'Login',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
-
-                      TextButton(
-                        onPressed: controller.isLoading.isTrue ||
-                                controller._isVerifyingPhone.isTrue
-                            ? null
-                            : () async {
-                                switch (controller._pageIndex.value) {
-                                  case 0:
-                                    final isValid =
-                                        await controller.validateCredentials();
-                                    if (!isValid) return;
-                                    if (controller._canVerifyEmail) {
-                                      if (!controller._emailIsVerified) {
-                                        showToast("Please verify email");
-                                        return;
-                                      }
-                                    }
-                                    controller.sendSmsCode();
-                                    break;
-                                  default:
-                                }
-                              },
-                        child: Text("next".tr),
-                      ),
-                      // const Icon(Icons.arrow_right),
-                    ],
+                    ),
                   ),
+
+                  IconButton(
+                    onPressed: controller.isLoading.isTrue ||
+                            controller._isVerifyingPhone.isTrue
+                        ? null
+                        : () async {
+                            switch (controller._pageIndex.value) {
+                              case 0:
+                                final isValid =
+                                    await controller.validateCredentials();
+                                if (!isValid) return;
+
+                                controller.sendSmsCode();
+                                break;
+                              default:
+                            }
+                          },
+                    icon: const Icon(
+                      CupertinoIcons.chevron_right_circle,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  // const Icon(Icons.arrow_right),
                 ],
               );
             }),

@@ -20,7 +20,6 @@ import 'package:carousel_slider/carousel_slider.dart';
 
 class _FindRoommatesController extends LoadingController {
   final RxMap<String, String?> filter;
-  final _sortKey = "".obs;
 
   final RxList<String> interest = <String>[].obs;
 
@@ -38,7 +37,7 @@ class _FindRoommatesController extends LoadingController {
 
   _FindRoommatesController({
     Map<String, String?>? filter,
-  }) : filter = (filter ?? {}).obs;
+  }) : filter = ({...?filter}).obs;
 
   final RxList<RoommateAd> ads = <RoommateAd>[].obs;
   @override
@@ -51,7 +50,6 @@ class _FindRoommatesController extends LoadingController {
 
   Future<void> _fetchData({bool isReFresh = true}) async {
     try {
-      _sortKey.value = '';
       isLoading(true);
       hasFetchError(false);
       update();
@@ -117,41 +115,41 @@ class _FindRoommatesController extends LoadingController {
                     ),
                     const Divider(),
                     // Action
-                    // InlineDropdown<String>(
-                    //   labelText: 'Action'.tr,
-                    //   hintText: 'What you want'.tr,
-                    //   value: filter["action"],
-                    //   items: const ["ALL", "HAVE ROOM", "NEED ROOM"],
-                    //   onChanged: (val) {
-                    //     if (val != null) filter["action"] = val;
-                    //     if (val == "All") filter.remove("action");
-                    //   },
-                    // ),
-                    // const SizedBox(height: 20),
-                    // // Roommate type
-                    // InlineDropdown<String>(
-                    //   labelText: 'Type'.tr,
-                    //   hintText: 'Preferred roommate'.tr,
-                    //   value: filter["type"],
-                    //   items: const ["All", "Studio", "Appartment", "House"],
-                    //   onChanged: (val) {
-                    //     if (val != null) filter["type"] = val;
-                    //     if (val == "All") filter.remove("type");
-                    //   },
-                    // ),
-                    // const SizedBox(height: 20),
-                    // // Rent type
-                    // InlineDropdown<String>(
-                    //   labelText: 'Rent'.tr,
-                    //   hintText: 'rentType'.tr,
-                    //   value: filter["rentType"],
-                    //   items: const ["All", "Monthly", "Weekly", "Daily"],
-                    //   onChanged: (val) {
-                    //     if (val != null) filter["rentType"] = val;
-                    //     if (val == "All") filter.remove("rentType");
-                    //   },
-                    // ),
-                    // const SizedBox(height: 20),
+                    InlineDropdown<String>(
+                      labelText: 'Action'.tr,
+                      hintText: 'What you want'.tr,
+                      value: filter["action"],
+                      items: const ["ALL", "HAVE ROOM", "NEED ROOM"],
+                      onChanged: (val) {
+                        if (val != null) filter["action"] = val;
+                        if (val == "All") filter.remove("action");
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    // Roommate type
+                    InlineDropdown<String>(
+                      labelText: 'Type'.tr,
+                      hintText: 'Preferred roommate'.tr,
+                      value: filter["type"],
+                      items: const ["All", "Studio", "Appartment", "House"],
+                      onChanged: (val) {
+                        if (val != null) filter["type"] = val;
+                        if (val == "All") filter.remove("type");
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    // Rent type
+                    InlineDropdown<String>(
+                      labelText: 'Rent'.tr,
+                      hintText: 'rentType'.tr,
+                      value: filter["rentType"],
+                      items: const ["All", "Monthly", "Weekly", "Daily"],
+                      onChanged: (val) {
+                        if (val != null) filter["rentType"] = val;
+                        if (val == "All") filter.remove("rentType");
+                      },
+                    ),
+                    const SizedBox(height: 20),
                     InlineDropdown<String>(
                       labelText: 'City',
                       hintText: AppController.instance.country.value.isUAE
@@ -171,7 +169,7 @@ class _FindRoommatesController extends LoadingController {
                     const SizedBox(height: 20),
                     InlineDropdown<String>(
                       labelText: 'Area',
-                      hintText: "Select area",
+                      hintText: "Select for area",
                       value: filter["location"],
                       items: getLocationsFromCity(
                         filter["city"].toString(),
@@ -188,7 +186,7 @@ class _FindRoommatesController extends LoadingController {
                     InlineDropdown<String>(
                       labelText: 'Gender',
                       hintText: "Select gender",
-                      value: filter["location"],
+                      value: filter["gender"],
                       items: const ["Female", "Male", "Mix"],
                       onChanged: (val) {
                         if (val != null) {
@@ -371,7 +369,11 @@ class FindRoommatesScreen extends StatelessWidget {
           actions: [
             Obx(() {
               return TextButton(
-                onPressed: () => changeAppCountry(context),
+                onPressed: () async {
+                  await changeAppCountry(context);
+                  controller.filter.remove('city');
+                  controller.filter.remove('location');
+                },
                 // icon: const Icon(Icons.arrow_drop_down, size: 40),
                 child: Text(
                   AppController.instance.country.value.flag,
@@ -393,32 +395,6 @@ class FindRoommatesScreen extends StatelessWidget {
           builder: (controller) {
             if (controller.isLoading.isTrue) {
               return const Center(child: CupertinoActivityIndicator());
-            }
-            if (controller.hasFetchError.isTrue) {
-              return Center(
-                child: Column(
-                  children: [
-                    const Text("Failed to fetch data"),
-                    OutlinedButton(
-                      onPressed: controller._fetchData,
-                      child: const Text("Refresh"),
-                    ),
-                  ],
-                ),
-              );
-            }
-            if (controller.ads.isEmpty) {
-              return Center(
-                child: Column(
-                  children: [
-                    const Text("No data."),
-                    OutlinedButton(
-                      onPressed: controller._fetchData,
-                      child: const Text("Refresh"),
-                    ),
-                  ],
-                ),
-              );
             }
 
             return CustomScrollView(
@@ -469,13 +445,13 @@ class FindRoommatesScreen extends StatelessWidget {
                               ],
                             ),
                           TextField(
+                            readOnly: true,
+                            onTap: controller._showFilter,
                             decoration: InputDecoration(
                               fillColor: Colors.white,
                               hintText: "Filter by gender, budget",
                               suffixIcon: IconButton(
-                                onPressed: () {
-                                  controller._showFilter();
-                                },
+                                onPressed: controller._showFilter,
                                 icon: const Icon(Icons.filter_list),
                               ),
                               contentPadding:
@@ -485,10 +461,6 @@ class FindRoommatesScreen extends StatelessWidget {
                               ),
                             ),
                             textInputAction: TextInputAction.search,
-                            onChanged: (value) {
-                              controller._sortKey(value);
-                              controller.update();
-                            },
                           ),
                           Expanded(
                             child: CarouselSlider(
@@ -534,42 +506,60 @@ class FindRoommatesScreen extends StatelessWidget {
                     }),
                   ),
                 ),
-                SliverGrid.count(
-                  crossAxisCount: 2,
-                  children: controller.ads.where((ad) {
-                    if (controller._sortKey.isEmpty) return true;
-                    final key = controller._sortKey.value.toLowerCase();
-                    final viewBudget = AppController.convertionRate * ad.budget;
-                    final bool haveMatch;
-
-                    haveMatch = "${ad.aboutYou["gender"]}"
-                            .toLowerCase()
-                            .contains(key) ||
-                        "${ad.address["city"]}".toLowerCase().contains(key) ||
-                        "${ad.address["location"]}"
-                            .toLowerCase()
-                            .contains(key) ||
-                        "$viewBudget".contains(key);
-
-                    return haveMatch;
-                  }).map((ad) {
-                    return _AdItem(
-                      ad: ad,
-                      onTap: () {
-                        if (AppController.me.isGuest) {
-                          showToast("Please register to see ad details");
-                          return;
-                        }
-                        if (AppController.me.isPremium) {
-                          Get.to(() => ViewRoommateAdScreen(ad: ad));
-                        } else {
-                          controller.upgradeToSeeDetails(ad);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                if (controller.ads.length.remainder(100) == 0)
+                if (controller.hasFetchError.isTrue)
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: Column(
+                        children: [
+                          const Text("Failed to fetch data"),
+                          OutlinedButton(
+                            onPressed: () {
+                              controller._fetchData(isReFresh: true);
+                            },
+                            child: const Text("Refresh"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (controller.ads.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: Column(
+                        children: [
+                          const Text("No data."),
+                          OutlinedButton(
+                            onPressed: () {
+                              controller._fetchData(isReFresh: true);
+                            },
+                            child: const Text("Refresh"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SliverGrid.count(
+                    crossAxisCount: 2,
+                    children: controller.ads.map((ad) {
+                      return _AdItem(
+                        ad: ad,
+                        onTap: () {
+                          if (AppController.me.isGuest) {
+                            showToast("Please register to see ad details");
+                            return;
+                          }
+                          if (AppController.me.isPremium) {
+                            Get.to(() => ViewRoommateAdScreen(ad: ad));
+                          } else {
+                            controller.upgradeToSeeDetails(ad);
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                if (controller.ads.length.remainder(100) == 0 &&
+                    controller.ads.isNotEmpty)
                   SliverToBoxAdapter(
                     child: GetMoreButton(
                       getMore: () {

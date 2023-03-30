@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -67,6 +68,7 @@ class _ResetPasswordScreenController extends LoadingController {
   Future<void> _verifyEmail() async {
     try {
       _isVerifiyingEmail(true);
+      update();
       if (_emailVerificationCode.isEmpty) {
         final res = await Dio().post(
           "$API_URL/auth/send-email-verification-code",
@@ -82,7 +84,6 @@ class _ResetPasswordScreenController extends LoadingController {
 
         _emailVerificationCode = res.data["code"].toString();
       }
-
       final userCode = await showInlineInputBottomSheet(
         label: "Code",
         message: "Enter the verification code sent to ${_emailController.text}",
@@ -116,8 +117,8 @@ class _ResetPasswordScreenController extends LoadingController {
           "fcmToken": await FirebaseMessaging.instance.getToken(),
         };
 
-        final res =
-            await Dio().post('$API_URL/auth/reset-password', data: mapData);
+        final res = await ApiService.getDio
+            .post('$API_URL/auth/reset-password', data: mapData);
 
         if (res.statusCode == 500) {
           showGetSnackbar(
@@ -187,6 +188,7 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                             enabled: controller.isLoading.isFalse &&
                                 !controller._emailIsVerified,
                             onChanged: (value) {
+                              controller._emailVerificationCode = "";
                               controller.update();
                             },
                             controller: controller._emailController,
@@ -287,6 +289,7 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                           children: [
                             const SizedBox(height: 20),
                             InlineTextField(
+                              labelText: 'New password',
                               obscureText: controller._showPassword.isFalse,
                               controller: controller._passwordController,
                               hintText: 'Enter new password',
@@ -311,6 +314,7 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                             ),
                             const SizedBox(height: 20),
                             InlineTextField(
+                              labelText: 'Confirm password',
                               obscureText:
                                   controller.showConfirmPassword.isFalse,
                               controller: controller._confirmPasswordController,

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
-import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/static.dart';
@@ -113,13 +112,16 @@ class ViewRoommateAdScreen extends StatelessWidget {
     final controller = Get.put(_ViewRoommateAdController(ad));
     return Scaffold(
       appBar: AppBar(
-        title: Text("${ad.type} Roommate"),
+        title: const Text(
+          "View Roommate ad",
+          style: TextStyle(fontSize: 18),
+        ),
         backgroundColor: ROOMY_PURPLE,
         actions: [
-          if (!ad.isMine)
+          if (!AppController.me.isGuest)
             IconButton(
               onPressed: () async {
-                await addAdToFavorite(ad.toJson(), "favorites-roommate-ads");
+                await addAdToFavorite(ad.toJson(), "favorites-roommates-ads");
                 showToast("Added to favorite");
               },
               icon: const Icon(Icons.favorite, color: ROOMY_ORANGE),
@@ -136,103 +138,112 @@ class ViewRoommateAdScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 1),
-            Card(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ...ad.images.map(
-                        (e) => GestureDetector(
-                          onTap: () => controller._viewImage(e),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 1),
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(5),
-                              ),
-                              child: CachedNetworkImage(
-                                imageUrl: e,
-                                height: 250,
-                                width: ad.images.length == 1 ? Get.width : null,
-                                fit: ad.images.length == 1
-                                    ? BoxFit.cover
-                                    : BoxFit.fitHeight,
-                                errorWidget: (ctx, e, trace) {
-                                  return SizedBox(
-                                    width: Get.width,
-                                    child: const CupertinoActivityIndicator(
-                                      radius: 30,
-                                    ),
-                                  );
-                                },
-                                progressIndicatorBuilder:
-                                    (context, url, downloadProgress) {
-                                  return Container(
-                                    width: Get.width * 0.9,
-                                    padding: const EdgeInsets.all(30),
-                                    child: CircularProgressIndicator(
-                                      value: downloadProgress.progress,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      ...ad.videos.map(
-                        (e) => GestureDetector(
-                          onTap: () => Get.to(() {
-                            return PlayVideoScreen(source: e, isAsset: false);
-                          }),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
+            Stack(
+              alignment: Alignment.bottomLeft,
+              children: [
+                Card(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ...ad.images.map(
+                            (e) => GestureDetector(
+                              onTap: () => controller._viewImage(e),
+                              child: Container(
                                 margin:
                                     const EdgeInsets.symmetric(horizontal: 1),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5),
-                                  child: FutureBuilder(
-                                    builder: (ctx, asp) {
-                                      if (asp.hasData) {
-                                        return Image.file(
-                                          File(asp.data!),
-                                          alignment: Alignment.center,
-                                          height: 250,
-                                          fit: BoxFit.fitHeight,
-                                        );
-                                      }
-                                      return Container();
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(5),
+                                  ),
+                                  child: CachedNetworkImage(
+                                    imageUrl: e,
+                                    height: 250,
+                                    width: ad.images.length == 1
+                                        ? Get.width
+                                        : null,
+                                    fit: ad.images.length == 1
+                                        ? BoxFit.cover
+                                        : BoxFit.fitHeight,
+                                    errorWidget: (ctx, e, trace) {
+                                      return SizedBox(
+                                        width: Get.width,
+                                        child: const CupertinoActivityIndicator(
+                                          radius: 30,
+                                        ),
+                                      );
                                     },
-                                    future: VideoThumbnail.thumbnailFile(
-                                      video: e,
-                                      quality: 50,
-                                    ),
+                                    progressIndicatorBuilder:
+                                        (context, url, downloadProgress) {
+                                      return Container(
+                                        width: Get.width * 0.9,
+                                        padding: const EdgeInsets.all(30),
+                                        child: CircularProgressIndicator(
+                                          value: downloadProgress.progress,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
-                              const Padding(
-                                padding: EdgeInsets.all(20),
-                                child: Icon(
-                                  Icons.play_arrow,
-                                  size: 40,
-                                  color: Color.fromARGB(255, 2, 3, 2),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          ...ad.videos.map(
+                            (e) => GestureDetector(
+                              onTap: () => Get.to(() {
+                                return PlayVideoScreen(
+                                    source: e, isAsset: false);
+                              }),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 1),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: FutureBuilder(
+                                        builder: (ctx, asp) {
+                                          if (asp.hasData) {
+                                            return Image.file(
+                                              File(asp.data!),
+                                              alignment: Alignment.center,
+                                              height: 250,
+                                              fit: BoxFit.fitHeight,
+                                            );
+                                          }
+                                          return Container();
+                                        },
+                                        future: VideoThumbnail.thumbnailFile(
+                                          video: e,
+                                          quality: 50,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.all(20),
+                                    child: Icon(
+                                      Icons.play_arrow,
+                                      size: 40,
+                                      color: Color.fromARGB(255, 2, 3, 2),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 5),
             Padding(
@@ -244,6 +255,15 @@ class ViewRoommateAdScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      GestureDetector(
+                        onTap: () =>
+                            controller._viewImage(ad.poster.profilePicture),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child:
+                              ad.poster.ppWidget(borderColor: false, size: 30),
+                        ),
+                      ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -253,7 +273,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             style: const TextStyle(
                               color: ROOMY_ORANGE,
                               fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                              fontSize: 16,
                             ),
                           ),
                           Text(
@@ -268,24 +288,44 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       ),
                       const Spacer(),
                       if (ad.isMine)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ROOMY_PURPLE,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                side: const BorderSide(color: Colors.red),
+                              ),
+                              onPressed: controller.isLoading.isTrue
+                                  ? null
+                                  : controller.deleteAd,
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
                             ),
-                            side: const BorderSide(color: ROOMY_PURPLE),
-                          ),
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : controller.deleteAd,
-                          child: const Text(
-                            "Delete",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                            // if (ad.isMine) const SizedBox(width: 10),
+                            if (ad.isMine)
+                              IconButton(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  side: const BorderSide(color: Colors.green),
+                                ),
+                                onPressed: controller.isLoading.isTrue
+                                    ? null
+                                    : controller.editAd,
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                ),
+                              ),
+                          ],
                         )
                       else
                         ElevatedButton(
@@ -307,30 +347,9 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (ad.isMine) const SizedBox(width: 10),
-                      if (ad.isMine)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ROOMY_ORANGE,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            side: const BorderSide(color: ROOMY_ORANGE),
-                          ),
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : controller.editAd,
-                          child: const Text(
-                            "Edit",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
-                  const Divider(height: 20),
+                  const Divider(height: 10),
                   Row(
                     children: [
                       const Icon(Icons.room, color: ROOMY_ORANGE),
@@ -338,10 +357,12 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         "${ad.address["city"]}, ${ad.address["location"]}",
                         style: const TextStyle(
                           fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const Spacer(),
                       Builder(builder: (context) {
+                        // ignore: unused_local_variable
                         final String rentDuration;
                         switch (ad.rentType) {
                           case "Monthly":
@@ -353,215 +374,250 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           default:
                             rentDuration = "Day";
                         }
-                        return Text(
-                          "Budget ${formatMoney(ad.budget * AppController.convertionRate)}"
-                          " / $rentDuration",
-                          style: const TextStyle(
-                            fontSize: 12,
-                          ),
+                        return Text.rich(
+                          TextSpan(children: [
+                            TextSpan(
+                              text: formatMoney(
+                                ad.budget * AppController.convertionRate,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 18,
+                              ),
+                            ),
+                          ]),
                         );
                       }),
                     ],
                   ),
-                  if (ad.isHaveRoom)
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(text: "Building : "),
-                          TextSpan(
-                            text: "${ad.address["buildingName"]}, ",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const TextSpan(text: "Appartment number : "),
-                          TextSpan(
-                            text: "${ad.address["appartmentNumber"]}, ",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const TextSpan(text: "Floor number : "),
-                          TextSpan(
-                            text: "${ad.address["floorNumber"]}, ",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                  if (ad.description?.isNotEmpty == true)
+                    const SizedBox(height: 10),
+                  if (ad.description?.isNotEmpty == true)
+                    Text(
+                      ad.description!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines:
+                          controller._showAllDescription.isTrue ? null : 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(height: 10),
-                  Text(
-                    ad.description,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: controller._showAllDescription.isTrue ? null : 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                   const Divider(height: 20),
-                  DefaultTextStyle(
+                  DefaultTextStyle.merge(
                     style: const TextStyle(
-                      color: ROOMY_ORANGE,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.person, color: ROOMY_ORANGE),
-                        SizedBox(width: 5),
-                        Text("ABOUT ME"),
-                        Spacer(),
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.person, color: ROOMY_ORANGE),
+                            SizedBox(width: 5),
+                            Text("ABOUT ME"),
+                          ],
+                        ),
+                        Row(
+                          children: const [
+                            Icon(Icons.person_add_alt_1, color: ROOMY_ORANGE),
+                            SizedBox(width: 5),
+                            Text("PREFERRED ROOMMATE"),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   DefaultTextStyle.merge(
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            {
-                              "label": "Age : ",
-                              "value": '${ad.aboutYou["age"]} years',
-                            },
-                            {
-                              "label": "Occupation : ",
-                              "value": '${ad.aboutYou["occupation"]}',
-                            },
-                            {
-                              "label": "Gender : ",
-                              "value": '${ad.aboutYou["gender"]}',
-                            },
-                            {
-                              "label": "Life style : ",
-                              "value": '${ad.aboutYou["lifeStyle"]}',
-                            },
-                            {
-                              "label": "Nationality : ",
-                              "value": '${ad.aboutYou["nationality"]}',
-                            },
-                            {
-                              "label": "Astrological sign : ",
-                              "value": '${ad.aboutYou["astrologicalSign"]}',
-                            },
-                            {
-                              "label": "Languages : ",
-                              "value":
-                                  (ad.aboutYou["languages"] as List).join(", "),
-                            },
-                          ].map((e) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              width: Get.width - 20,
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: "   •   ${e["label"]}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              {
+                                "label": "Age : ",
+                                "value": '${ad.aboutYou["age"]} years',
+                              },
+                              {
+                                "label": "Occupation : ",
+                                "value": '${ad.aboutYou["occupation"]}',
+                              },
+                              {
+                                "label": "Gender : ",
+                                "value": '${ad.aboutYou["gender"]}',
+                              },
+                              {
+                                "label": "Life style : ",
+                                "value": '${ad.aboutYou["lifeStyle"]}',
+                              },
+                              {
+                                "label": "Nationality : ",
+                                "value": '${ad.aboutYou["nationality"]}',
+                              },
+                              {
+                                "label": "Astrological sign : ",
+                                "value": '${ad.aboutYou["astrologicalSign"]}',
+                              },
+                            ].map((e) {
+                              return Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
+                                // width: Get.width - 20,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: "   •   ${e["label"]}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    TextSpan(text: e["value"]),
-                                  ],
+                                      TextSpan(text: e["value"]),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                        const Spacer(),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              {
+                                "label": "Gender : ",
+                                "value": "${ad.socialPreferences["gender"]}",
+                              },
+                              {
+                                "label": "Nationality : ",
+                                "value":
+                                    '${ad.socialPreferences["nationality"]}',
+                              },
+                              {
+                                "label": "Life style : ",
+                                "value": '${ad.aboutYou["lifeStyle"]}',
+                              },
+                            ].map((e) {
+                              return Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
+                                // width: Get.width - 20,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: "   •   ${e["label"]}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(text: e["value"]),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                       ],
                     ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    // width: Get.width - 20,
+                    child: Text.rich(
+                      TextSpan(
+                        style: const TextStyle(
+                          fontSize: 12,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: "   •   Languages : ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                              text: (ad.aboutYou["languages"] as List)
+                                  .join(", ")),
+                        ],
+                      ),
+                    ),
+                  ),
                   const Divider(height: 20),
-                  const Center(
+                  Center(
                     child: Text(
-                      "SHARING/HOUSING PREFERENCES",
-                      style: TextStyle(
+                      ad.isHaveRoom
+                          ? "SHARING/HOUSING PREFERENCES"
+                          : "PREFERRED HOUSING PREFERENCES",
+                      style: const TextStyle(
                         fontSize: 14,
                         color: ROOMY_ORANGE,
                       ),
                     ),
                   ),
-                  GridView.count(
-                    crossAxisCount: 3,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    childAspectRatio: 1.5,
-                    children: [
-                      SocialPreferenceWidget(
-                        icon: const Icon(Icons.group, color: ROOMY_ORANGE),
-                        label: "People",
-                        value: "${ad.socialPreferences["numberOfPeople"]}",
-                      ),
-                      SocialPreferenceWidget(
-                        icon: const Icon(Icons.public, color: ROOMY_ORANGE),
-                        label: "Nationality",
-                        value: "${ad.socialPreferences["nationality"]}",
-                      ),
-                      SocialPreferenceWidget(
-                        icon: Icon(
-                            ad.socialPreferences["gender"] == "Male"
-                                ? Icons.male
-                                : Icons.female,
-                            color: ROOMY_ORANGE),
-                        label: "Gender",
-                        value: "${ad.socialPreferences["gender"]}",
-                      ),
-                    ],
-                  ),
+                  const SizedBox(height: 10),
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 4,
-                    childAspectRatio: 1.2,
+                    childAspectRatio: 1.5,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
                     children: allSocialPreferences.map((e) {
-                      return Card(
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          alignment: Alignment.center,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Image.asset("${e["asset"]}"),
-                              ),
-                              const SizedBox(width: 2),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "${e["label"]}",
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                  Builder(builder: (context) {
-                                    final isTrue = ad.socialPreferences
-                                        .containsKey(e["value"]);
-                                    return Text(
-                                      isTrue ? 'Yes' : "No",
-                                      style: TextStyle(
-                                        color: Get.isDarkMode
-                                            ? Colors.white
-                                            : ROOMY_ORANGE,
-                                        fontSize: 12,
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ],
-                          ),
+                      return Container(
+                        decoration: shadowedBoxDecoration,
+                        padding: const EdgeInsets.all(5),
+                        alignment: Alignment.center,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Image.asset("${e["asset"]}"),
+                            ),
+                            const SizedBox(width: 2),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${e["label"]}",
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                Builder(builder: (context) {
+                                  final isTrue = ad.socialPreferences
+                                      .containsKey(e["value"]);
+                                  return Text(
+                                    isTrue ? 'Yes' : "No",
+                                    style: TextStyle(
+                                      color: isTrue ? Colors.green : Colors.red,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),
                   ),
                   const Divider(height: 20),
+                  Center(
+                    child: Text(
+                      ad.isHaveRoom ? "AMENITIES" : "PREFERRED AMENITIES",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: ROOMY_ORANGE,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   DefaultTextStyle.merge(
                     style: const TextStyle(
                       fontSize: 12,
@@ -575,8 +631,11 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Image.asset("assets/icons/washing_2.png",
-                                    height: 30),
+                                Image.asset(
+                                  "assets/icons/washing_2.png",
+                                  height: 30,
+                                ),
+                                const SizedBox(width: 10),
                                 const Text("APPLIANCES"),
                               ],
                             ),
@@ -592,8 +651,11 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Image.asset("assets/icons/wifi.png",
-                                    height: 30),
+                                Image.asset(
+                                  "assets/icons/wifi.png",
+                                  height: 30,
+                                ),
+                                const SizedBox(width: 10),
                                 const Text("TECH"),
                               ],
                             ),
@@ -609,9 +671,13 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.widgets, color: ROOMY_ORANGE),
-                                Text("UTILITIES"),
+                              children: [
+                                Image.asset(
+                                  "assets/icons/utilities.png",
+                                  height: 25,
+                                ),
+                                const SizedBox(width: 5),
+                                const Text("UTILITIES"),
                               ],
                             ),
                             ...ad.utilitiesAmenities
@@ -634,40 +700,43 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
                   if (ad.interests.isNotEmpty)
                     GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 4,
                       childAspectRatio: 1.2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                       children: roommateInterests
                           .where((e) => ad.interests.contains(e["value"]))
                           .map((e) {
-                        return Card(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: Image.asset("${e["asset"]}"),
+                        return Container(
+                          decoration: shadowedBoxDecoration,
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Image.asset("${e["asset"]}"),
+                              ),
+                              Text(
+                                "${e["value"]}",
+                                style: TextStyle(
+                                  color: Get.isDarkMode
+                                      ? Colors.white
+                                      : ROOMY_ORANGE,
+                                  fontSize: 12,
                                 ),
-                                Text(
-                                  "${e["value"]}",
-                                  style: TextStyle(
-                                    color: Get.isDarkMode
-                                        ? Colors.white
-                                        : ROOMY_ORANGE,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
                     ),
+                  const SizedBox(height: 20),
                 ],
               ),
             )

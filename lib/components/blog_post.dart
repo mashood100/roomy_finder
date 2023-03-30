@@ -2,15 +2,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/models/blog_post.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class BlogPostWidget extends StatelessWidget {
   final BlogPost post;
   final void Function()? onTap;
+  final bool? showTitle;
 
   const BlogPostWidget({
     super.key,
     required this.post,
     this.onTap,
+    this.showTitle,
   });
 
   @override
@@ -26,6 +29,7 @@ class BlogPostWidget extends StatelessWidget {
             borderRadius: BorderRadius.all(Radius.circular(10)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ClipRRect(
@@ -41,9 +45,23 @@ class BlogPostWidget extends StatelessWidget {
                   },
                 ),
               ),
+              if (showTitle == true)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    post.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: ROOMY_ORANGE,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     post.content,
                     maxLines: 3,

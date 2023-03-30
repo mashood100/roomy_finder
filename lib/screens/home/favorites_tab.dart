@@ -3,21 +3,32 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
+import 'package:roomy_finder/screens/user/upgrade_plan.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ignore: unused_element
-class _FavoriteTabController extends LoadingController {
+class _FavoriteTabController extends LoadingController
+    with GetSingleTickerProviderStateMixin {
   final propertyAds = <PropertyAd>[];
   final roommateAds = <RoommateAd>[];
+  late final TabController _tabController;
+
+  final _currentTabIndex = 0.obs;
+
+  final canSeeDetails = AppController.me.isPremium.obs;
 
   @override
   void onInit() {
+    _tabController = TabController(length: 2, vsync: this);
     super.onInit();
     _loadFavoritePropertyAds();
     _loadFavoriteRoommateAds();
@@ -47,7 +58,7 @@ class _FavoriteTabController extends LoadingController {
       update();
       final pref = await SharedPreferences.getInstance();
 
-      final favorites = pref.getStringList("favorites-roommate-ads") ?? [];
+      final favorites = pref.getStringList("favorites-roommates-ads") ?? [];
 
       if (favorites.isEmpty) return;
       roommateAds.clear();
@@ -57,6 +68,16 @@ class _FavoriteTabController extends LoadingController {
       isLoading(false);
       update();
     }
+  }
+
+  Future<void> upgradeToSeeDetails(RoommateAd ad) async {
+    await Get.to(() => UpgragePlanScreen(
+          skipCallback: () {
+            canSeeDetails(true);
+            Get.to(() => ViewRoommateAdScreen(ad: ad));
+          },
+        ));
+    update();
   }
 }
 
@@ -76,42 +97,121 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
             children: [
               const Text("Failed to fetch data"),
               OutlinedButton(
-                onPressed: controller._loadFavoritePropertyAds,
+                onPressed: () {
+                  controller._loadFavoritePropertyAds();
+                  controller._loadFavoriteRoommateAds();
+                },
                 child: const Text("Refresh"),
               ),
             ],
           ),
         );
       }
-      if (controller.propertyAds.isEmpty) {
-        return Center(
-          child: Column(
-            children: [
-              const Text("No data."),
-              OutlinedButton(
-                onPressed: controller._loadFavoritePropertyAds,
-                child: const Text("Refresh"),
-              ),
-            ],
+
+      return TabBarView(
+        controller: controller._tabController,
+        children: [
+          Builder(
+            builder: (context) {
+              if (controller.propertyAds.isEmpty) {
+                return const Center(child: Text("No favorite property."));
+              }
+              return GridView.count(
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                children: List.generate(
+                  controller.propertyAds.length,
+                  (ind) {
+                    final ad = controller.propertyAds[ind];
+                    return Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        PropertyAdMiniWidget(
+                          ad: ad,
+                          onTap: () {
+                            Get.to(() => ViewPropertyAd(ad: ad));
+                          },
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final res = await removeAdFromFavorite(
+                              ad.toJson(),
+                              "favorites-property-ads",
+                            );
+                            if (res) {
+                              showToast("Ad removed");
+                              controller.propertyAds.remove(ad);
+                              controller.update();
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
           ),
-        );
-      }
-      return ListView.builder(
-        itemBuilder: (context, index) {
-          final ad = controller.propertyAds[index];
-          return PropertyAdWidget(
-            ad: ad,
-            onFavoriteTap: () async {
-              removeAdFromFavorite(ad.toJson(), "favorites-property-ads");
-              showToast("Removed from favorite");
+          Builder(
+            builder: (context) {
+              if (controller.roommateAds.isEmpty) {
+                return const Center(child: Text("No favorite roommates."));
+              }
+              return GridView.count(
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                children: List.generate(
+                  controller.roommateAds.length,
+                  (ind) {
+                    final ad = controller.roommateAds[ind];
+                    return Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        RoommateAdMiniWidget(
+                          ad: ad,
+                          onTap: () {
+                            if (AppController.me.isGuest) {
+                              Get.offAllNamed("/registration");
+                              return;
+                            }
+                            if (AppController.me.isPremium) {
+                              Get.to(() => ViewRoommateAdScreen(ad: ad));
+                            } else {
+                              controller.upgradeToSeeDetails(ad);
+                            }
+                          },
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final res = await removeAdFromFavorite(
+                              ad.toJson(),
+                              "favorites-roommates-ads",
+                            );
+                            if (res) {
+                              showToast("Ad removed");
+                              controller.roommateAds.remove(ad);
+                              controller.update();
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
             },
-            onTap: () async {
-              await Get.to(() => ViewPropertyAd(ad: ad));
-              controller.update();
-            },
-          );
-        },
-        itemCount: controller.propertyAds.length,
+          ),
+        ],
       );
     });
   }
@@ -126,17 +226,32 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
       elevation: 0,
       actions: [
         IconButton(
-          onPressed: controller._loadFavoritePropertyAds,
+          onPressed: () {
+            controller._loadFavoritePropertyAds();
+            controller._loadFavoriteRoommateAds();
+          },
           icon: const Icon(Icons.refresh),
         )
       ],
+      bottom: TabBar(
+        labelColor: ROOMY_ORANGE,
+        indicatorColor: ROOMY_ORANGE,
+        unselectedLabelColor: Colors.white,
+        tabs: const [
+          Tab(text: "Property Ads"),
+          Tab(text: "Roommates Ads"),
+        ],
+        controller: controller._tabController,
+        onTap: controller._currentTabIndex,
+      ),
     );
   }
 
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      icon: const Icon(CupertinoIcons.heart_fill),
+      activeIcon: Image.asset("assets/icons/favorite.png", height: 30),
+      icon: Image.asset("assets/icons/favorite_white.png", height: 30),
       label: 'Favorites'.tr,
     );
   }

@@ -11,7 +11,7 @@ class RoommateAd {
   String action; // "NEED ROOM", "HAVE ROOM"
   bool isPremium;
   num budget;
-  String description;
+  String? description;
   List<String> images;
   List<String> videos;
   bool isAvailable;
@@ -33,7 +33,7 @@ class RoommateAd {
     required this.budget,
     required this.isPremium,
     required this.isAvailable,
-    required this.description,
+    this.description,
     required this.images,
     required this.videos,
     required this.createdAt,
@@ -58,20 +58,20 @@ class RoommateAd {
 
   List<String> get homeAppliancesAmenities {
     return amenities.where((e) {
-      return ["Washer", "Cleaning included", "Kitchen appliances"].contains(e);
+      return ["Washer", "Cleaning Included", "Kitchen Appliances"].contains(e);
     }).toList();
   }
 
   List<String> get utilitiesAmenities {
     return amenities.where((e) {
       return [
-        "Close to metro",
+        "Close to Metro",
         "Balcony",
-        "Parking",
-        "Shared gym",
-        "Near to supermarket",
-        "Shared swimming pool",
-        "Near to pharmacy",
+        "Parking Lot",
+        "Gym",
+        "Near Grocery",
+        "Swimming Pool",
+        "Near Pharmacy",
       ].contains(e);
     }).toList();
   }
@@ -122,7 +122,7 @@ class RoommateAd {
       budget: map['budget'] as num,
       isPremium: map['isPremium'] as bool,
       isAvailable: map['isAvailable'] as bool,
-      description: map['description'] as String,
+      description: map['description'] as String?,
       images: List<String>.from((map['images'] as List)),
       videos: List<String>.from((map['videos'] as List)),
       createdAt: DateTime.parse(map['createdAt'] as String),

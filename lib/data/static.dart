@@ -1,20 +1,6 @@
+import 'package:flutter/material.dart';
+
 const allAmenties = [
-  {
-    "value": "Close to metro",
-    "asset": "assets/icons/metro.png",
-  },
-  {
-    "value": "Balcony",
-    "asset": "assets/icons/balcony.png",
-  },
-  {
-    "value": "Kitchen appliances",
-    "asset": "assets/icons/kitchen_appliance.png",
-  },
-  {
-    "value": "Parking",
-    "asset": "assets/icons/parking.png",
-  },
   {
     "value": "WIFI",
     "asset": "assets/icons/wifi.png",
@@ -24,28 +10,44 @@ const allAmenties = [
     "asset": "assets/icons/tv.png",
   },
   {
-    "value": "Shared gym",
+    "value": "Balcony",
+    "asset": "assets/icons/balcony.png",
+  },
+  {
+    "value": "Gym",
     "asset": "assets/icons/gym.png",
+  },
+  {
+    "value": "Kitchen Appliances",
+    "asset": "assets/icons/kitchen_appliance.png",
+  },
+  {
+    "value": "Swimming Pool",
+    "asset": "assets/icons/swimming.png",
+  },
+  {
+    "value": "Parking Lot",
+    "asset": "assets/icons/parking.png",
+  },
+  {
+    "value": "Cleaning Included",
+    "asset": "assets/icons/cleanning.png",
   },
   {
     "value": "Washer",
     "asset": "assets/icons/washing.png",
   },
   {
-    "value": "Cleaning included",
-    "asset": "assets/icons/cleanning.png",
-  },
-  {
-    "value": "Near to supermarket",
+    "value": "Near Grocery",
     "asset": "assets/icons/grocery.png",
   },
   {
-    "value": "Shared swimming pool",
-    "asset": "assets/icons/swimming.png",
+    "value": "Near Pharmacy",
+    "asset": "assets/icons/pharmacy.png",
   },
   {
-    "value": "Near to pharmacy",
-    "asset": "assets/icons/pharmacy.png",
+    "value": "Close to Metro",
+    "asset": "assets/icons/metro.png",
   },
 ];
 
@@ -127,3 +129,17 @@ const allSocialPreferences = [
     "asset": "assets/icons/dog_foot.png",
   },
 ];
+
+const shadowedBoxDecoration = BoxDecoration(
+  borderRadius: BorderRadius.all(
+    Radius.circular(10),
+  ),
+  boxShadow: [
+    BoxShadow(
+      blurRadius: 3,
+      blurStyle: BlurStyle.outer,
+      color: Colors.black54,
+      spreadRadius: -1,
+    ),
+  ],
+);

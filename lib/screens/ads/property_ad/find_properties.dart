@@ -12,17 +12,17 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class _FindPropertiesController extends LoadingController {
   final RxMap<String, String?> filter;
-  final _sortKey = "".obs;
 
   _FindPropertiesController({
     Map<String, String?>? filter,
-  }) : filter = (filter ?? {}).obs;
+  }) : filter = ({...?filter}).obs;
 
   final RxList<PropertyAd> ads = <PropertyAd>[].obs;
   @override
@@ -35,7 +35,6 @@ class _FindPropertiesController extends LoadingController {
 
   Future<void> _fetchData({bool isReFresh = true}) async {
     try {
-      _sortKey.value = '';
       isLoading(true);
       hasFetchError(false);
       final requestBody = <String, dynamic>{"skip": _skip, ...filter};
@@ -269,24 +268,6 @@ class _FindPropertiesController extends LoadingController {
       _fetchData();
     }
   }
-
-  List<PropertyAd> get _matchDocuments {
-    return ads.where((ad) {
-      if (_sortKey.isEmpty) return true;
-      final key = _sortKey.value.toLowerCase();
-      final viewBudget =
-          AppController.convertionRate * ad.prefferedRentDisplayPrice;
-      final bool haveMatch;
-
-      haveMatch =
-          "${ad.socialPreferences["gender"]}".toLowerCase().contains(key) ||
-              "${ad.address["city"]}".toLowerCase().contains(key) ||
-              "${ad.address["location"]}".toLowerCase().contains(key) ||
-              "$viewBudget".contains(key);
-
-      return haveMatch;
-    }).toList();
-  }
 }
 
 class FindPropertiesAdsScreen extends StatelessWidget {
@@ -303,43 +284,25 @@ class FindPropertiesAdsScreen extends StatelessWidget {
           backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
           title: Text("properpyAds".tr),
           actions: [
-            IconButton(
-              onPressed: () {
-                controller._showFilter();
-              },
-              icon: const Icon(Icons.filter_list),
-            ),
+            Obx(() {
+              return TextButton(
+                onPressed: () async {
+                  await changeAppCountry(context);
+                  controller.filter.remove('city');
+                  controller.filter.remove('location');
+                },
+                // icon: const Icon(Icons.arrow_drop_down, size: 40),
+                child: Text(
+                  AppController.instance.country.value.flag,
+                  style: const TextStyle(fontSize: 25),
+                ),
+              );
+            }),
           ],
         ),
         body: Obx(() {
           if (controller.isLoading.isTrue) {
             return const Center(child: CupertinoActivityIndicator());
-          }
-          if (controller.hasFetchError.isTrue) {
-            return Center(
-              child: Column(
-                children: [
-                  const Text("Failed to fetch data"),
-                  OutlinedButton(
-                    onPressed: controller._fetchData,
-                    child: const Text("Refresh"),
-                  ),
-                ],
-              ),
-            );
-          }
-          if (controller.ads.isEmpty) {
-            return Center(
-              child: Column(
-                children: [
-                  const Text("No data."),
-                  OutlinedButton(
-                    onPressed: controller._fetchData,
-                    child: const Text("Refresh"),
-                  ),
-                ],
-              ),
-            );
           }
 
           return CustomScrollView(
@@ -390,13 +353,13 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                             ],
                           ),
                         TextField(
+                          readOnly: true,
+                          onTap: controller._showFilter,
                           decoration: InputDecoration(
                             fillColor: Colors.white,
                             hintText: "Filter by gender, budget",
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                controller._showFilter();
-                              },
+                              onPressed: controller._showFilter,
                               icon: const Icon(Icons.filter_list),
                             ),
                             contentPadding:
@@ -406,10 +369,6 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                             ),
                           ),
                           textInputAction: TextInputAction.search,
-                          onChanged: (value) {
-                            controller._sortKey(value);
-                            controller.update();
-                          },
                         ),
                         Expanded(
                           child: CarouselSlider(
@@ -453,26 +412,60 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                   }),
                 ),
               ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final ad = controller._matchDocuments[index];
-                    return PropertyAdWidget(
-                      ad: ad,
-                      onTap: () async {
-                        if (AppController.me.isGuest) {
-                          showToast("Please register to see ad details");
-                          return;
-                        }
-                        await Get.to(() => ViewPropertyAd(ad: ad));
-                        controller.update();
-                      },
-                    );
-                  },
-                  childCount: controller._matchDocuments.length,
+              if (controller.hasFetchError.isTrue)
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text("Failed to fetch data"),
+                        OutlinedButton(
+                          onPressed: () {
+                            controller._fetchData(isReFresh: true);
+                          },
+                          child: const Text("Refresh"),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (controller.ads.isEmpty)
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text("No data."),
+                        OutlinedButton(
+                          onPressed: () {
+                            controller._fetchData(isReFresh: true);
+                          },
+                          child: const Text("Refresh"),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final ad = controller.ads[index];
+                      return PropertyAdWidget(
+                        ad: ad,
+                        onTap: () async {
+                          if (AppController.me.isGuest) {
+                            showToast("Please register to see ad details");
+                            return;
+                          }
+                          await Get.to(() => ViewPropertyAd(ad: ad));
+                          controller.update();
+                        },
+                      );
+                    },
+                    childCount: controller.ads.length,
+                  ),
                 ),
-              ),
-              if (controller.ads.length.remainder(100) == 0)
+              if (controller.ads.length.remainder(100) == 0 &&
+                  controller.ads.isNotEmpty)
                 SliverToBoxAdapter(
                   child: GetMoreButton(
                     getMore: () {

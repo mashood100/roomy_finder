@@ -18,6 +18,7 @@ import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/start/login.dart';
+import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
@@ -66,7 +67,7 @@ void main() async {
   // Get any initial links
   final initialLink = await FirebaseDynamicLinks.instance.getInitialLink();
 
-  if (initialLink != null) AppController.initialLink = initialLink.link;
+  if (initialLink != null) AppController.dynamicInitialLink = initialLink.link;
 
   FirebaseDynamicLinks.instance.onLink.listen((data) {
     dynamicLinkHandler(data.link);
@@ -123,9 +124,9 @@ class MyApp extends StatelessWidget {
         actionsIconTheme: IconThemeData(color: Colors.white),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        // backgroundColor: Color.fromRGBO(255, 123, 77, 1),
-        // showSelectedLabels: false,
-        // showUnselectedLabels: false,
+        backgroundColor: ROOMY_PURPLE,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         unselectedLabelStyle: TextStyle(fontSize: 15),
         selectedLabelStyle: TextStyle(fontSize: 15),
         type: BottomNavigationBarType.fixed,
@@ -260,6 +261,10 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: "/login",
           page: () => const LoginScreen(),
+        ),
+        GetPage(
+          name: "/registration",
+          page: () => const RegistrationScreen(),
         ),
         GetPage(
           name: "/reset_password",

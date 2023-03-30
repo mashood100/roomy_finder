@@ -275,7 +275,8 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      icon: const Icon(CupertinoIcons.person_alt_circle_fill),
+      activeIcon: Image.asset("assets/icons/account.png", height: 30),
+      icon: Image.asset("assets/icons/account_white.png", height: 30),
       label: 'Account'.tr,
     );
   }

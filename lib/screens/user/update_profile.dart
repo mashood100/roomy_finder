@@ -54,6 +54,7 @@ class _UpdateProfileController extends LoadingController {
   Future<void> _verifyEmail() async {
     try {
       _isVerifiyingEmail(true);
+      update();
       if (_emailVerificationCode.isEmpty) {
         final res = await ApiService.getDio.post(
           "/auth/send-email-verification-code",
@@ -181,7 +182,9 @@ class UpdateUserProfile extends StatelessWidget {
                               enabled: controller.isLoading.isFalse &&
                                   !controller._emailIsVerified,
                               onChanged: (value) {
-                                controller.information["email"] = value;
+                                controller.information["email"] =
+                                    value.toLowerCase();
+                                controller._emailVerificationCode = "";
                                 controller.update();
                               },
                               validator: (value) {
@@ -217,7 +220,9 @@ class UpdateUserProfile extends StatelessWidget {
                               child: controller._isVerifiyingEmail.isTrue
                                   ? const CupertinoActivityIndicator()
                                   : Text(
-                                      controller._emailIsVerified
+                                      controller._emailIsVerified ||
+                                              controller.information["email"] ==
+                                                  AppController.me.email
                                           ? "Verified"
                                           : "Verify",
                                       style: const TextStyle(
@@ -278,10 +283,23 @@ class UpdateUserProfile extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: ROOMY_ORANGE,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            side: const BorderSide(color: ROOMY_ORANGE),
+                          ),
                           onPressed: () {
                             controller._saveCredentials();
                           },
-                          child: const Text("Save"),
+                          child: const Text(
+                            "Save",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       )
                     ],

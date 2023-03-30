@@ -23,6 +23,10 @@ class ChatConversation {
 
   static String get conversationsKey => "chat_conversations";
 
+  /// This value is set went entered in a chat. This will be uses by
+  /// the Notification controller.
+  static String? currrentChatKey;
+
   ChatConversation.newConversation(this.me, this.friend)
       : createdAt = DateTime.now(),
         messages = [];
@@ -111,13 +115,15 @@ class ChatConversation {
     }
   }
 
-  static Future<List<ChatConversation>> getAllSavedChats() async {
+  static Future<List<ChatConversation>> getAllSavedChats(String userId) async {
     final directory = await getApplicationDocumentsDirectory();
 
     final conversationDirectory =
         Directory(path.join(directory.path, "conversations"));
 
-    final files = conversationDirectory.listSync();
+    final files = conversationDirectory.listSync().where((e) {
+      return e.path.contains(userId);
+    });
 
     final List<ChatConversation> conversations = [];
 

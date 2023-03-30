@@ -118,10 +118,12 @@ class InlineDropdown<T> extends StatelessWidget {
       children: [
         SizedBox(
           width: labelWidth ?? MediaQuery.of(context).size.width * 0.25,
-          child: Text(
-            labelText ?? "",
-            style: const TextStyle(fontSize: 15),
-          ),
+          child: labelText != null
+              ? Text(
+                  labelText!,
+                  style: const TextStyle(fontSize: 15),
+                )
+              : null,
         ),
         Expanded(
           child: ClipRRect(

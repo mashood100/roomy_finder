@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -224,7 +224,7 @@ class _VewPropertyController extends LoadingController {
 
   Future<void> bookProperty(PropertyAd ad) async {
     if (AppController.me.isGuest) {
-      showToast("Please register before booking property");
+      Get.offAllNamed("/registration");
       return;
     }
     try {
@@ -350,6 +350,14 @@ class ViewPropertyAd extends StatelessWidget {
         title: Text("${ad.type} Property"),
         backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
         actions: [
+          if (!AppController.me.isGuest)
+            IconButton(
+              onPressed: () async {
+                await addAdToFavorite(ad.toJson(), "favorites-property-ads");
+                showToast("Added to favorite");
+              },
+              icon: const Icon(Icons.favorite, color: ROOMY_ORANGE),
+            ),
           IconButton(
             onPressed: () {
               shareAd(ad);
@@ -360,31 +368,44 @@ class ViewPropertyAd extends StatelessWidget {
         bottom: ad.isMine
             ? PreferredSize(
                 preferredSize: const Size(double.infinity, 50),
-                child: Padding(
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () => controller.editAd(ad),
-                          child: const Text("Edit"),
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        onPressed: controller.isLoading.isTrue
+                            ? null
+                            : () {
+                                controller.deleteAd(ad);
+                              },
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 20),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () => controller.deleteAd(ad),
-                          child: const Text(
-                            "Delete",
-                            style: TextStyle(color: Colors.white),
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
                           ),
+                          side: const BorderSide(color: Colors.green),
+                        ),
+                        onPressed: controller.isLoading.isTrue
+                            ? null
+                            : () => controller.editAd(ad),
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -397,181 +418,97 @@ class ViewPropertyAd extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 1),
-            Card(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: SizedBox(
-                  width: Get.width,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            ...ad.images.map(
-                              (e) => GestureDetector(
-                                onTap: () => controller._viewImage(e),
-                                child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 1),
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(5),
-                                    ),
-                                    child: CachedNetworkImage(
-                                      imageUrl: e,
-                                      height: 250,
-                                      fit: BoxFit.fitHeight,
-                                      errorWidget: (ctx, e, trace) {
-                                        return const SizedBox(
-                                          child: CupertinoActivityIndicator(
-                                            radius: 30,
-                                          ),
-                                        );
-                                      },
-                                      progressIndicatorBuilder:
-                                          (context, url, downloadProgress) {
-                                        return Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: CircularProgressIndicator(
-                                            value: downloadProgress.progress,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
+            CarouselSlider(
+              items: [
+                ...ad.images.map(
+                  (e) => GestureDetector(
+                    onTap: () => controller._viewImage(e),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(5),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: e,
+                          height: 250,
+                          width: Get.width,
+                          fit: BoxFit.cover,
+                          errorWidget: (ctx, e, trace) {
+                            return const SizedBox(
+                              child: CupertinoActivityIndicator(
+                                radius: 30,
+                                animating: false,
                               ),
-                            ),
-                            ...ad.videos.map(
-                              (e) => GestureDetector(
-                                onTap: () => Get.to(() {
-                                  return PlayVideoScreen(
-                                      source: e, isAsset: false);
-                                }),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 1),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(5),
-                                        child: FutureBuilder(
-                                          builder: (ctx, asp) {
-                                            if (asp.hasData) {
-                                              return Image.file(
-                                                File(asp.data!),
-                                                alignment: Alignment.center,
-                                                height: 250,
-                                                fit: BoxFit.fitHeight,
-                                              );
-                                            }
-                                            return Container();
-                                          },
-                                          future: VideoThumbnail.thumbnailFile(
-                                            video: e,
-                                            quality: 50,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const Padding(
-                                      padding: EdgeInsets.all(20),
-                                      child: Icon(
-                                        Icons.play_arrow,
-                                        size: 40,
-                                        color: Color.fromARGB(255, 2, 3, 2),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            );
+                          },
+                          progressIndicatorBuilder:
+                              (context, url, downloadProgress) {
+                            return Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: CircularProgressIndicator(
+                                value: downloadProgress.progress,
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(height: 5),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              "${ad.type} to rent",
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Obx(() {
-                              return Text(
-                                formatMoney(
-                                  ad.prefferedRentDisplayPrice *
-                                      AppController.instance.country.value
-                                          .aedCurrencyConvertRate,
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                      const Divider(),
-                      Container(
-                        padding: const EdgeInsets.only(
-                          right: 10,
-                          left: 10,
-                          bottom: 10,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.room, color: ROOMY_ORANGE),
-                                const SizedBox(width: 5),
-                                Text(
-                                  "${ad.address["location"]}, ${ad.address["city"]}",
-                                  style: const TextStyle(fontSize: 12),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Text(
-                              "Available ${ad.quantity - ad.quantityTaken}",
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              "Taken ${ad.quantityTaken}",
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+                ...ad.videos.map(
+                  (e) => GestureDetector(
+                    onTap: () => Get.to(() {
+                      return PlayVideoScreen(source: e, isAsset: false);
+                    }),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: FutureBuilder(
+                              builder: (ctx, asp) {
+                                if (asp.hasData) {
+                                  return Image.file(
+                                    File(asp.data!),
+                                    alignment: Alignment.center,
+                                    height: 250,
+                                    fit: BoxFit.fitHeight,
+                                  );
+                                }
+                                return Container();
+                              },
+                              future: VideoThumbnail.thumbnailFile(
+                                video: e,
+                                quality: 50,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Icon(
+                            Icons.play_arrow,
+                            size: 40,
+                            color: Color.fromARGB(255, 2, 3, 2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              options: CarouselOptions(
+                autoPlayInterval: const Duration(seconds: 10),
+                pageSnapping: true,
+                autoPlay: true,
+                viewportFraction: 1,
+                enlargeStrategy: CenterPageEnlargeStrategy.zoom,
               ),
             ),
             const SizedBox(height: 5),
@@ -636,11 +573,8 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
 
                   const Divider(height: 20),
-
                   DefaultTextStyle.merge(
-                    style: const TextStyle(
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(fontSize: 12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -650,13 +584,22 @@ class ViewPropertyAd extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Image.asset("assets/icons/washing_2.png",
-                                    height: 30),
-                                const Text("APPLIANCES"),
+                                Image.asset(
+                                  "assets/icons/washer_grey.png",
+                                  height: 25,
+                                ),
+                                const SizedBox(width: 5),
+                                const Text(
+                                  "APPLIANCES",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                             ...ad.homeAppliancesAmenities
-                                .map((e) => Text("•  $e"))
+                                .map((e) => Text("-  $e"))
                                 .toList()
                           ],
                         ),
@@ -667,14 +610,23 @@ class ViewPropertyAd extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Image.asset("assets/icons/wifi.png",
-                                    height: 30),
-                                const Text("TECH"),
+                                Image.asset(
+                                  "assets/icons/wifi_grey.png",
+                                  height: 25,
+                                ),
+                                const SizedBox(width: 5),
+                                const Text(
+                                  "TECH",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                             ...ad.technologyAmenities
                                 .map((e) =>
-                                    Text("•  $e", textAlign: TextAlign.center))
+                                    Text("-  $e", textAlign: TextAlign.center))
                                 .toList()
                           ],
                         ),
@@ -684,14 +636,24 @@ class ViewPropertyAd extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.widgets, color: ROOMY_ORANGE),
-                                Text("UTILITIES"),
+                              children: [
+                                Image.asset(
+                                  "assets/icons/utilities_grey.png",
+                                  height: 25,
+                                ),
+                                const SizedBox(width: 5),
+                                const Text(
+                                  "UTILITIES",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                             ...ad.utilitiesAmenities
                                 .map(
-                                  (e) => Text("• $e", textAlign: TextAlign.end),
+                                  (e) => Text("- $e", textAlign: TextAlign.end),
                                 )
                                 .toList()
                           ],
@@ -699,6 +661,7 @@ class ViewPropertyAd extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   const Divider(height: 20),
                   const Center(
                     child: Text(
@@ -709,79 +672,98 @@ class ViewPropertyAd extends StatelessWidget {
                       ),
                     ),
                   ),
-
+                  const SizedBox(height: 10),
                   GridView.count(
                     crossAxisCount: 3,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    childAspectRatio: 1.5,
+                    childAspectRatio: 1.6,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                     children: [
-                      SocialPreferenceWidget(
-                        icon: const Icon(Icons.group, color: ROOMY_ORANGE),
-                        label: "People",
-                        value: "${ad.socialPreferences["numberOfPeople"]}",
-                      ),
-                      SocialPreferenceWidget(
-                        icon: const Icon(Icons.public, color: ROOMY_ORANGE),
-                        label: "Nationality",
-                        value: "${ad.socialPreferences["nationality"]}",
-                      ),
-                      SocialPreferenceWidget(
-                        icon: Icon(
-                            ad.socialPreferences["gender"] == "Male"
-                                ? Icons.male
-                                : Icons.female,
-                            color: ROOMY_ORANGE),
-                        label: "Gender",
-                        value: "${ad.socialPreferences["gender"]}",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3,
-                    childAspectRatio: 1.5,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    children: allSocialPreferences.map((e) {
-                      return Card(
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          alignment: Alignment.center,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Image.asset("${e["asset"]}"),
+                      {
+                        "label": "People",
+                        "asset": "assets/icons/people_2_grey.png",
+                        "value": "${ad.socialPreferences["numberOfPeople"]}",
+                      },
+                      {
+                        "label": "Nationality",
+                        "asset": "assets/icons/globe_grey.jpg",
+                        "value": "${ad.socialPreferences["nationality"]}",
+                      },
+                      {
+                        "label": "Visitors",
+                        "asset": "assets/icons/people_3_grey.png",
+                        "value": ad.socialPreferences["visitors"] == true
+                            ? "Allowed"
+                            : "Not Allowed",
+                        "color": ad.socialPreferences["visitors"] == true
+                            ? Colors.green
+                            : ROOMY_PURPLE,
+                      },
+                      {
+                        "label": "Drinking",
+                        "asset": "assets/icons/drink_grey.png",
+                        "value": ad.socialPreferences["drinking"] == true
+                            ? "Allowed"
+                            : "Not Allowed",
+                        "color": ad.socialPreferences["drinking"] == true
+                            ? Colors.green
+                            : ROOMY_PURPLE,
+                      },
+                      {
+                        "label": "Gender",
+                        "asset": "assets/icons/gender_grey.png",
+                        "value": ad.socialPreferences["gender"],
+                      },
+                      {
+                        "label": "Smoking",
+                        "asset": "assets/icons/smoking_grey.png",
+                        "value": ad.socialPreferences["smoking"] == true
+                            ? "Allowed"
+                            : "Not Allowed",
+                        "color": ad.socialPreferences["smoking"] == true
+                            ? Colors.green
+                            : ROOMY_PURPLE,
+                      },
+                    ].map((e) {
+                      return Container(
+                        decoration: shadowedBoxDecoration,
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Image.asset(
+                                "${e["asset"]}",
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "${e["label"]}",
-                                    style: const TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "${e["label"]}",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: e["color"] as Color? ?? Colors.grey,
                                   ),
-                                  Builder(builder: (context) {
-                                    final isTrue = ad.socialPreferences
-                                        .containsKey(e["value"]);
-                                    return Text(
-                                      isTrue ? 'Yes' : "No",
-                                      style: TextStyle(
-                                        color: Get.isDarkMode
-                                            ? Colors.white
-                                            : ROOMY_ORANGE,
-                                        fontSize: 12,
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ],
-                          ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  "${e["value"]}",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: e["color"] as Color? ?? ROOMY_PURPLE,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),

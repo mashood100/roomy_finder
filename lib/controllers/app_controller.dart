@@ -18,7 +18,7 @@ class AppController extends GetxController {
   static late String initialRoute;
   static late String apiToken;
   static late bool isFirstStart;
-  static Uri? initialLink;
+  static Uri? dynamicInitialLink;
 
   static AppController instance = Get.find<AppController>(tag: "appController");
   static User get me => instance.user.value;
@@ -247,7 +247,7 @@ class AppController extends GetxController {
       await removeSaveUser();
       await removeApiToken();
       await removeUserPassword();
-      initialLink = null;
+      dynamicInitialLink = null;
       user(User.GUEST_USER);
     } catch (e, trace) {
       log(e);

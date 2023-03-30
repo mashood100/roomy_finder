@@ -15,7 +15,6 @@ import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/blog_post.dart';
-import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
@@ -510,10 +509,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             return PropertyAdMiniWidget(
                               ad: ad,
                               onTap: () {
-                                if (AppController.me.isGuest) {
-                                  showToast("Please register to view the ad");
-                                  return;
-                                }
                                 Get.to(() => ViewPropertyAd(ad: ad));
                               },
                             );
@@ -562,7 +557,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                               ad: ad,
                               onTap: () {
                                 if (AppController.me.isGuest) {
-                                  showToast("Please register to view the ad");
+                                  Get.offAllNamed("/registration");
                                   return;
                                 }
                                 if (AppController.me.isPremium) {
@@ -582,9 +577,17 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: const [
                             Text(
-                              "All",
+                              "Properties",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: ROOMY_ORANGE,
+                              ),
+                            ),
+                            Text(
+                              "Roommates",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: ROOMY_ORANGE,
@@ -620,11 +623,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 return PropertyAdMiniWidget(
                                   ad: ad,
                                   onTap: () {
-                                    if (AppController.me.isGuest) {
-                                      showToast(
-                                          "Please register to view the ad");
-                                      return;
-                                    }
                                     Get.to(() => ViewPropertyAd(ad: ad));
                                   },
                                 );
@@ -637,8 +635,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                   ad: ad,
                                   onTap: () {
                                     if (AppController.me.isGuest) {
-                                      showToast(
-                                          "Please register to view the ad");
+                                      Get.offAllNamed("/registration");
                                       return;
                                     }
                                     if (AppController.me.isPremium) {
@@ -772,7 +769,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      icon: const Icon(CupertinoIcons.home),
+      activeIcon: Image.asset("assets/icons/home.png", height: 30),
+      icon: Image.asset("assets/icons/home_white.png", height: 30),
       label: 'Home'.tr,
     );
   }

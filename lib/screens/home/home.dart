@@ -30,7 +30,7 @@ import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class HomeController extends LoadingController {
-  final currentTabIndex = 0.obs;
+  final currentTabIndex = 2.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
   final tabs = <HomeScreenSupportable>[];
@@ -38,16 +38,18 @@ class HomeController extends LoadingController {
   @override
   void onInit() {
     tabs.addAll(const [
-      HomeTab(),
       AccountTab(),
       MessagesTab(),
-      FavoriteTab(),
+      HomeTab(),
     ]);
     if (AppController.me.isLandlord) {
       tabs.add(const MaintenanceTab());
     }
-    if (AppController.initialLink != null) {
-      dynamicLinkHandler(AppController.initialLink!);
+    tabs.addAll(const [
+      FavoriteTab(),
+    ]);
+    if (AppController.dynamicInitialLink != null) {
+      dynamicLinkHandler(AppController.dynamicInitialLink!);
     }
 
     Future(_runStartFutures);
@@ -153,8 +155,12 @@ class Home extends GetView<HomeController> {
               : BottomNavigationBar(
                   currentIndex: controller.currentTabIndex.value,
                   onTap: (index) {
+                    if (controller.tabs[index] is MaintenanceTab) {
+                      showToast("Comming soon");
+                      return;
+                    }
                     controller.currentTabIndex(index);
-                    if (index == 2) {
+                    if (controller.tabs[index] is MessagesTab) {
                       final chatController = Get.put(ChatTabController());
                       chatController.update();
                       AppController.instance.haveNewMessage(false);
@@ -248,7 +254,7 @@ class HomeDrawer extends StatelessWidget {
                 title: const Text("My Account"),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  controller.currentTabIndex(1);
+                  controller.currentTabIndex(0);
                   Get.back();
                 },
               ),

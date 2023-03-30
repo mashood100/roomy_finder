@@ -64,20 +64,20 @@ class PropertyAd {
 
   List<String> get homeAppliancesAmenities {
     return amenities.where((e) {
-      return ["Washer", "Cleaning included", "Kitchen appliances"].contains(e);
+      return ["Washer", "Cleaning Included", "Kitchen Appliances"].contains(e);
     }).toList();
   }
 
   List<String> get utilitiesAmenities {
     return amenities.where((e) {
       return [
-        "Close to metro",
+        "Close to Metro",
         "Balcony",
-        "Parking",
-        "Shared gym",
-        "Near to supermarket",
-        "Shared swimming pool",
-        "Near to pharmacy",
+        "Parking Lot",
+        "Gym",
+        "Near Grocery",
+        "Swimming Pool",
+        "Near Pharmacy",
       ].contains(e);
     }).toList();
   }
