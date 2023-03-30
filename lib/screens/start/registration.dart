@@ -616,10 +616,10 @@ class RegistrationScreen extends StatelessWidget {
                                 const SizedBox(width: 5),
                                 GetBuilder<_RegistrationController>(
                                     builder: (controller) {
-                                  final color = !controller._canVerifyEmail
-                                      ? Colors.grey
-                                      : controller._emailIsVerified
-                                          ? Colors.green
+                                  final color = controller._emailIsVerified
+                                      ? Colors.green
+                                      : !controller._canVerifyEmail
+                                          ? Colors.grey
                                           : ROOMY_ORANGE;
                                   return ElevatedButton(
                                     style: ElevatedButton.styleFrom(

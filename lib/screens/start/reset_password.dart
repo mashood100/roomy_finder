@@ -204,10 +204,10 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
                           ),
                           const SizedBox(height: 20),
                           Builder(builder: (context) {
-                            final color = !controller._canVerifyEmail
-                                ? Colors.grey
-                                : controller._emailIsVerified
-                                    ? Colors.green
+                            final color = controller._emailIsVerified
+                                ? Colors.green
+                                : !controller._canVerifyEmail
+                                    ? Colors.grey
                                     : ROOMY_ORANGE;
                             return SizedBox(
                               width: double.infinity,

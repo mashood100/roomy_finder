@@ -76,6 +76,7 @@ class _PostPropertyAdController extends LoadingController {
     "location": "",
     "buildingNane": "",
     "floorNumber": "",
+    "countryCode": AppController.instance.country.value.code,
   }.obs;
 
   final socialPreferences = {
@@ -122,6 +123,7 @@ class _PostPropertyAdController extends LoadingController {
           address["location"] = oldData!.address["location"].toString();
       address["buildingName"] = oldData!.address["buildingName"].toString();
       address["floorNumber"] = oldData!.address["floorNumber"].toString();
+      address["countryCode"] = oldData!.address["countryCode"].toString();
       address["appartmentNumber"] =
           oldData!.address["appartmentNumber"].toString();
       amenties.value = oldData!.amenities;
@@ -354,7 +356,7 @@ class _PostPropertyAdController extends LoadingController {
           await showSuccessDialog("Ad updated successfully. ", isAlert: true);
 
           deleteManyFilesFromUrl(
-            oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
+            oldData!.images.where((e) => !oldImages.contains(e)).toList(),
           );
           deleteManyFilesFromUrl(
             oldData!.videos.where((e) => !oldVideos.contains(e)).toList(),
@@ -1353,23 +1355,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                             ),
                           ),
                           const Divider(height: 30),
-                          if (controller.images.isEmpty &&
-                              controller.oldImages.isEmpty &&
-                              controller.videos.isEmpty &&
-                              controller.oldVideos.isEmpty)
-                            Card(
-                              child: Container(
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.all(10),
-                                height: 150,
-                                child: const Text(
-                                  "Help everyone imagine What it's like "
-                                  "to live at your property upload clear"
-                                  " photo and video of your property",
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
                           if (controller.images.length +
                                   controller.oldImages.length !=
                               0)

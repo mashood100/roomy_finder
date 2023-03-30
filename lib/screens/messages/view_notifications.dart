@@ -5,6 +5,7 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -58,7 +59,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(n.event),
+                            SizedBox(
+                              width: Get.width * 0.6,
+                              child: Text(
+                                n.event,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: ROOMY_ORANGE),
+                              ),
+                            ),
                             Text(relativeTimeText(n.createdAt)),
                           ],
                         ),
@@ -70,7 +78,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             const Spacer(),
                             SizedBox(
                               height: 35,
-                              child: ElevatedButton(
+                              child: IconButton(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  side: const BorderSide(color: Colors.red),
+                                ),
                                 onPressed: () async {
                                   final shouldDelete = await showConfirmDialog(
                                       "Do you really want to delete");
@@ -79,7 +94,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   await AppNotication.deleteNotifications(n);
                                   setState(() {});
                                 },
-                                child: const Text("Delete Notification"),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
                               ),
                             )
                           ],
