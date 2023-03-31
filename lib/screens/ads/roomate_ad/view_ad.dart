@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -376,16 +377,18 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       }),
                     ],
                   ),
-                  if (ad.description?.isNotEmpty == true)
-                    const SizedBox(height: 10),
-                  if (ad.description?.isNotEmpty == true)
-                    Text(
+                  if (ad.description != null && ad.description!.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    ReadMoreText(
                       ad.description!,
+                      trimLines: 3,
+                      trimCollapsedText: "Read more",
+                      trimExpandedText: "Read less",
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines:
-                          controller._showAllDescription.isTrue ? null : 3,
-                      overflow: TextOverflow.ellipsis,
+                      trimMode : TrimMode.Line,
+                      colorClickableText : ROOMY_ORANGE,
                     ),
+                  ],
                   const Divider(height: 20),
                   DefaultTextStyle.merge(
                     style: const TextStyle(

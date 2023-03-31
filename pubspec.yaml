@@ -81,6 +81,7 @@ dependencies:
   skeletons: ^0.0.3
   share_plus: ^4.5.3
   just_audio: ^0.9.32
+  readmore: ^2.2.0
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
@@ -578,14 +579,16 @@ class ViewPropertyAd extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (ad.description != null) ...[
+                  if (ad.description != null && ad.description!.isNotEmpty) ...[
                     const SizedBox(height: 5),
-                    Text(
+                    ReadMoreText(
                       ad.description!,
+                      trimLines: 3,
+                      trimCollapsedText: "Read more",
+                      trimExpandedText: "Read less",
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines:
-                          controller._showAllDescription.isTrue ? null : 3,
-                      overflow: TextOverflow.ellipsis,
+                      trimMode : TrimMode.Line,
+                      colorClickableText : ROOMY_PURPLE,
                     ),
                   ],
 
@@ -763,7 +766,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["visitors"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                       {
                         "label": "Drinking",
@@ -773,7 +776,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["drinking"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                       {
                         "label": "Gender",
@@ -788,7 +791,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["smoking"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                     ].map((e) {
                       return Container(
@@ -820,7 +823,7 @@ class ViewPropertyAd extends StatelessWidget {
                                   "${e["value"]}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: e["color"] as Color? ?? Colors.red,
+                                    color: e["color"] as Color? ?? ROOMY_PURPLE,
                                     fontSize: 12,
                                   ),
                                   overflow: TextOverflow.ellipsis,
