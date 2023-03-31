@@ -260,6 +260,7 @@ class AppController extends GetxController {
         "$API_URL/auth//update-fcm-token",
         data: {"fcmToken": token},
       );
+      log("Fcm token save to database  $token");
     } catch (e) {
       log(e);
     }

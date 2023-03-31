@@ -3,7 +3,7 @@ import Flutter
 import GoogleMaps
 import Firebase
 import FirebaseAuth
-
+import FirebaseMessaging
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
   override func application(
@@ -14,7 +14,8 @@ import FirebaseAuth
       if #available(iOS 10.0, *) {
         UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
       }
-      print("fcmToken",Messaging.messaging().fcmToken)
+      application.registerForRemoteNotifications()
+//      print("fcmToken",Messaging.messaging().fcmToken)
     GMSServices.provideAPIKey("AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8")
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -24,6 +25,8 @@ import FirebaseAuth
         extHelper.exportDeliveryMetricsToBigQuery(withMessageInfo: response.notification.request.content.userInfo)
     }
     override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+              Messaging.messaging().apnsToken = deviceToken
+              super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
            let firebaseAuth = Auth.auth()
            firebaseAuth.setAPNSToken(deviceToken, type: AuthAPNSTokenType.unknown)
 
@@ -36,5 +39,8 @@ import FirebaseAuth
             }
 
         }
+   override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    print("application didRegisterForRemoteNotificationsWithDeviceToken")
+}
 
 }
