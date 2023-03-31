@@ -26,7 +26,7 @@ String relativeTimeText(DateTime dateTime) {
   return Jiffy(dateTime.toUtc()).yMMMEd;
 }
 
-Future<void> changeAppCountry(BuildContext context) async {
+Future<bool> changeAppCountry(BuildContext context) async {
   final country = await showModalBottomSheet<Country?>(
     context: context,
     builder: (context) {
@@ -55,10 +55,12 @@ Future<void> changeAppCountry(BuildContext context) async {
     if (country.code != Country.UAE.code &&
         country.code != Country.SAUDI_ARABIA.code) {
       showToast('Comming soon');
-      return;
+      return false;
     }
     AppController.instance.country(country);
+    return true;
   }
+  return false;
 }
 
 String formatMoney(num price) {

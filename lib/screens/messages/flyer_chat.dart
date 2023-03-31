@@ -25,6 +25,7 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import "package:path/path.dart" as path;
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:just_audio/just_audio.dart';
 
 class FlyerChatScreenController extends GetxController
     with WidgetsBindingObserver {
@@ -38,6 +39,8 @@ class FlyerChatScreenController extends GetxController
   types.Message? _currentRepliedMessage;
 
   FlyerChatScreenController(this.conversation);
+
+  late final AudioPlayer _audioPlayer;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -55,6 +58,9 @@ class FlyerChatScreenController extends GetxController
 
     conversation.loadMessages().then((_) => update());
     conversation.updateChatInfo().then((_) => update());
+
+    _audioPlayer = AudioPlayer();
+
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
       final data = event.data;
       AppController.instance.haveNewMessage(false);
@@ -72,6 +78,9 @@ class FlyerChatScreenController extends GetxController
           if (convKey == conversation.key) {
             conversation.messages.insert(0, msg);
             update();
+            _audioPlayer
+                .setAsset("assets/audio/in_chat_new_message_sound.mp3")
+                .then((value) => _audioPlayer.play());
           }
         } catch (e, trace) {
           Get.log('$e');
@@ -86,6 +95,7 @@ class FlyerChatScreenController extends GetxController
     _newMessageController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     ChatConversation.currrentChatKey = null;
+    _audioPlayer.dispose();
     super.onClose();
   }
 

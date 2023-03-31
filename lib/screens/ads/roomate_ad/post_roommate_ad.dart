@@ -82,6 +82,7 @@ class _PostRoommateAdController extends LoadingController {
     "buildingName": "",
     "appartmentNumber": "",
     "floorNumber": "",
+    "countryCode": AppController.instance.country.value.code,
   }.obs;
 
   final socialPreferences = {
@@ -125,6 +126,7 @@ class _PostRoommateAdController extends LoadingController {
       address["appartmentNumber"] =
           oldData!.address["appartmentNumber"].toString();
       address["floorNumber"] = oldData!.address["floorNumber"].toString();
+      address["countryCode"] = oldData!.address["countryCode"].toString();
 
       aboutYou["nationality"] = oldData!.aboutYou["nationality"].toString();
       aboutYou["astrologicalSign"] =
@@ -305,7 +307,10 @@ class _PostRoommateAdController extends LoadingController {
             await showSuccessDialog("Ad updated successfully.", isAlert: true);
 
             deleteManyFilesFromUrl(
-              oldData!.images.where((e) => !imagesUrls.contains(e)).toList(),
+              oldData!.images.where((e) => !oldImages.contains(e)).toList(),
+            );
+            deleteManyFilesFromUrl(
+              oldData!.videos.where((e) => !oldVideos.contains(e)).toList(),
             );
             Get.offNamedUntil(
               "/my-roommate-ads",
@@ -506,21 +511,21 @@ class PostRoommateAdScreen extends StatelessWidget {
                 ),
               ),
               const Divider(height: 30),
-              if (controller.images.isEmpty &&
-                  controller.oldImages.isEmpty &&
-                  controller.videos.isEmpty &&
-                  controller.oldVideos.isEmpty)
-                Card(
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(10),
-                    height: 150,
-                    child: const Text(
-                      "Please upload your photos",
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
+              // if (controller.images.isEmpty &&
+              //     controller.oldImages.isEmpty &&
+              //     controller.videos.isEmpty &&
+              //     controller.oldVideos.isEmpty)
+              //   Card(
+              //     child: Container(
+              //       alignment: Alignment.center,
+              //       padding: const EdgeInsets.all(10),
+              //       height: 150,
+              //       child: const Text(
+              //         "Please upload your photos",
+              //         textAlign: TextAlign.center,
+              //       ),
+              //     ),
+              //   ),
               if (controller.images.length + controller.oldImages.length != 0)
                 GridView.count(
                   crossAxisCount: Get.width > 370 ? 4 : 2,

@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
@@ -519,14 +520,77 @@ class ViewPropertyAd extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (ad.description != null)
-                    Text(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "${ad.type} to rent",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Obx(() {
+                        return Text(
+                          formatMoney(
+                            ad.prefferedRentDisplayPrice *
+                                AppController.instance.country.value
+                                    .aedCurrencyConvertRate,
+                          ),
+                          style: const TextStyle(fontSize: 16),
+                        );
+                      }),
+                    ],
+                  ),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.room, color: ROOMY_ORANGE),
+                          const SizedBox(width: 5),
+                          Text(
+                            "${ad.address["city"]}, ${ad.address["location"]}",
+                            style: const TextStyle(fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Available ${ad.quantity - ad.quantityTaken}",
+                            style: const TextStyle(
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "Taken ${ad.quantityTaken}",
+                            style: const TextStyle(
+                              color: ROOMY_ORANGE,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (ad.description != null && ad.description!.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    ReadMoreText(
                       ad.description!,
+                      trimLines: 3,
+                      trimCollapsedText: "Read more",
+                      trimExpandedText: "Read less",
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines:
-                          controller._showAllDescription.isTrue ? null : 3,
-                      overflow: TextOverflow.ellipsis,
+                      trimMode : TrimMode.Line,
+                      colorClickableText : ROOMY_PURPLE,
                     ),
+                  ],
 
                   const SizedBox(height: 10),
 
@@ -592,12 +656,13 @@ class ViewPropertyAd extends StatelessWidget {
                                 const Text(
                                   "APPLIANCES",
                                   style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
+                                    color: ROOMY_ORANGE,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 5),
                             ...ad.homeAppliancesAmenities
                                 .map((e) => Text("-  $e"))
                                 .toList()
@@ -618,12 +683,13 @@ class ViewPropertyAd extends StatelessWidget {
                                 const Text(
                                   "TECH",
                                   style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
+                                    color: ROOMY_ORANGE,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 5),
                             ...ad.technologyAmenities
                                 .map((e) =>
                                     Text("-  $e", textAlign: TextAlign.center))
@@ -645,12 +711,13 @@ class ViewPropertyAd extends StatelessWidget {
                                 const Text(
                                   "UTILITIES",
                                   style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
+                                    color: ROOMY_ORANGE,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 5),
                             ...ad.utilitiesAmenities
                                 .map(
                                   (e) => Text("- $e", textAlign: TextAlign.end),
@@ -688,7 +755,7 @@ class ViewPropertyAd extends StatelessWidget {
                       },
                       {
                         "label": "Nationality",
-                        "asset": "assets/icons/globe_grey.jpg",
+                        "asset": "assets/icons/globe_grey.png",
                         "value": "${ad.socialPreferences["nationality"]}",
                       },
                       {
@@ -699,7 +766,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["visitors"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                       {
                         "label": "Drinking",
@@ -709,7 +776,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["drinking"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                       {
                         "label": "Gender",
@@ -724,7 +791,7 @@ class ViewPropertyAd extends StatelessWidget {
                             : "Not Allowed",
                         "color": ad.socialPreferences["smoking"] == true
                             ? Colors.green
-                            : ROOMY_PURPLE,
+                            : Colors.red,
                       },
                     ].map((e) {
                       return Container(

@@ -7,14 +7,12 @@ import 'package:get/get.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
-import 'package:roomy_finder/components/blog_post.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
-import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
@@ -23,14 +21,12 @@ import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
-import 'package:roomy_finder/screens/blog_post/view_post.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class _HomeTabController extends LoadingController {
-  final List<BlogPost> _blogPosts = [];
   final _targetAds = "All".obs;
 
   final _homePropertyAds = <PropertyAd>[];
@@ -46,7 +42,6 @@ class _HomeTabController extends LoadingController {
 
     _fetchHommeAds();
 
-    _fetBlogPost();
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
@@ -73,7 +68,12 @@ class _HomeTabController extends LoadingController {
       _isLoadingHomeAds(true);
       _failedToLoadHomeAds(false);
 
-      final res = await Dio().get("$API_URL/ads/recomended");
+      final res = await Dio().get(
+        "$API_URL/ads/recomended",
+        queryParameters: {
+          "countryCode": AppController.instance.country.value.code,
+        },
+      );
 
       // Property ads
       final propertyAds = (res.data["propertyAds"] as List).map((e) {
@@ -108,23 +108,6 @@ class _HomeTabController extends LoadingController {
     }
   }
 
-  Future<void> _fetBlogPost() async {
-    try {
-      final posts = await BlogPost.getBlogPost();
-      _blogPosts.clear();
-      _blogPosts.addAll(posts);
-      update(["blogposts-get-builder"]);
-    } catch (e) {
-      Get.log('$e');
-    }
-  }
-
-  void _toggleThemeMode() {
-    AppController.setThemeMode(
-        Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
-    Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
-  }
-
   Future<void> upgradeToSeeDetails(RoommateAd ad) async {
     await Get.to(() => UpgragePlanScreen(
           skipCallback: () {
@@ -146,7 +129,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
       onRefresh: () async {
         await Future.wait([
           controller._fetchHommeAds(),
-          controller._fetBlogPost(),
         ]);
       },
       child: GetBuilder<_HomeTabController>(builder: (controller) {
@@ -658,42 +640,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        "Blog posts",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: ROOMY_ORANGE,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: GetBuilder<_HomeTabController>(
-                    id: "blogposts-get-builder",
-                    builder: (controller) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: controller._blogPosts.map((e) {
-                            return BlogPostWidget(
-                              post: e,
-                              onTap: () {
-                                Get.to(() => ViewBlogPostScreen(post: e));
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }),
-              ),
             ],
           ),
         );
@@ -707,61 +653,71 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
     return AppBar(
       backgroundColor: ROOMY_PURPLE,
       // automaticallyImplyLeading: false,
-      leadingWidth: 30,
-      title: SizedBox(
-        width: Get.width,
-        child: Builder(builder: (context) {
-          return Row(
-            children: [
-              const Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: "Roomy",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    TextSpan(
-                      text: "FINDER",
-                      style: TextStyle(color: Color.fromRGBO(255, 123, 77, 1)),
-                    ),
-                  ],
-                ),
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: controller._toggleThemeMode,
-                icon: Theme.of(context).brightness == Brightness.light
-                    ? const Icon(Icons.dark_mode, color: Colors.white)
-                    : const Icon(Icons.light_mode, color: Colors.white),
-              ),
-              Obx(() {
-                return TextButton(
-                  onPressed: () => changeAppCountry(context),
-                  // icon: const Icon(Icons.arrow_drop_down, size: 40),
-                  child: Text(
-                    AppController.instance.country.value.flag,
-                    style: const TextStyle(fontSize: 25),
+      leadingWidth: 150,
+      leading: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(width: 5),
+          Image.asset("assets/images/logo.png", height: 40),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  "Roomy",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    fontSize: 18,
                   ),
-                );
-              }),
-              // Builder(builder: (context) {
-              //   return IconButton(
-              //     onPressed: () {
-              //       if (Scaffold.of(context).isDrawerOpen) {
-              //         Scaffold.of(context).openDrawer();
-              //       } else {
-              //         Scaffold.of(context).closeDrawer();
-              //       }
-              //     },
-              //     icon: Icon(Icons.menu, color: Colors.grey.shade300),
-              //   );
-              // }),
-            ],
+                ),
+                Text(
+                  "FINDER",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: ROOMY_ORANGE,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+      actions: [
+        Builder(builder: (context) {
+          return IconButton(
+            onPressed: () async {
+              var changed = await changeAppCountry(context);
+              if (changed) {
+                controller._fetchHommeAds();
+              }
+            },
+            icon: Obx(() {
+              return Text(
+                AppController.instance.country.value.flag,
+                style: const TextStyle(fontSize: 25),
+              );
+            }),
           );
         }),
-      ),
-      centerTitle: false,
+        Builder(builder: (context) {
+          return IconButton(
+            onPressed: () {
+              if (Scaffold.of(context).isDrawerOpen) {
+                Scaffold.of(context).closeDrawer();
+              } else {
+                Scaffold.of(context).openDrawer();
+              }
+            },
+            icon: Icon(Icons.menu, color: Colors.grey.shade300),
+          );
+        }),
+      ],
       elevation: 0,
     );
   }

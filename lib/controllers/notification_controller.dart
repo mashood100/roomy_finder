@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -182,7 +181,7 @@ class NotificationController {
   @pragma("vm:entry-point")
   static Future<void> firebaseMessagingHandler(
     RemoteMessage msg,
-    bool showAndroidMessage,
+    bool isForeground,
   ) async {
     switch (msg.data["event"].toString()) {
       case "new-booking":
@@ -193,7 +192,7 @@ class NotificationController {
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
         }
-        if (Platform.isAndroid && showAndroidMessage) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -223,7 +222,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (Platform.isAndroid && showAndroidMessage) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -238,7 +237,7 @@ class NotificationController {
 
         break;
       case "new-message":
-        _messageNotificationHandler(msg, showAndroidMessage);
+        _messageNotificationHandler(msg, isForeground);
         break;
       case "plan-upgraded-successfully":
         final message = msg.data["message"] ?? "new notification";
@@ -247,7 +246,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (Platform.isAndroid && showAndroidMessage) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -268,7 +267,7 @@ class NotificationController {
 
   static Future<void> _messageNotificationHandler(
     RemoteMessage msg,
-    bool showAndroidMessage,
+    bool isForeGroundMessage,
   ) async {
     try {
       final message = types.Message.fromJson(jsonDecode(msg.data["message"]));
@@ -295,24 +294,18 @@ class NotificationController {
         return;
       }
 
-      if (Platform.isAndroid && showAndroidMessage) {
+      if (isForeGroundMessage) {
         AwesomeNotifications().createNotification(
           content: NotificationContent(
             id: Random().nextInt(1000),
-            channelKey: Platform.isAndroid
-                ? "chat_channel_key"
-                : "notification_channel",
-            groupKey: Platform.isAndroid
-                ? "chat_channel_group_key"
-                : "notification_channel_group",
+            channelKey: "chat_channel_key",
+            groupKey: "chat_channel_group_key",
             title: sender.fullName,
             body: notificationMessage,
-            notificationLayout: Platform.isAndroid
-                ? NotificationLayout.Messaging
-                : NotificationLayout.Messaging,
+            notificationLayout: NotificationLayout.Messaging,
             payload: Map<String, String?>.from(msg.data),
-            summary: Platform.isAndroid ? 'Chat notification' : null,
-            largeIcon: Platform.isAndroid ? sender.profilePicture : null,
+            summary: 'Chat notification',
+            largeIcon: sender.profilePicture,
           ),
         );
       }

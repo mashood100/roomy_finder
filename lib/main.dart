@@ -58,10 +58,10 @@ void main() async {
   });
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    sound: true,
-  );
+  // await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+  //   alert: true,
+  //   sound: true,
+  // );
 
   // Dynamic link
 
@@ -203,6 +203,9 @@ class _MyAppState extends State<MyApp> {
         // backgroundColor: Color.fromRGBO(255, 123, 77, 1),
         elevation: 3,
         type: BottomNavigationBarType.fixed,
+        backgroundColor: ROOMY_PURPLE,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         unselectedLabelStyle: TextStyle(fontSize: 15),
         selectedLabelStyle: TextStyle(fontSize: 15),
         selectedIconTheme: IconThemeData(

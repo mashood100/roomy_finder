@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -138,112 +140,98 @@ class ViewRoommateAdScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 1),
-            Stack(
-              alignment: Alignment.bottomLeft,
-              children: [
-                Card(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          ...ad.images.map(
-                            (e) => GestureDetector(
-                              onTap: () => controller._viewImage(e),
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 1),
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(5),
-                                  ),
-                                  child: CachedNetworkImage(
-                                    imageUrl: e,
-                                    height: 250,
-                                    width: ad.images.length == 1
-                                        ? Get.width
-                                        : null,
-                                    fit: ad.images.length == 1
-                                        ? BoxFit.cover
-                                        : BoxFit.fitHeight,
-                                    errorWidget: (ctx, e, trace) {
-                                      return SizedBox(
-                                        width: Get.width,
-                                        child: const CupertinoActivityIndicator(
-                                          radius: 30,
-                                        ),
-                                      );
-                                    },
-                                    progressIndicatorBuilder:
-                                        (context, url, downloadProgress) {
-                                      return Container(
-                                        width: Get.width * 0.9,
-                                        padding: const EdgeInsets.all(30),
-                                        child: CircularProgressIndicator(
-                                          value: downloadProgress.progress,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+            CarouselSlider(
+              items: [
+                ...ad.images.map(
+                  (e) => GestureDetector(
+                    onTap: () => controller._viewImage(e),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(5),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: e,
+                          height: 250,
+                          width: Get.width,
+                          fit: BoxFit.cover,
+                          errorWidget: (ctx, e, trace) {
+                            return const SizedBox(
+                              child: CupertinoActivityIndicator(
+                                radius: 30,
+                                animating: false,
                               ),
-                            ),
-                          ),
-                          ...ad.videos.map(
-                            (e) => GestureDetector(
-                              onTap: () => Get.to(() {
-                                return PlayVideoScreen(
-                                    source: e, isAsset: false);
-                              }),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 1),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: FutureBuilder(
-                                        builder: (ctx, asp) {
-                                          if (asp.hasData) {
-                                            return Image.file(
-                                              File(asp.data!),
-                                              alignment: Alignment.center,
-                                              height: 250,
-                                              fit: BoxFit.fitHeight,
-                                            );
-                                          }
-                                          return Container();
-                                        },
-                                        future: VideoThumbnail.thumbnailFile(
-                                          video: e,
-                                          quality: 50,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.all(20),
-                                    child: Icon(
-                                      Icons.play_arrow,
-                                      size: 40,
-                                      color: Color.fromARGB(255, 2, 3, 2),
-                                    ),
-                                  ),
-                                ],
+                            );
+                          },
+                          progressIndicatorBuilder:
+                              (context, url, downloadProgress) {
+                            return Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: CircularProgressIndicator(
+                                value: downloadProgress.progress,
                               ),
-                            ),
-                          ),
-                        ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
                 ),
+                ...ad.videos.map(
+                  (e) => GestureDetector(
+                    onTap: () => Get.to(() {
+                      return PlayVideoScreen(source: e, isAsset: false);
+                    }),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: FutureBuilder(
+                              builder: (ctx, asp) {
+                                if (asp.hasData) {
+                                  return Image.file(
+                                    File(asp.data!),
+                                    alignment: Alignment.center,
+                                    height: 250,
+                                    fit: BoxFit.fitHeight,
+                                  );
+                                }
+                                return Container();
+                              },
+                              future: VideoThumbnail.thumbnailFile(
+                                video: e,
+                                quality: 50,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Icon(
+                            Icons.play_arrow,
+                            size: 40,
+                            color: Color.fromARGB(255, 2, 3, 2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
+              options: CarouselOptions(
+                autoPlayInterval: const Duration(seconds: 10),
+                pageSnapping: true,
+                autoPlay: true,
+                viewportFraction: 1,
+                enlargeStrategy: CenterPageEnlargeStrategy.zoom,
+              ),
             ),
             const SizedBox(height: 5),
             Padding(
@@ -389,16 +377,18 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       }),
                     ],
                   ),
-                  if (ad.description?.isNotEmpty == true)
-                    const SizedBox(height: 10),
-                  if (ad.description?.isNotEmpty == true)
-                    Text(
+                  if (ad.description != null && ad.description!.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    ReadMoreText(
                       ad.description!,
+                      trimLines: 3,
+                      trimCollapsedText: "Read more",
+                      trimExpandedText: "Read less",
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines:
-                          controller._showAllDescription.isTrue ? null : 3,
-                      overflow: TextOverflow.ellipsis,
+                      trimMode : TrimMode.Line,
+                      colorClickableText : ROOMY_ORANGE,
                     ),
+                  ],
                   const Divider(height: 20),
                   DefaultTextStyle.merge(
                     style: const TextStyle(

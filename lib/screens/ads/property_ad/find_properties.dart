@@ -19,6 +19,7 @@ import 'package:roomy_finder/utilities/data.dart';
 
 class _FindPropertiesController extends LoadingController {
   final RxMap<String, String?> filter;
+  final _carouselIndex = 0.obs;
 
   _FindPropertiesController({
     Map<String, String?>? filter,
@@ -37,7 +38,11 @@ class _FindPropertiesController extends LoadingController {
     try {
       isLoading(true);
       hasFetchError(false);
-      final requestBody = <String, dynamic>{"skip": _skip, ...filter};
+      final requestBody = <String, dynamic>{
+        "skip": _skip,
+        "countryCode": AppController.instance.country.value.code,
+        ...filter,
+      };
       final res = await Dio().post(
         "$API_URL/ads/property-ad/available",
         data: requestBody,
@@ -311,7 +316,7 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                 automaticallyImplyLeading: false,
                 toolbarHeight: 0,
                 collapsedHeight: 0,
-                expandedHeight: AppController.me.isGuest ? 300 : 250,
+                expandedHeight: AppController.me.isGuest ? 310 : 260,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Builder(builder: (context) {
                     const list = [
@@ -352,6 +357,56 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                        Expanded(
+                          child: SizedBox(
+                            width: Get.width,
+                            child: CarouselSlider(
+                              items: list.map((e) {
+                                return Image.asset(
+                                  e,
+                                  width: Get.width,
+                                  fit: BoxFit.fitWidth,
+                                );
+                              }).toList(),
+                              options: CarouselOptions(
+                                autoPlayInterval: const Duration(seconds: 10),
+                                pageSnapping: true,
+                                autoPlay: true,
+                                viewportFraction: 1,
+                                onPageChanged: (index, reason) {
+                                  controller._carouselIndex(index);
+                                },
+                              ),
+                              disableGesture: true,
+                            ),
+                          ),
+                        ),
+                        Obx(() {
+                          return Container(
+                            color: Colors.white,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(list.length, (ind) {
+                                return Container(
+                                  height: 10,
+                                  width: 10,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color:
+                                        ind == controller._carouselIndex.value
+                                            ? ROOMY_PURPLE
+                                            : Colors.grey,
+                                  ),
+                                );
+                              }),
+                            ),
+                          );
+                        }),
                         TextField(
                           readOnly: true,
                           onTap: controller._showFilter,
@@ -370,43 +425,7 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                           ),
                           textInputAction: TextInputAction.search,
                         ),
-                        Expanded(
-                          child: CarouselSlider(
-                            items: list.map((e) {
-                              return Stack(
-                                alignment: Alignment.bottomCenter,
-                                children: [
-                                  Image.asset(
-                                    e,
-                                    width: Get.width,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(list.length, (ind) {
-                                      return Text(
-                                        "•",
-                                        style: TextStyle(
-                                          color: ind == list.indexOf(e)
-                                              ? ROOMY_PURPLE
-                                              : Colors.grey,
-                                          fontSize: 50,
-                                        ),
-                                      );
-                                    }),
-                                  )
-                                ],
-                              );
-                            }).toList(),
-                            options: CarouselOptions(
-                              autoPlayInterval: const Duration(seconds: 10),
-                              pageSnapping: true,
-                              autoPlay: true,
-                              viewportFraction: 1,
-                            ),
-                            disableGesture: true,
-                          ),
-                        ),
+                        Container(color: Colors.white, height: 10),
                       ],
                     );
                   }),
