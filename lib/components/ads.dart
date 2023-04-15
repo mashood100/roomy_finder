@@ -36,7 +36,12 @@ class PropertyAdWidget extends StatelessWidget {
                 top: Radius.circular(10),
               ),
               child: ad.images.isEmpty
-                  ? const SizedBox(height: 150)
+                  ? Image.asset(
+                      "assets/images/default_ad_picture.jpg",
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    )
                   : CachedNetworkImage(
                       imageUrl: ad.images[0],
                       width: double.infinity,
@@ -205,17 +210,23 @@ class PropertyAdMiniWidget extends StatelessWidget {
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
-              CachedNetworkImage(
-                imageUrl: ad.images.isNotEmpty
-                    ? ad.images[0]
-                    : ad.poster.profilePicture,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorWidget: (ctx, url, e) {
-                  return const SizedBox();
-                },
-              ),
+              if (ad.images.isEmpty)
+                Image.asset(
+                  "assets/images/default_ad_picture.jpg",
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              else
+                CachedNetworkImage(
+                  imageUrl: ad.images[0],
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorWidget: (ctx, url, e) {
+                    return const SizedBox();
+                  },
+                ),
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,
@@ -337,20 +348,27 @@ class RoommateAdWidget extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(10),
               ),
-              child: CachedNetworkImage(
-                imageUrl: ad.images.isNotEmpty
-                    ? ad.images[0]
-                    : ad.poster.profilePicture,
-                width: double.infinity,
-                height: 150,
-                fit: BoxFit.cover,
-                errorWidget: (ctx, url, e) {
-                  return const SizedBox(
-                    width: double.infinity,
-                    height: 150,
-                  );
-                },
-              ),
+              child: (ad.images.isEmpty)
+                  ? Image.asset(
+                      "assets/images/default_ad_picture.jpg",
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: ad.images.isNotEmpty
+                          ? ad.images[0]
+                          : ad.poster.profilePicture,
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      errorWidget: (ctx, url, e) {
+                        return const SizedBox(
+                          width: double.infinity,
+                          height: 150,
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 5),
             Padding(
@@ -467,17 +485,23 @@ class RoommateAdMiniWidget extends StatelessWidget {
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
-              CachedNetworkImage(
-                imageUrl: ad.images.isNotEmpty
-                    ? ad.images[0]
-                    : ad.poster.profilePicture,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorWidget: (ctx, url, e) {
-                  return const SizedBox();
-                },
-              ),
+              if (ad.images.isEmpty)
+                Image.asset(
+                  "assets/images/default_ad_picture.jpg",
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              else
+                CachedNetworkImage(
+                  imageUrl: ad.images[0],
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorWidget: (ctx, url, e) {
+                    return const SizedBox();
+                  },
+                ),
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,

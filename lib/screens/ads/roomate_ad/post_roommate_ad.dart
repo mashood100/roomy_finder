@@ -1415,98 +1415,103 @@ class PostRoommateAdScreen extends StatelessWidget {
                 ? "${controller.information["action"]}"
                 : "Update Roommate Ad"),
           ),
-          body: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 10,
-                  right: 10,
-                  top: 5,
-                  bottom: 60,
-                ),
-                child: PageView(
-                  controller: controller._pageController,
-                  onPageChanged: (index) => controller._pageIndex(index),
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    // Action
-                    Column(
-                      children: [
-                        const Spacer(),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 1.5,
-                          children: ["HAVE ROOM", "NEED ROOM"].map((e) {
-                            return GestureDetector(
-                              onTap: () {
-                                if (controller.oldData != null) return;
-                                controller.information["action"] = e;
-                                controller.images.clear();
-                              },
-                              child: Card(
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(10),
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        blurRadius: 3,
-                                        blurStyle: BlurStyle.outer,
-                                        color: Colors.black54,
-                                        spreadRadius: -1,
+          body: GestureDetector(
+            onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    right: 10,
+                    top: 5,
+                    bottom: 60,
+                  ),
+                  child: PageView(
+                    controller: controller._pageController,
+                    onPageChanged: (index) => controller._pageIndex(index),
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      // Action
+                      Column(
+                        children: [
+                          const Spacer(),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 1.5,
+                            children: ["HAVE ROOM", "NEED ROOM"].map((e) {
+                              return GestureDetector(
+                                onTap: () {
+                                  if (controller.oldData != null) return;
+                                  controller.information["action"] = e;
+                                  controller.images.clear();
+                                },
+                                child: Card(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.all(
+                                        Radius.circular(10),
                                       ),
-                                    ],
-                                    color: controller.information["action"] == e
-                                        ? ROOMY_ORANGE
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    e,
-                                    style: const TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontWeight: FontWeight.bold,
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          blurRadius: 3,
+                                          blurStyle: BlurStyle.outer,
+                                          color: Colors.black54,
+                                          spreadRadius: -1,
+                                        ),
+                                      ],
+                                      color:
+                                          controller.information["action"] == e
+                                              ? ROOMY_ORANGE
+                                              : null,
+                                    ),
+                                    child: Text(
+                                      e,
+                                      style: const TextStyle(
+                                        color: ROOMY_PURPLE,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
+                              );
+                            }).toList(),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
 
-                    // Images/Videos (Have Room)
-                    if (controller.information["action"] == "HAVE ROOM") ...[
-                      imagesWidget,
-                      aboutRoommateWidget,
-                      amenitiesWidget,
-                      propertyPreferencesWidget,
-                      aboutYouWidget,
-                      interestWidget,
-                      lifeStyleWidget,
-                    ] else ...[
-                      aboutYouWidget,
-                      imagesWidget,
-                      lifeStyleWidget,
-                      interestWidget,
-                      aboutRoommateWidget,
-                      amenitiesWidget,
-                      propertyPreferencesWidget,
-                      descriptionWidget
+                      // Images/Videos (Have Room)
+                      if (controller.information["action"] == "HAVE ROOM") ...[
+                        imagesWidget,
+                        aboutRoommateWidget,
+                        amenitiesWidget,
+                        propertyPreferencesWidget,
+                        aboutYouWidget,
+                        interestWidget,
+                        lifeStyleWidget,
+                      ] else ...[
+                        aboutYouWidget,
+                        imagesWidget,
+                        lifeStyleWidget,
+                        interestWidget,
+                        aboutRoommateWidget,
+                        amenitiesWidget,
+                        propertyPreferencesWidget,
+                        descriptionWidget
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (controller.isLoading.isTrue) const LinearProgressIndicator(),
-            ],
+                if (controller.isLoading.isTrue)
+                  const LinearProgressIndicator(),
+              ],
+            ),
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,

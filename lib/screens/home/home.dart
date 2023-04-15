@@ -15,6 +15,7 @@ import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/functions/share_app.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/blog_post/all_posts.dart';
@@ -165,7 +166,11 @@ class HomeController extends LoadingController {
       final pref = await SharedPreferences.getInstance();
       final value = pref.getString("last-message-fetch-date");
 
-      if (value != null) lastDate = DateTime.parse(value);
+      if (value != null) {
+        lastDate = DateTime.parse(value);
+      } else {
+        lastDate = DateTime.now();
+      }
 
       final conversations = await ChatConversation.getAllSavedChats(
         AppController.me.id,
@@ -185,6 +190,16 @@ class HomeController extends LoadingController {
         if (conv != null) {
           conv.lastMessage = m;
           conv.saveChat();
+        } else {
+          final newConv = ChatConversation(
+            me: AppController.me.chatUser,
+            friend: ChatUser(id: m.senderId, createdAt: DateTime.now()),
+            createdAt: DateTime.now(),
+            lastMessage: m,
+          );
+
+          conversations.insert(0, newConv);
+          newConv.saveChat();
         }
         m.saveToSameKeyLocaleMessages(convKey);
       }

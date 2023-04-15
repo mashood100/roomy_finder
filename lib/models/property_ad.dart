@@ -107,7 +107,7 @@ class PropertyAd {
     this.autoCompletePredicate,
     this.needsPhotograph,
     this.shareLink,
-  }) : assert(images.isNotEmpty);
+  });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{

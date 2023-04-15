@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/chat_message.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 
@@ -43,16 +44,20 @@ class ChatConversation {
   }
 
   Future<void> updateChatInfo() async {
-    final myInfo = await ApiService.getUserInfo(me.id);
-    if (myInfo != null) {
-      me.profilePicture = '${myInfo["profilePicture"]}';
-      me.fcmToken = '${myInfo["fcmToken"]}';
-    }
+    me.profilePicture = AppController.me.profilePicture;
+    me.fcmToken = AppController.me.fcmToken;
+    me.firstName = AppController.me.firstName;
+    me.lastName = AppController.me.lastName;
+    me.createdAt = AppController.me.createdAt;
 
     final friendInfo = await ApiService.getUserInfo(friend.id);
     if (friendInfo != null) {
       friend.profilePicture = '${friendInfo["profilePicture"]}';
       friend.fcmToken = '${friendInfo["fcmToken"]}';
+      friend.firstName = '${friendInfo["firstName"]}';
+      friend.lastName = '${friendInfo["lastName"]}';
+      friend.createdAt =
+          DateTime.tryParse('${friendInfo["createdAt"]}') ?? friend.createdAt;
     }
   }
 

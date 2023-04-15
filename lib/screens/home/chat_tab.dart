@@ -1,5 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:badges/badges.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Badge;
@@ -11,7 +12,6 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 
 import '../../functions/utility.dart';
-// import 'package:roomy_finder/controllers/loadinding_controller.dart';
 
 class ChatTabController extends LoadingController {
   final conversations = <ChatConversation>[].obs;
@@ -19,25 +19,35 @@ class ChatTabController extends LoadingController {
   @override
   void onInit() {
     super.onInit();
-    _getNotifications();
+    _loadConversations();
 
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
       if (data["event"] == "new-message") {
         await Future.delayed(const Duration(milliseconds: 200));
-        _getNotifications();
+        _loadConversations();
       }
     });
   }
 
-  Future<void> _getNotifications() async {
+  Future<void> _loadConversations() async {
     try {
       isLoading(true);
-      final notifications =
+      final chats =
           await ChatConversation.getAllSavedChats(AppController.me.id);
+
+      await Future.wait(
+          chats.where((e) => e.friend.fcmToken == null).map((e) async {
+        await e.updateChatInfo();
+      }));
+
+      for (final c in chats) {
+        c.saveChat();
+      }
+
       conversations.clear();
-      conversations.addAll(notifications);
+      conversations.addAll(chats.where((e) => e.friend.fcmToken != null));
       conversations.sort((a, b) => a.createdAt.isAfter(b.createdAt) ? 1 : -1);
     } catch (_) {
     } finally {
@@ -74,15 +84,15 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                 await Get.to(() => FlyerChatScreen(
                       conversation: conv,
                     ));
-                controller._getNotifications();
+                controller._loadConversations();
                 AwesomeNotifications()
                     .cancelNotificationsByChannelKey("chat_channel_group_key");
               },
               leading: CircleAvatar(
                 radius: 20,
-                foregroundImage: NetworkImage(
-                  conv.friend.profilePicture,
-                ),
+                foregroundImage: conv.friend.profilePicture != null
+                    ? CachedNetworkImageProvider(conv.friend.profilePicture!)
+                    : null,
               ),
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,7 +144,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
       elevation: 0,
       actions: [
         IconButton(
-          onPressed: controller._getNotifications,
+          onPressed: controller._loadConversations,
           icon: const Icon(Icons.refresh),
         ),
       ],

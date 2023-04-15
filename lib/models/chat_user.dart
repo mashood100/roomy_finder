@@ -2,19 +2,19 @@ import 'dart:convert';
 
 class ChatUser {
   final String id;
-  String firstName;
-  String lastName;
-  String profilePicture;
-  String fcmToken;
+  String? firstName;
+  String? lastName;
+  String? profilePicture;
+  String? fcmToken;
   DateTime createdAt;
 
   ChatUser({
     required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.profilePicture,
-    required this.fcmToken,
     required this.createdAt,
+    this.firstName,
+    this.lastName,
+    this.profilePicture,
+    this.fcmToken,
   });
 
   String get fullName => "$firstName $lastName";
@@ -33,10 +33,10 @@ class ChatUser {
   factory ChatUser.fromMap(Map<String, dynamic> map) {
     return ChatUser(
       id: map['id'] as String,
-      firstName: map['firstName'] as String,
-      lastName: map['lastName'] as String,
-      profilePicture: map['profilePicture'] as String,
-      fcmToken: map['fcmToken'] as String,
+      firstName: map['firstName'] as String?,
+      lastName: map['lastName'] as String?,
+      profilePicture: map['profilePicture'] as String?,
+      fcmToken: map['fcmToken'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }

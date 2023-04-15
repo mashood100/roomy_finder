@@ -378,6 +378,13 @@ class ViewPropertyAd extends StatelessWidget {
                         CarouselSlider(
                           carouselController: controller.carouselController,
                           items: [
+                            if (ad.images.isEmpty && ad.videos.isEmpty)
+                              Image.asset(
+                                "assets/images/default_ad_picture.jpg",
+                                height: 250,
+                                width: Get.width,
+                                fit: BoxFit.cover,
+                              ),
                             ...ad.images.map(
                               (e) => GestureDetector(
                                 onTap: () {
