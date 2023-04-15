@@ -89,247 +89,257 @@ class _FindRoommatesController extends LoadingController {
       isScrollControlled: true,
       context: Get.context!,
       builder: (context) {
-        return SizedBox(
-          height: Get.height * 0.8,
-          child: StatefulBuilder(builder: (context, setState) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: SizedBox(
+              height: Get.height * 0.8,
+              child: StatefulBuilder(builder: (context, setState) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          onPressed: () {
-                            Get.back();
-                          },
-                          icon: const Icon(Icons.chevron_left),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          "Filter",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: ROOMY_ORANGE,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                    const Divider(),
-                    // Action
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        {"label": "Need Room", "value": "NEED ROOM"},
-                        {"label": "Have Room", "value": "HAVE ROOM"},
-                        {"label": "All", "value": null},
-                      ].map((e) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (e["value"] != null) {
-                                filter['action'] = e["value"];
-                              } else {
-                                filter.remove("action");
-                              }
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: filter["action"] == e["value"]
-                                  ? ROOMY_ORANGE
-                                  : Colors.grey,
-                              borderRadius: BorderRadius.circular(10),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Get.back();
+                              },
+                              icon: const Icon(Icons.chevron_left),
                             ),
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text("${e["label"]}"),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 10),
-
-                    const SizedBox(height: 20),
-                    // Roommate type
-                    InlineDropdown<String>(
-                      labelText: 'Type'.tr,
-                      hintText: 'Appartment type'.tr,
-                      value: filter["type"],
-                      items: const ["All", "Studio", "Appartment", "House"],
-                      onChanged: (val) {
-                        if (val != null) filter["type"] = val;
-                        if (val == "All") filter.remove("type");
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    // Rent type
-                    InlineDropdown<String>(
-                      labelText: 'Rent'.tr,
-                      hintText: 'rentType'.tr,
-                      value: filter["rentType"],
-                      items: const ["All", "Monthly", "Weekly", "Daily"],
-                      onChanged: (val) {
-                        if (val != null) filter["rentType"] = val;
-                        if (val == "All") filter.remove("rentType");
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    InlineDropdown<String>(
-                      labelText: 'City',
-                      hintText: AppController.instance.country.value.isUAE
-                          ? 'Example : Dubai'
-                          : "Example : Riyadh",
-                      value: filter["city"],
-                      items: CITIES_FROM_CURRENT_COUNTRY,
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            filter["location"] = null;
-                            filter["city"] = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    InlineDropdown<String>(
-                      labelText: 'Area',
-                      hintText: "Select for area",
-                      value: filter["location"],
-                      items: getLocationsFromCity(
-                        filter["city"].toString(),
-                      ),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            filter["location"] = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    InlineDropdown<String>(
-                      labelText: 'Gender',
-                      hintText: "Select gender",
-                      value: filter["gender"],
-                      items: const ["Female", "Male", "Any"],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            filter["gender"] = val;
-                          });
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-                    const Text("Budget", style: TextStyle(fontSize: 14)),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InlineTextField(
-                            labelWidth: 0,
-                            suffixText: AppController
-                                .instance.country.value.currencyCode,
-                            hintText: 'Minimum',
-                            initialValue: filter["minBudget"],
-                            enabled: isLoading.isFalse,
-                            onChanged: (value) {
-                              setState(() {
-                                if (num.tryParse(value) != null) {
-                                  filter["minBudget"] = value;
-                                } else {
-                                  filter.remove("minBudget");
-                                }
-                              });
-                            },
-                            keyboardType: const TextInputType.numberWithOptions(
-                                signed: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(priceRegex)
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: InlineTextField(
-                            labelWidth: 0,
-                            suffixText: AppController
-                                .instance.country.value.currencyCode,
-                            hintText: 'Maximum',
-                            initialValue: filter["maxBudget"],
-                            enabled: isLoading.isFalse,
-                            onChanged: (value) {
-                              setState(() {
-                                if (num.tryParse(value) != null) {
-                                  filter["maxBudget"] = value;
-                                } else {
-                                  filter.remove("maxBudget");
-                                }
-                              });
-                            },
-                            keyboardType: const TextInputType.numberWithOptions(
-                                signed: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(priceRegex)
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: ROOMY_PURPLE,
-                            ),
-                            onPressed: () {
-                              filter.clear();
-                              this.filter.clear();
-                              _fetchData();
-                              Get.back();
-                            },
-                            child: const Text(
-                              "Clear Filter",
+                            const Spacer(),
+                            const Text(
+                              "Filter",
                               style: TextStyle(
+                                fontSize: 18,
+                                color: ROOMY_ORANGE,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
                               ),
                             ),
-                          ),
+                            const Spacer(),
+                          ],
                         ),
-                        SizedBox(
-                          width: 120,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Get.back(result: filter);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: ROOMY_PURPLE,
-                            ),
-                            child: const Text(
-                              "Search",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        const Divider(),
+                        // Action
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            {"label": "Need Room", "value": "NEED ROOM"},
+                            {"label": "Have Room", "value": "HAVE ROOM"},
+                            {"label": "All", "value": null},
+                          ].map((e) {
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (e["value"] != null) {
+                                    filter['action'] = e["value"];
+                                  } else {
+                                    filter.remove("action");
+                                  }
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: filter["action"] == e["value"]
+                                      ? ROOMY_ORANGE
+                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.all(10.0),
+                                child: Text("${e["label"]}"),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 10),
+
+                        const SizedBox(height: 20),
+                        // Roommate type
+                        InlineDropdown<String>(
+                          labelText: 'Type'.tr,
+                          hintText: 'Appartment type'.tr,
+                          value: filter["type"],
+                          items: const ["All", "Studio", "Appartment", "House"],
+                          onChanged: (val) {
+                            if (val != null) filter["type"] = val;
+                            if (val == "All") filter.remove("type");
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // Rent type
+                        InlineDropdown<String>(
+                          labelText: 'Rent'.tr,
+                          hintText: 'rentType'.tr,
+                          value: filter["rentType"],
+                          items: const ["All", "Monthly", "Weekly", "Daily"],
+                          onChanged: (val) {
+                            if (val != null) filter["rentType"] = val;
+                            if (val == "All") filter.remove("rentType");
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        InlineDropdown<String>(
+                          labelText: 'City',
+                          hintText: AppController.instance.country.value.isUAE
+                              ? 'Example : Dubai'
+                              : "Example : Riyadh",
+                          value: filter["city"],
+                          items: CITIES_FROM_CURRENT_COUNTRY,
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                filter["location"] = null;
+                                filter["city"] = val;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        InlineDropdown<String>(
+                          labelText: 'Area',
+                          hintText: "Select for area",
+                          value: filter["location"],
+                          items: getLocationsFromCity(
+                            filter["city"].toString(),
+                          ),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                filter["location"] = val;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        InlineDropdown<String>(
+                          labelText: 'Gender',
+                          hintText: "Select gender",
+                          value: filter["gender"],
+                          items: const ["Female", "Male", "Any"],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                filter["gender"] = val;
+                              });
+                            }
+                          },
+                        ),
+
+                        const SizedBox(height: 10),
+                        const Text("Budget", style: TextStyle(fontSize: 14)),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InlineTextField(
+                                labelWidth: 0,
+                                suffixText: AppController
+                                    .instance.country.value.currencyCode,
+                                hintText: 'Minimum',
+                                initialValue: filter["minBudget"],
+                                enabled: isLoading.isFalse,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (num.tryParse(value) != null) {
+                                      filter["minBudget"] = value;
+                                    } else {
+                                      filter.remove("minBudget");
+                                    }
+                                  });
+                                },
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        signed: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(priceRegex)
+                                ],
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: InlineTextField(
+                                labelWidth: 0,
+                                suffixText: AppController
+                                    .instance.country.value.currencyCode,
+                                hintText: 'Maximum',
+                                initialValue: filter["maxBudget"],
+                                enabled: isLoading.isFalse,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (num.tryParse(value) != null) {
+                                      filter["maxBudget"] = value;
+                                    } else {
+                                      filter.remove("maxBudget");
+                                    }
+                                  });
+                                },
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        signed: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(priceRegex)
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SizedBox(
+                              width: 150,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ROOMY_PURPLE,
+                                ),
+                                onPressed: () {
+                                  filter.clear();
+                                  this.filter.clear();
+                                  _fetchData();
+                                  Get.back();
+                                },
+                                child: const Text(
+                                  "Clear Filter",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 150,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Get.back(result: filter);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ROOMY_PURPLE,
+                                ),
+                                child: const Text(
+                                  "Search",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            );
-          }),
+                  ),
+                );
+              }),
+            ),
+          ),
         );
       },
     );
@@ -366,6 +376,7 @@ class FindRoommatesScreen extends StatelessWidget {
                   await changeAppCountry(context);
                   controller.filter.remove('city');
                   controller.filter.remove('location');
+                  controller._fetchData(isReFresh: true);
                 },
                 // icon: const Icon(Icons.arrow_drop_down, size: 40),
                 child: Text(
@@ -567,22 +578,28 @@ class _AdItem extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(10),
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: ad.images.first,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorWidget: (ctx, url, e) {
-                            return const SizedBox(
-                              width: 150,
-                              height: 150,
-                              child: CupertinoActivityIndicator(
-                                radius: 30,
-                                color: Colors.grey,
-                                animating: false,
+                        child: ad.images.isEmpty
+                            ? Image.asset(
+                                "assets/images/default_ad_picture.jpg",
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: ad.images.first,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorWidget: (ctx, url, e) {
+                                  return const SizedBox(
+                                    width: 150,
+                                    height: 150,
+                                    child: CupertinoActivityIndicator(
+                                      radius: 30,
+                                      color: Colors.grey,
+                                      animating: false,
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
                       ),
                       InkWell(
                         onTap: () async {

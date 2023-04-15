@@ -462,399 +462,373 @@ class RegistrationScreen extends StatelessWidget {
             centerTitle: true,
             title: const Text("Registration"),
           ),
-          body: Stack(
-            children: [
-              Container(
-                height: 15,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Get.theme.appBarTheme.backgroundColor,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.elliptical(50, 25),
+          body: GestureDetector(
+            onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+            child: Stack(
+              children: [
+                Container(
+                  height: 15,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Get.theme.appBarTheme.backgroundColor,
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.elliptical(50, 25),
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 10,
-                  top: 30,
-                  right: 10,
-                  bottom: 60,
-                ),
-                child: PageView(
-                  controller: controller._pageController,
-                  onPageChanged: (index) => controller._pageIndex(index),
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    // Credentials
-                    SingleChildScrollView(
-                      child: Form(
-                        key: controller._formkeyCredentials,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Account type
-                            Row(
-                              children: [
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () {
-                                    controller
-                                        .accountType(UserAccountType.roommate);
-                                  },
-                                  child: Icon(
-                                    !controller.isLandlord
-                                        ? Icons.check_circle_outline_outlined
-                                        : Icons.circle_outlined,
-                                    color: ROOMY_ORANGE,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    controller
-                                        .accountType(UserAccountType.roommate);
-                                  },
-                                  child: const Text(
-                                    "Roommate",
-                                    style: TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () {
-                                    controller
-                                        .accountType(UserAccountType.landlord);
-                                  },
-                                  child: Icon(
-                                    controller.isLandlord
-                                        ? Icons.check_circle_outline_outlined
-                                        : Icons.circle_outlined,
-                                    color: ROOMY_ORANGE,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    controller
-                                        .accountType(UserAccountType.landlord);
-                                  },
-                                  child: const Text(
-                                    "Landlord",
-                                    style: TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                              ],
-                            ),
-                            const Divider(),
-                            InlineTextField(
-                              initialValue: controller.information["firstName"],
-                              enabled: controller.isLoading.isFalse,
-                              labelText: 'firstName'.tr,
-                              onChanged: (value) =>
-                                  controller.information["firstName"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            InlineTextField(
-                              labelText: 'lastName'.tr,
-                              initialValue: controller.information["lastName"],
-                              enabled: controller.isLoading.isFalse,
-                              onChanged: (value) =>
-                                  controller.information["lastName"] = value,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            InlineDropdown<String>(
-                              labelText: 'gender'.tr,
-                              value: controller.information["gender"],
-                              items: const ["Male", "Female"],
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.information["gender"] = val;
-                                      }
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    top: 30,
+                    right: 10,
+                    bottom: 60,
+                  ),
+                  child: PageView(
+                    controller: controller._pageController,
+                    onPageChanged: (index) => controller._pageIndex(index),
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      // Credentials
+                      SingleChildScrollView(
+                        child: Form(
+                          key: controller._formkeyCredentials,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Account type
+                              Row(
+                                children: [
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.accountType(
+                                          UserAccountType.roommate);
                                     },
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: InlineTextField(
-                                    labelText: 'email'.tr,
-                                    hintText: "emailAddress".tr,
-                                    initialValue:
-                                        controller.information["email"],
-                                    enabled: controller.isLoading.isFalse &&
-                                        !controller._emailIsVerified,
-                                    onChanged: (value) {
-                                      controller.information["email"] =
-                                          value.toLowerCase();
-                                      controller._emailVerificationCode = "";
-                                      controller.update();
-                                    },
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'thisFieldIsRequired'.tr;
-                                      }
-                                      if (!value.isEmail) {
-                                        return 'invalidEmail'.tr;
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                GetBuilder<_RegistrationController>(
-                                    builder: (controller) {
-                                  final color = controller._emailIsVerified
-                                      ? Colors.green
-                                      : !controller._canVerifyEmail
-                                          ? Colors.grey
-                                          : ROOMY_ORANGE;
-                                  return ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: color,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      side: BorderSide(color: color),
-                                    ),
-                                    onPressed: !controller._canVerifyEmail
-                                        ? null
-                                        : controller._verifyEmail,
-                                    child: controller._isVerifiyingEmail.isTrue
-                                        ? const CupertinoActivityIndicator()
-                                        : Text(
-                                            controller._emailIsVerified
-                                                ? "Verified"
-                                                : "Verify",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                  );
-                                })
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            InlineTextField(
-                              labelText: 'password'.tr,
-                              initialValue: controller.information["password"],
-                              enabled: controller.isLoading.isFalse,
-                              obscureText: controller.showPassword.isFalse,
-                              suffixIcon: IconButton(
-                                onPressed: controller.showPassword.toggle,
-                                icon: controller.showPassword.isFalse
-                                    ? const Icon(CupertinoIcons.eye)
-                                    : const Icon(CupertinoIcons.eye_slash),
-                              ),
-                              onChanged: (value) =>
-                                  controller.information["password"] = value,
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                if (value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-                                if (value.length < 7 || value.length > 15) {
-                                  return 'passwordLengthMessage'.tr;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            InlineTextField(
-                              labelText: 'confirmPassword'.tr,
-                              initialValue:
-                                  controller.information["confirmPassword"],
-                              enabled: controller.isLoading.isFalse,
-                              obscureText:
-                                  controller.showConfirmPassword.isFalse,
-                              suffixIcon: IconButton(
-                                onPressed:
-                                    controller.showConfirmPassword.toggle,
-                                icon: controller.showPassword.isFalse
-                                    ? const Icon(CupertinoIcons.eye)
-                                    : const Icon(CupertinoIcons.eye_slash),
-                              ),
-                              onChanged: (value) => controller
-                                  .information["confirmPassword"] = value,
-                              validator: (value) {
-                                if (value !=
-                                    controller.information["password"]) {
-                                  return 'passwordMustHaveMatch'.tr;
-                                }
-
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-
-                            InlinePhoneNumberInput(
-                              initialValue: controller.phoneNumber,
-                              labelText: "phoneNumber".tr,
-                              onChange: (phoneNumber) {
-                                controller.phoneNumber = phoneNumber;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            InlineDropdown<String>(
-                              labelText: 'country'.tr,
-                              value: controller.information["country"],
-                              items: allCountriesNames,
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.information["country"] = val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Profile picture
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                GestureDetector(
-                                  onTap: controller._viewPropfilePicture,
-                                  child: CircleAvatar(
-                                    radius: 30,
-                                    backgroundImage: controller
-                                            ._images.isNotEmpty
-                                        ? FileImage(
-                                            File(controller._images[0].path))
-                                        : null,
-                                    child: controller._images.isNotEmpty
-                                        ? null
-                                        : const Icon(
-                                            Icons.person,
-                                            size: 40,
-                                            color: Colors.white,
-                                          ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    showModalBottomSheet(
-                                      isScrollControlled: true,
-                                      context: context,
-                                      builder: (context) {
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ListTile(
-                                              leading: const Icon(Icons.camera),
-                                              title: const Text("Camera"),
-                                              onTap: () {
-                                                Get.back();
-                                                controller._pickProfilePicture(
-                                                    gallery: false);
-                                              },
-                                            ),
-                                            const Divider(),
-                                            ListTile(
-                                              leading: const Icon(Icons.image),
-                                              title: const Text("Gallery"),
-                                              onTap: () {
-                                                Get.back();
-                                                controller
-                                                    ._pickProfilePicture();
-                                              },
-                                            ),
-                                            const Divider(),
-                                            ListTile(
-                                              leading: const Icon(
-                                                Icons.cancel,
-                                                color: Colors.red,
-                                              ),
-                                              title: const Text("Cancel"),
-                                              onTap: () {
-                                                Get.back();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: const Text("Add profile picture"),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Get.to(() {
-                                      return const ViewPdfScreen(
-                                        title: "Terms and conditions",
-                                        asset:
-                                            "assets/pdf/terms-and-conditions.pdf",
-                                      );
-                                    });
-                                  },
-                                  child: const Text(
-                                    "Terms and conditions",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                    child: Icon(
+                                      !controller.isLandlord
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
                                       color: ROOMY_ORANGE,
                                     ),
                                   ),
-                                ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () {
-                                    FocusManager.instance.primaryFocus
-                                        ?.unfocus();
-                                    controller.acceptTermsAndConditions
-                                        .toggle();
-                                  },
-                                  child: Icon(
-                                    controller.acceptTermsAndConditions.value
-                                        ? Icons.check_circle_outline_outlined
-                                        : Icons.circle_outlined,
-                                    color: ROOMY_ORANGE,
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.accountType(
+                                          UserAccountType.roommate);
+                                    },
+                                    child: const Text(
+                                      "Roommate",
+                                      style: TextStyle(
+                                        color: ROOMY_PURPLE,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.accountType(
+                                          UserAccountType.landlord);
+                                    },
+                                    child: Icon(
+                                      controller.isLandlord
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.accountType(
+                                          UserAccountType.landlord);
+                                    },
+                                    child: const Text(
+                                      "Landlord",
+                                      style: TextStyle(
+                                        color: ROOMY_PURPLE,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                ],
+                              ),
+                              const Divider(),
+                              InlineTextField(
+                                initialValue:
+                                    controller.information["firstName"],
+                                enabled: controller.isLoading.isFalse,
+                                labelText: 'firstName'.tr,
+                                onChanged: (value) =>
+                                    controller.information["firstName"] = value,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              InlineTextField(
+                                labelText: 'lastName'.tr,
+                                initialValue:
+                                    controller.information["lastName"],
+                                enabled: controller.isLoading.isFalse,
+                                onChanged: (value) =>
+                                    controller.information["lastName"] = value,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              InlineDropdown<String>(
+                                labelText: 'gender'.tr,
+                                value: controller.information["gender"],
+                                items: const ["Male", "Female"],
+                                onChanged: controller.isLoading.isTrue
+                                    ? null
+                                    : (val) {
+                                        if (val != null) {
+                                          controller.information["gender"] =
+                                              val;
+                                        }
+                                      },
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: InlineTextField(
+                                      labelText: 'email'.tr,
+                                      hintText: "emailAddress".tr,
+                                      initialValue:
+                                          controller.information["email"],
+                                      enabled: controller.isLoading.isFalse &&
+                                          !controller._emailIsVerified,
+                                      onChanged: (value) {
+                                        controller.information["email"] =
+                                            value.toLowerCase();
+                                        controller._emailVerificationCode = "";
+                                        controller.update();
+                                      },
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'thisFieldIsRequired'.tr;
+                                        }
+                                        if (!value.isEmail) {
+                                          return 'invalidEmail'.tr;
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  GetBuilder<_RegistrationController>(
+                                      builder: (controller) {
+                                    final color = controller._emailIsVerified
+                                        ? Colors.green
+                                        : !controller._canVerifyEmail
+                                            ? Colors.grey
+                                            : ROOMY_ORANGE;
+                                    return ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: color,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        side: BorderSide(color: color),
+                                      ),
+                                      onPressed: !controller._canVerifyEmail
+                                          ? null
+                                          : controller._verifyEmail,
+                                      child: controller
+                                              ._isVerifiyingEmail.isTrue
+                                          ? const CupertinoActivityIndicator()
+                                          : Text(
+                                              controller._emailIsVerified
+                                                  ? "Verified"
+                                                  : "Verify",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                    );
+                                  })
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              InlineTextField(
+                                labelText: 'password'.tr,
+                                initialValue:
+                                    controller.information["password"],
+                                enabled: controller.isLoading.isFalse,
+                                obscureText: controller.showPassword.isFalse,
+                                suffixIcon: IconButton(
+                                  onPressed: controller.showPassword.toggle,
+                                  icon: controller.showPassword.isFalse
+                                      ? const Icon(CupertinoIcons.eye)
+                                      : const Icon(CupertinoIcons.eye_slash),
                                 ),
-                              ],
-                            ),
-                            if (controller.isLandlord)
+                                onChanged: (value) =>
+                                    controller.information["password"] = value,
+                                validator: (value) {
+                                  if (value == null) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  if (value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+                                  if (value.length < 7 || value.length > 15) {
+                                    return 'passwordLengthMessage'.tr;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              InlineTextField(
+                                labelText: 'confirmPassword'.tr,
+                                initialValue:
+                                    controller.information["confirmPassword"],
+                                enabled: controller.isLoading.isFalse,
+                                obscureText:
+                                    controller.showConfirmPassword.isFalse,
+                                suffixIcon: IconButton(
+                                  onPressed:
+                                      controller.showConfirmPassword.toggle,
+                                  icon: controller.showPassword.isFalse
+                                      ? const Icon(CupertinoIcons.eye)
+                                      : const Icon(CupertinoIcons.eye_slash),
+                                ),
+                                onChanged: (value) => controller
+                                    .information["confirmPassword"] = value,
+                                validator: (value) {
+                                  if (value !=
+                                      controller.information["password"]) {
+                                    return 'passwordMustHaveMatch'.tr;
+                                  }
+
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+
+                              InlinePhoneNumberInput(
+                                initialValue: controller.phoneNumber,
+                                labelText: "phoneNumber".tr,
+                                onChange: (phoneNumber) {
+                                  controller.phoneNumber = phoneNumber;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              InlineDropdown<String>(
+                                labelText: 'country'.tr,
+                                value: controller.information["country"],
+                                items: allCountriesNames,
+                                onChanged: controller.isLoading.isTrue
+                                    ? null
+                                    : (val) {
+                                        if (val != null) {
+                                          controller.information["country"] =
+                                              val;
+                                        }
+                                      },
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Profile picture
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap: controller._viewPropfilePicture,
+                                    child: CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: controller
+                                              ._images.isNotEmpty
+                                          ? FileImage(
+                                              File(controller._images[0].path))
+                                          : null,
+                                      child: controller._images.isNotEmpty
+                                          ? null
+                                          : const Icon(
+                                              Icons.person,
+                                              size: 40,
+                                              color: Colors.white,
+                                            ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        context: context,
+                                        builder: (context) {
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading:
+                                                    const Icon(Icons.camera),
+                                                title: const Text("Camera"),
+                                                onTap: () {
+                                                  Get.back();
+                                                  controller
+                                                      ._pickProfilePicture(
+                                                          gallery: false);
+                                                },
+                                              ),
+                                              const Divider(),
+                                              ListTile(
+                                                leading:
+                                                    const Icon(Icons.image),
+                                                title: const Text("Gallery"),
+                                                onTap: () {
+                                                  Get.back();
+                                                  controller
+                                                      ._pickProfilePicture();
+                                                },
+                                              ),
+                                              const Divider(),
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.cancel,
+                                                  color: Colors.red,
+                                                ),
+                                                title: const Text("Cancel"),
+                                                onTap: () {
+                                                  Get.back();
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: const Text("Add profile picture"),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
                               Row(
                                 children: [
                                   GestureDetector(
                                     onTap: () {
                                       Get.to(() {
                                         return const ViewPdfScreen(
-                                          title: "Landlord Agreement",
+                                          title: "Terms and conditions",
                                           asset:
-                                              "assets/pdf/landlord_agreement.pdf",
+                                              "assets/pdf/terms-and-conditions.pdf",
                                         );
                                       });
                                     },
                                     child: const Text(
-                                      "Landlord Agreement",
+                                      "Terms and conditions",
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -867,10 +841,11 @@ class RegistrationScreen extends StatelessWidget {
                                     onTap: () {
                                       FocusManager.instance.primaryFocus
                                           ?.unfocus();
-                                      controller.acceptLandlordPolicy.toggle();
+                                      controller.acceptTermsAndConditions
+                                          .toggle();
                                     },
                                     child: Icon(
-                                      controller.acceptLandlordPolicy.value
+                                      controller.acceptTermsAndConditions.value
                                           ? Icons.check_circle_outline_outlined
                                           : Icons.circle_outlined,
                                       color: ROOMY_ORANGE,
@@ -878,111 +853,152 @@ class RegistrationScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                            // const Divider(height: 30),
-                            // Center(
-                            //   child: TextButton(
-                            //     onPressed: () =>
-                            //         Get.off(() => const LoginScreen()),
-                            //     child: const Text(
-                            //       'Login',
-                            //       style: TextStyle(
-                            //         color: ROOMY_PURPLE,
-                            //         fontWeight: FontWeight.bold,
-                            //       ),
-                            //     ),
-                            //   ),
-                            // ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Verification
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 10),
-                          if (controller._pageIndex.value == 1)
-                            FutureBuilder(
-                              future: controller._formattedPhoneNumber,
-                              builder: (ctx, asp) {
-                                return Text(
-                                  'enterTheVerificationCodeSentTo'.trParams(
-                                    {"phoneNumber": asp.data ?? ""},
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              },
-                            ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.watch_later_outlined),
-                              const SizedBox(width: 10),
-                              Text("${controller.secondsLeft.value}s"),
+                              if (controller.isLandlord)
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        Get.to(() {
+                                          return const ViewPdfScreen(
+                                            title: "Landlord Agreement",
+                                            asset:
+                                                "assets/pdf/landlord_agreement.pdf",
+                                          );
+                                        });
+                                      },
+                                      child: const Text(
+                                        "Landlord Agreement",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: ROOMY_ORANGE,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    GestureDetector(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus
+                                            ?.unfocus();
+                                        controller.acceptLandlordPolicy
+                                            .toggle();
+                                      },
+                                      child: Icon(
+                                        controller.acceptLandlordPolicy.value
+                                            ? Icons
+                                                .check_circle_outline_outlined
+                                            : Icons.circle_outlined,
+                                        color: ROOMY_ORANGE,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              // const Divider(height: 30),
+                              // Center(
+                              //   child: TextButton(
+                              //     onPressed: () =>
+                              //         Get.off(() => const LoginScreen()),
+                              //     child: const Text(
+                              //       'Login',
+                              //       style: TextStyle(
+                              //         color: ROOMY_PURPLE,
+                              //         fontWeight: FontWeight.bold,
+                              //       ),
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          Center(
-                            child: Pinput(
-                              length: 6,
-                              onCompleted: (val) {
-                                if (controller.secondsLeft.value <= 0) {
-                                  showToast("Verification time out");
-                                } else {
-                                  controller.saveCredentials(val);
-                                }
-                                // controller.saveCredentials(val);
-                              },
-                              controller: controller._piniputController,
-                              defaultPinTheme: PinTheme(
-                                height: 40,
-                                width: 35,
-                                textStyle: const TextStyle(
-                                    fontSize: 20,
-                                    color: Color.fromARGB(255, 56, 94, 128),
-                                    fontWeight: FontWeight.w600),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: const Color.fromARGB(
-                                        255, 161, 163, 165),
+                        ),
+                      ),
+
+                      // Verification
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 10),
+                            if (controller._pageIndex.value == 1)
+                              FutureBuilder(
+                                future: controller._formattedPhoneNumber,
+                                builder: (ctx, asp) {
+                                  return Text(
+                                    'enterTheVerificationCodeSentTo'.trParams(
+                                      {"phoneNumber": asp.data ?? ""},
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  );
+                                },
+                              ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.watch_later_outlined),
+                                const SizedBox(width: 10),
+                                Text("${controller.secondsLeft.value}s"),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Center(
+                              child: Pinput(
+                                length: 6,
+                                onCompleted: (val) {
+                                  if (controller.secondsLeft.value <= 0) {
+                                    showToast("Verification time out");
+                                  } else {
+                                    controller.saveCredentials(val);
+                                  }
+                                  // controller.saveCredentials(val);
+                                },
+                                controller: controller._piniputController,
+                                defaultPinTheme: PinTheme(
+                                  height: 40,
+                                  width: 35,
+                                  textStyle: const TextStyle(
+                                      fontSize: 20,
+                                      color: Color.fromARGB(255, 56, 94, 128),
+                                      fontWeight: FontWeight.w600),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color.fromARGB(
+                                          255, 161, 163, 165),
+                                    ),
+                                    borderRadius: BorderRadius.circular(5),
                                   ),
-                                  borderRadius: BorderRadius.circular(5),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 50),
-                          Text('didNotReicievedCode'.tr),
-                          TextButton(
-                            onPressed: controller.isLoading.isTrue
-                                ? null
-                                : controller.sendSmsCode,
-                            child: Text('resend'.tr),
-                          )
-                        ],
+                            const SizedBox(height: 50),
+                            Text('didNotReicievedCode'.tr),
+                            TextButton(
+                              onPressed: controller.isLoading.isTrue
+                                  ? null
+                                  : controller.sendSmsCode,
+                              child: Text('resend'.tr),
+                            )
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              if (controller.isLoading.isTrue)
-                const LinearProgressIndicator(
-                  color: Color.fromRGBO(96, 15, 116, 1),
-                ),
-              if (controller._isVerifyingPhone.isTrue)
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.5),
-                    // borderRadius: BorderRadius.circular(10),
+                    ],
                   ),
-                  child: const CupertinoActivityIndicator(radius: 50),
-                )
-            ],
+                ),
+                if (controller.isLoading.isTrue)
+                  const LinearProgressIndicator(
+                    color: Color.fromRGBO(96, 15, 116, 1),
+                  ),
+                if (controller._isVerifyingPhone.isTrue)
+                  Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.5),
+                      // borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const CupertinoActivityIndicator(radius: 50),
+                  )
+              ],
+            ),
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,

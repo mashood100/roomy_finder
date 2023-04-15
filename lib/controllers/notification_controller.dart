@@ -332,12 +332,11 @@ class NotificationController {
       final payload = json.decode(remoteMessage.data["payload"]);
 
       final message = ChatMessage.fromMap(payload["message"]);
-      final sender = ChatUser.fromMap(payload["sender"]);
-      final reciever = ChatUser.fromMap(payload["reciever"]);
 
-      final conv = ChatConversation.newConversation(
-        me: reciever,
-        friend: sender,
+      final conv = ChatConversation(
+        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
+        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
+        createdAt: DateTime.now(),
         lastMessage: message,
       );
 
@@ -431,12 +430,10 @@ class NotificationController {
 
       final message = ChatMessage.fromMap(payload["message"]);
 
-      final sender = ChatUser.fromMap(payload["sender"]);
-      final reciever = ChatUser.fromMap(payload["reciever"]);
-
-      final conv = ChatConversation.newConversation(
-        me: reciever,
-        friend: sender,
+      final conv = ChatConversation(
+        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
+        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
+        createdAt: DateTime.now(),
         lastMessage: message,
       );
 

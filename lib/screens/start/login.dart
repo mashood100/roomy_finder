@@ -118,186 +118,194 @@ class LoginScreen extends StatelessWidget {
     return Obx(() {
       return Scaffold(
         appBar: AppBar(toolbarHeight: 0),
-        body: Stack(
-          children: [
-            const BackButton(),
-            Form(
-              key: controller.formkey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Image.asset(
-                        "assets/images/logo.png",
-                        height: 150,
-                        width: 150,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: ROOMY_PURPLE,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.elliptical(50, 20),
-                      ),
-                    ),
-                    child: DefaultTextStyle(
-                      style: const TextStyle(color: Colors.white),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+          child: Stack(
+            children: [
+              const BackButton(),
+              Form(
+                key: controller.formkey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: Image.asset(
+                          "assets/images/logo.png",
+                          height: 150,
+                          width: 150,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Login",
-                                style: TextStyle(
-                                  fontSize: 30,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text("Email"),
-                            const SizedBox(height: 5),
-                            InlineTextField(
-                              hintText: "emailAddress".tr,
-                              controller: controller._emailController,
-                              suffixIcon: const Icon(CupertinoIcons.mail),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-
-                                if (!value.isEmail) return 'invalidEmail'.tr;
-
-                                return null;
-                              },
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            const SizedBox(height: 10),
-                            const Text("Password"),
-                            const SizedBox(height: 5),
-                            InlineTextField(
-                              hintText: "enterYourPassword".tr,
-                              obscureText: controller.showPassword.isFalse,
-                              controller: controller._passwordController,
-                              suffixIcon: IconButton(
-                                onPressed: controller.showPassword.toggle,
-                                icon: controller.showPassword.isTrue
-                                    ? const Icon(CupertinoIcons.eye_slash_fill)
-                                    : const Icon(CupertinoIcons.eye_fill),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'thisFieldIsRequired'.tr;
-                                }
-
-                                return null;
-                              },
-                              keyboardType: TextInputType.visiblePassword,
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: ROOMY_ORANGE,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  side: const BorderSide(color: ROOMY_ORANGE),
-                                ),
-                                onPressed: controller.isLoading.isTrue
-                                    ? null
-                                    : controller._login,
-                                child: const Text(
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: const BoxDecoration(
+                        color: ROOMY_PURPLE,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.elliptical(50, 40),
+                        ),
+                      ),
+                      child: DefaultTextStyle(
+                        style: const TextStyle(color: Colors.white),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(height: 10),
+                              const Center(
+                                child: Text(
                                   "Login",
                                   style: TextStyle(
+                                    fontSize: 30,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            ),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  child: Checkbox(
-                                    checkColor: ROOMY_ORANGE,
-                                    value: controller.rememberMe.isTrue,
-                                    onChanged: controller.isLoading.isTrue
-                                        ? null
-                                        : (_) => controller.rememberMe.toggle(),
-                                  ),
+                              const SizedBox(height: 20),
+                              const Text("Email"),
+                              const SizedBox(height: 5),
+                              InlineTextField(
+                                hintText: "emailAddress".tr,
+                                controller: controller._emailController,
+                                suffixIcon: const Icon(CupertinoIcons.mail),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+
+                                  if (!value.isEmail) return 'invalidEmail'.tr;
+
+                                  return null;
+                                },
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              const SizedBox(height: 10),
+                              const Text("Password"),
+                              const SizedBox(height: 5),
+                              InlineTextField(
+                                hintText: "enterYourPassword".tr,
+                                obscureText: controller.showPassword.isFalse,
+                                controller: controller._passwordController,
+                                suffixIcon: IconButton(
+                                  onPressed: controller.showPassword.toggle,
+                                  icon: controller.showPassword.isTrue
+                                      ? const Icon(
+                                          CupertinoIcons.eye_slash_fill)
+                                      : const Icon(CupertinoIcons.eye_fill),
                                 ),
-                                const SizedBox(width: 10),
-                                Text("rememberMe".tr),
-                                const Spacer(),
-                                TextButton(
-                                  onPressed: () =>
-                                      Get.toNamed('/reset_password'),
-                                  child: Text(
-                                    'forgotPassword'.tr,
-                                    style: const TextStyle(color: ROOMY_ORANGE),
-                                  ),
-                                )
-                              ],
-                            ),
-                            const Divider(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Get.off(() => const RegistrationScreen()),
-                                  child: const Text(
-                                    'Sign Up',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Get.offAllNamed("/home");
-                                  },
-                                  style: TextButton.styleFrom(
-                                    // backgroundColor: ROOMY_ORANGE,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+
+                                  return null;
+                                },
+                                keyboardType: TextInputType.visiblePassword,
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: ROOMY_ORANGE,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(5),
                                     ),
+                                    side: const BorderSide(color: ROOMY_ORANGE),
                                   ),
+                                  onPressed: controller.isLoading.isTrue
+                                      ? null
+                                      : controller._login,
                                   child: const Text(
-                                    "Skip",
+                                    "Login",
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                )
-                              ],
-                            ),
-                          ],
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    child: Checkbox(
+                                      checkColor: ROOMY_ORANGE,
+                                      value: controller.rememberMe.isTrue,
+                                      onChanged: controller.isLoading.isTrue
+                                          ? null
+                                          : (_) =>
+                                              controller.rememberMe.toggle(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text("rememberMe".tr),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Get.toNamed('/reset_password'),
+                                    child: Text(
+                                      'forgotPassword'.tr,
+                                      style:
+                                          const TextStyle(color: ROOMY_ORANGE),
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const Divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Get.off(
+                                        () => const RegistrationScreen()),
+                                    child: const Text(
+                                      'Sign Up',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Get.offAllNamed("/home");
+                                    },
+                                    style: TextButton.styleFrom(
+                                      // backgroundColor: ROOMY_ORANGE,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Skip",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                ],
+                    )
+                  ],
+                ),
               ),
-            ),
-            if (controller.isLoading.isTrue)
-              const LinearProgressIndicator(
-                color: Color.fromRGBO(96, 15, 116, 1),
-              ),
-          ],
+              if (controller.isLoading.isTrue)
+                const LinearProgressIndicator(
+                  color: Color.fromRGBO(96, 15, 116, 1),
+                ),
+            ],
+          ),
         ),
       );
     });

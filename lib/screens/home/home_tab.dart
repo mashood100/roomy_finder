@@ -456,7 +456,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     ),
                     if (controller._targetAds.value == "Room") ...[
                       Padding(
-                        padding: const EdgeInsets.only(left: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -503,7 +503,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     ],
                     if (controller._targetAds.value == "Roommate") ...[
                       Padding(
-                        padding: const EdgeInsets.only(left: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -577,7 +577,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     // Merged grid
                     if (controller._targetAds.value == "All") ...[
                       Padding(
-                        padding: const EdgeInsets.only(left: 5),
+                        padding:
+                            const EdgeInsets.only(left: 5, top: 10, bottom: 10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: const [

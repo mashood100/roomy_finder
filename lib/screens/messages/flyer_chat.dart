@@ -44,23 +44,6 @@ class FlyerChatScreenController extends GetxController
 
   late final AudioPlayer _audioPlayer;
 
-  Map<String, String?> get _sender => {
-        "id": conversation.me.id,
-        "firstName": conversation.me.firstName,
-        "lastName": conversation.me.lastName,
-        "profilePicture": conversation.me.profilePicture,
-        "fcmToken": conversation.me.fcmToken,
-        "createdAt": conversation.me.createdAt.toIso8601String(),
-      };
-  Map<String, String?> get _reciever => {
-        "id": conversation.friend.id,
-        "firstName": conversation.friend.firstName,
-        "lastName": conversation.friend.lastName,
-        "profilePicture": conversation.friend.profilePicture,
-        "fcmToken": conversation.friend.fcmToken,
-        "createdAt": conversation.friend.createdAt.toIso8601String(),
-      };
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     conversation.loadMessages().then((msgs) {
@@ -227,8 +210,6 @@ class FlyerChatScreenController extends GetxController
             "fileName": file.name,
             "fileSize": file.size,
             "replyId": _currentRepliedMessage?.id,
-            "sender": _sender,
-            "reciever": _reciever,
           },
         );
 
@@ -343,8 +324,6 @@ class FlyerChatScreenController extends GetxController
           "fileName": result.name,
           "fileSize": bytes.length,
           "replyId": _currentRepliedMessage?.id,
-          "sender": _sender,
-          "reciever": _reciever,
         },
       );
 
@@ -448,8 +427,6 @@ class FlyerChatScreenController extends GetxController
           "recieverId": conversation.friend.id,
           "recieverFcmToken": conversation.friend.fcmToken,
           "replyId": _currentRepliedMessage?.id,
-          "sender": _sender,
-          "reciever": _reciever,
         },
       );
 
@@ -568,9 +545,11 @@ class FlyerChatScreen extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              foregroundImage: CachedNetworkImageProvider(
-                conversation.friend.profilePicture,
-              ),
+              foregroundImage: conversation.friend.profilePicture != null
+                  ? CachedNetworkImageProvider(
+                      conversation.friend.profilePicture!,
+                    )
+                  : null,
             ),
             const SizedBox(width: 10),
             Text(conversation.friend.fullName)
@@ -750,16 +729,20 @@ class FlyerChatScreen extends StatelessWidget {
               if (userId == conversation.me.id) {
                 return CircleAvatar(
                   radius: 20,
-                  foregroundImage: CachedNetworkImageProvider(
-                    conversation.me.profilePicture,
-                  ),
+                  foregroundImage: conversation.me.profilePicture != null
+                      ? CachedNetworkImageProvider(
+                          conversation.me.profilePicture!,
+                        )
+                      : null,
                 );
               }
               return CircleAvatar(
                 radius: 20,
-                foregroundImage: CachedNetworkImageProvider(
-                  conversation.friend.profilePicture,
-                ),
+                foregroundImage: conversation.friend.profilePicture != null
+                    ? CachedNetworkImageProvider(
+                        conversation.friend.profilePicture!,
+                      )
+                    : null,
               );
             },
             bubbleBuilder: (
@@ -798,40 +781,3 @@ enum AttachedTypes {
   videoCammera,
   any
 }
-
-// Future<void> updateChatMessage(RemoteMessage remoteMessage) async {
-//   AppController.instance.haveNewMessage(false);
-
-//   if (remoteMessage.data["event"] == "new-message") {
-//     try {
-//       final payload = json.decode(remoteMessage.data["payload"]);
-
-//       final message = ChatMessage.fromMap(payload["message"]);
-//       final sender = ChatUser.fromMap(payload["sender"]);
-//       final reciever = ChatUser.fromMap(payload["reciever"]);
-
-//       final conv = ChatConversation.newConversation(reciever, sender);
-//       await conv.loadMessages();
-
-//       final messageIndex = conv.messages.indexOf(message);
-
-//       if (messageIndex == -1) return;
-
-//       conv.messages[messageIndex].isRead
-
-//       final convKey =
-//           ChatConversation.createConvsertionKey(reciever.id, sender.id);
-
-//       if (convKey == conversation.key) {
-//         conversation.messages.insert(0, message);
-//         update();
-//         _audioPlayer
-//             .setAsset("assets/audio/in_chat_new_message_sound.mp3")
-//             .then((value) => _audioPlayer.play());
-//       }
-//     } catch (e, trace) {
-//       Get.log('$e');
-//       Get.log('$trace');
-//     }
-//   }
-// }
