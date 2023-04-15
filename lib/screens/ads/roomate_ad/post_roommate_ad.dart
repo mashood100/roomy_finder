@@ -95,8 +95,6 @@ class _PostRoommateAdController extends LoadingController {
 
   @override
   void onInit() {
-    _pageController = PageController();
-
     if (oldData != null) {
       oldImages.addAll(oldData!.images);
       oldVideos.addAll(oldData!.videos);
@@ -120,7 +118,9 @@ class _PostRoommateAdController extends LoadingController {
       aboutYou["astrologicalSign"] =
           oldData!.aboutYou["astrologicalSign"] as String?;
       aboutYou["gender"] = oldData!.aboutYou["gender"] as String?;
-      aboutYou["age"] = oldData!.aboutYou["age"] as String?;
+      if (oldData!.aboutYou["age"] != null) {
+        aboutYou["age"] = oldData!.aboutYou["age"].toString();
+      }
       aboutYou["occupation"] = oldData!.aboutYou["occupation"] as String?;
       aboutYou["lifeStyle"] = oldData!.aboutYou["lifeStyle"] as String?;
 
@@ -132,6 +132,7 @@ class _PostRoommateAdController extends LoadingController {
       socialPreferences.value = oldData!.socialPreferences;
     }
     super.onInit();
+    _pageController = PageController();
   }
 
   @override
