@@ -130,8 +130,8 @@ class LoginScreen extends StatelessWidget {
                     child: Center(
                       child: Image.asset(
                         "assets/images/logo.png",
-                        height: 100,
-                        width: 100,
+                        height: 150,
+                        width: 150,
                       ),
                     ),
                   ),
@@ -146,7 +146,7 @@ class LoginScreen extends StatelessWidget {
                       style: const TextStyle(color: Colors.white),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 20,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,9 +162,10 @@ class LoginScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 20),
+                            const Text("Email"),
+                            const SizedBox(height: 5),
                             InlineTextField(
-                              labelText: "email".tr,
                               hintText: "emailAddress".tr,
                               controller: controller._emailController,
                               suffixIcon: const Icon(CupertinoIcons.mail),
@@ -180,8 +181,9 @@ class LoginScreen extends StatelessWidget {
                               keyboardType: TextInputType.emailAddress,
                             ),
                             const SizedBox(height: 10),
+                            const Text("Password"),
+                            const SizedBox(height: 5),
                             InlineTextField(
-                              labelText: "password".tr,
                               hintText: "enterYourPassword".tr,
                               obscureText: controller.showPassword.isFalse,
                               controller: controller._passwordController,

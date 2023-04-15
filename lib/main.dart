@@ -8,7 +8,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:month_year_picker/month_year_picker.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
@@ -28,10 +27,6 @@ import 'package:roomy_finder/utilities/data.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  if (Platform.isAndroid) {
-    await AndroidInAppWebViewController.setWebContentsDebuggingEnabled(true);
-  }
 
   // final pref = await SharedPreferences.getInstance();
   // pref.clear();
@@ -116,7 +111,7 @@ class MyApp extends StatelessWidget {
         helperMaxLines: 3,
         errorMaxLines: 3,
       ),
-      fontFamily: 'Roboto',
+      fontFamily: 'Avro',
       appBarTheme: const AppBarTheme(
         backgroundColor: ROOMY_PURPLE,
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 22),
@@ -172,7 +167,7 @@ class MyApp extends StatelessWidget {
       ),
       // cardTheme: const CardTheme(color: Color.fromARGB(255, 1, 39, 70)),
       // iconTheme: const IconThemeData(color: Color.fromARGB(255, 0, 109, 4)),
-      fontFamily: 'Roboto',
+      fontFamily: 'Avro',
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         hintStyle: const TextStyle(color: Colors.grey),

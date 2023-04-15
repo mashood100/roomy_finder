@@ -1,12 +1,12 @@
-library home_screen;
-
 import 'dart:async';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
+import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -23,11 +23,13 @@ import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/home/chat_tab.dart';
 import 'package:roomy_finder/screens/home/maintenance_tab.dart';
-import 'package:roomy_finder/screens/user/contact_us.dart';
+import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
-import 'package:roomy_finder/screens/user/view_pdf.dart';
+import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 import 'package:roomy_finder/utilities/data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
   final currentTabIndex = 2.obs;
@@ -37,6 +39,7 @@ class HomeController extends LoadingController {
 
   @override
   void onInit() {
+    if (!AppController.me.isGuest) _fetchNewMessages();
     tabs.addAll(const [
       AccountTab(),
       MessagesTab(),
@@ -88,6 +91,12 @@ class HomeController extends LoadingController {
     });
   }
 
+  @override
+  void onClose() {
+    if (_popTimer != null) _popTimer!.cancel();
+    super.onClose();
+  }
+
   // Initial Remote message handler
   Future<void> _handleInitialMessage() async {
     final message = await FirebaseMessaging.instance.getInitialMessage();
@@ -125,10 +134,68 @@ class HomeController extends LoadingController {
     }
   }
 
-  @override
-  void onClose() {
-    if (_popTimer != null) _popTimer!.cancel();
-    super.onClose();
+  Future<void> _logout(BuildContext context) async {
+    final shouldLogout = await showCupertinoDialog(
+        context: context,
+        builder: (context) {
+          return CupertinoAlertDialog(
+            title: const Text('Roomy Finder'),
+            content: const Text("Are you sure yo want to logout?"),
+            actions: [
+              CupertinoDialogAction(
+                child: Text("no".tr),
+                onPressed: () => Get.back(result: false),
+              ),
+              CupertinoDialogAction(
+                child: Text("yes".tr),
+                onPressed: () => Get.back(result: true),
+              ),
+            ],
+          );
+        });
+    if (shouldLogout == true) {
+      AppController.instance.logout();
+      Get.offAllNamed('/login');
+    }
+  }
+
+  Future<void> _fetchNewMessages() async {
+    try {
+      DateTime? lastDate;
+      final pref = await SharedPreferences.getInstance();
+      final value = pref.getString("last-message-fetch-date");
+
+      if (value != null) lastDate = DateTime.parse(value);
+
+      final conversations = await ChatConversation.getAllSavedChats(
+        AppController.me.id,
+      );
+
+      final messages = await ChatConversation.fetchMessages(lastDate);
+
+      if (messages.isNotEmpty) {
+        AppController.instance.haveNewMessage(true);
+      }
+
+      for (var m in messages) {
+        final convKey =
+            ChatConversation.createConvsertionKey(m.recieverId, m.senderId);
+
+        final conv = conversations.firstWhereOrNull((e) => e.key == convKey);
+        if (conv != null) {
+          conv.lastMessage = m;
+          conv.saveChat();
+        }
+        m.saveToSameKeyLocaleMessages(convKey);
+      }
+
+      pref.setString(
+        "last-message-fetch-date",
+        DateTime.now().toIso8601String(),
+      );
+    } catch (e) {
+      Get.log("$e");
+    }
   }
 }
 
@@ -220,7 +287,14 @@ class HomeDrawer extends StatelessWidget {
               }),
             if (!AppController.me.isGuest)
               ListTile(
+                // leading: Image.asset(
+                //   "assets/icons/drawer/edit.png",
+                //   width: 40,
+                //   height: 40,
+                //   fit: BoxFit.cover,
+                // ),
                 leading: const CircleAvatar(
+                  // foregroundImage: AssetImage("assets/icons/drawer/edit.png"),
                   radius: 18,
                   backgroundColor: Colors.green,
                   child: Icon(Icons.edit, color: Colors.white),
@@ -244,9 +318,37 @@ class HomeDrawer extends StatelessWidget {
                 ),
               ),
             ),
+            ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/home.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
+              leading: const CircleAvatar(
+                radius: 18,
+                // foregroundImage: AssetImage("assets/icons/drawer/home.png"),
+                backgroundColor: ROOMY_PURPLE,
+                child: Icon(Icons.home, color: Colors.white),
+              ),
+              title: const Text("Home"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                controller.currentTabIndex(2);
+                Get.back();
+              },
+            ),
             if (!AppController.me.isGuest)
               ListTile(
+                // leading: Image.asset(
+                //   "assets/icons/drawer/account.png",
+                //   width: 40,
+                //   height: 40,
+                //   fit: BoxFit.cover,
+                // ),
                 leading: const CircleAvatar(
+                  // foregroundImage:
+                  //     AssetImage("assets/icons/drawer/account.png"),
                   radius: 18,
                   backgroundColor: ROOMY_ORANGE,
                   child: Icon(Icons.person, color: Colors.white),
@@ -259,6 +361,12 @@ class HomeDrawer extends StatelessWidget {
                 },
               ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/plus.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.blue,
@@ -274,14 +382,18 @@ class HomeDrawer extends StatelessWidget {
                   Get.to(() => const PostPropertyAdScreen());
                 } else if (AppController.me.isRoommate) {
                   Get.to(() {
-                    return const PostRoommateAdScreen(
-                      isPremium: true,
-                    );
+                    return const PostRoommateAdScreen();
                   });
                 }
               },
             ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/contact_us.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.pink,
@@ -295,6 +407,12 @@ class HomeDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/edit_article.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: ROOMY_ORANGE,
@@ -308,6 +426,12 @@ class HomeDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/info.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.green,
@@ -326,6 +450,12 @@ class HomeDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/lock.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.red,
@@ -344,6 +474,12 @@ class HomeDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              // leading: Image.asset(
+              //   "assets/icons/drawer/share.png",
+              //   width: 40,
+              //   height: 40,
+              //   fit: BoxFit.cover,
+              // ),
               leading: const CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.purpleAccent,
@@ -356,6 +492,67 @@ class HomeDrawer extends StatelessWidget {
                 shareApp();
               },
             ),
+            ListTile(
+              leading: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.red,
+                child: Icon(Icons.logout, color: Colors.white),
+              ),
+              title: const Text("Logout"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                controller._logout(Get.context!);
+              },
+            ),
+            const Divider(height: 10),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                {
+                  "url":
+                      "https://www.tiktok.com/@roomyfinder?_t=8bNtaBqPwQr&_r=1",
+                  "assetImage": "assets/images/social/tiktok.png",
+                  "label": "Tiktok",
+                },
+                {
+                  "url": "https://www.facebook.com/roomyfinder?mibextid=LQQJ4d",
+                  "assetImage": "assets/images/social/facebook.png",
+                  "label": "Facebook",
+                },
+                {
+                  "url":
+                      "https://instagram.com/roomyfinder?igshid=YjNmNGQ3MDY=",
+                  "assetImage": "assets/images/social/instagram.png",
+                  "label": "Instagram",
+                },
+                {
+                  "assetImage": "assets/images/social/twitter.png",
+                  "label": "Twitter",
+                },
+                {
+                  "assetImage": "assets/images/social/snapchat.png",
+                  "label": "Snapchat",
+                },
+              ].map((e) {
+                return GestureDetector(
+                  onTap: () async {
+                    Get.back();
+                    if (e["url"] == null) {
+                      showToast("Comming soon...");
+                      return;
+                    }
+                    var url = Uri.parse(e["url"]!);
+                    if (await canLaunchUrl(url)) {
+                      launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Image.asset(e["assetImage"]!, width: 40, height: 40),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),

@@ -25,7 +25,7 @@ class WelcomeScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Spacer(),
+              const Spacer(flex: 3),
               Center(
                 child: Image.asset(
                   "assets/images/logo.png",
@@ -33,13 +33,13 @@ class WelcomeScreen extends StatelessWidget {
                   width: 150,
                 ),
               ),
-              const SizedBox(height: 10),
               const Text(
                 "Roomy ",
                 style: TextStyle(
                   color: ROOMY_PURPLE,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 20,
+                  fontFamily: "Avro",
                 ),
               ),
               const Text(
@@ -47,11 +47,11 @@ class WelcomeScreen extends StatelessWidget {
                 style: TextStyle(
                   color: ROOMY_ORANGE,
                   fontWeight: FontWeight.bold,
-                  fontSize: 22,
+                  fontSize: 24,
+                  fontFamily: "Avro",
                 ),
               ),
-              const SizedBox(height: 10),
-              const Spacer(),
+              const SizedBox(height: 20),
               const Text(
                 "Welcome ",
                 style: TextStyle(
@@ -59,11 +59,11 @@ class WelcomeScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 10),
+              const Spacer(),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 50, vertical: 50),
+                    const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
                 decoration: const BoxDecoration(
                   color: ROOMY_PURPLE,
                   borderRadius: BorderRadius.vertical(
@@ -73,7 +73,7 @@ class WelcomeScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 50),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
@@ -119,6 +119,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: TextButton(

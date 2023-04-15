@@ -250,8 +250,12 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/favorite.png", height: 30),
-      icon: Image.asset("assets/icons/favorite_white.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/favorite.png", height: 30),
+      icon: Image.asset(
+        "assets/icons/home/favorite.png",
+        height: 30,
+        color: Colors.white,
+      ),
       label: 'Favorites'.tr,
     );
   }

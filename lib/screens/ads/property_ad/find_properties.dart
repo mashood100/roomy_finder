@@ -1,10 +1,10 @@
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/advertising.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -19,7 +19,6 @@ import 'package:roomy_finder/utilities/data.dart';
 
 class _FindPropertiesController extends LoadingController {
   final RxMap<String, String?> filter;
-  final _carouselIndex = 0.obs;
 
   _FindPropertiesController({
     Map<String, String?>? filter,
@@ -233,14 +232,23 @@ class _FindPropertiesController extends LoadingController {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        OutlinedButton(
+                        ElevatedButton(
                           onPressed: () {
                             filter.clear();
                             this.filter.clear();
                             _fetchData();
                             Get.back();
                           },
-                          child: const Text("Clear Filter"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ROOMY_ORANGE,
+                          ),
+                          child: const Text(
+                            "Clear Filter",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -313,109 +321,65 @@ class FindPropertiesAdsScreen extends StatelessWidget {
           return CustomScrollView(
             slivers: [
               SliverAppBar.large(
+                backgroundColor: Colors.white,
                 automaticallyImplyLeading: false,
                 toolbarHeight: 0,
                 collapsedHeight: 0,
-                expandedHeight: AppController.me.isGuest ? 310 : 260,
+                expandedHeight: AppController.me.isGuest ? 330 : 280,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Builder(builder: (context) {
-                    const list = [
-                      "assets/images/roommates_1.jpg",
-                      "assets/images/roommates_2.jpg",
-                      "assets/images/roommates_3.jpg",
-                    ];
-                    return Column(
-                      children: [
-                        if (AppController.me.isGuest)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () {
-                                  Get.offAllNamed("/registration");
-                                },
-                                child: const Text(
-                                  "REGISTER",
-                                  style: TextStyle(
-                                    color: ROOMY_PURPLE,
-                                    fontSize: 16,
-                                  ),
+                  background: Column(
+                    children: [
+                      if (AppController.me.isGuest)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Get.offAllNamed("/registration");
+                              },
+                              child: const Text(
+                                "REGISTER",
+                                style: TextStyle(
+                                  color: ROOMY_PURPLE,
+                                  fontSize: 16,
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.offAllNamed("/login");
-                                },
-                                child: const Text(
-                                  "LOGIN",
-                                  style: TextStyle(
-                                    color: ROOMY_ORANGE,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        Expanded(
-                          child: SizedBox(
-                            width: Get.width,
-                            child: CarouselSlider(
-                              items: list.map((e) {
-                                return Image.asset(
-                                  e,
-                                  width: Get.width,
-                                  fit: BoxFit.fitWidth,
-                                );
-                              }).toList(),
-                              options: CarouselOptions(
-                                autoPlayInterval: const Duration(seconds: 10),
-                                pageSnapping: true,
-                                autoPlay: true,
-                                viewportFraction: 1,
-                                onPageChanged: (index, reason) {
-                                  controller._carouselIndex(index);
-                                },
-                              ),
-                              disableGesture: true,
                             ),
-                          ),
+                            TextButton(
+                              onPressed: () {
+                                Get.offAllNamed("/login");
+                              },
+                              child: const Text(
+                                "LOGIN",
+                                style: TextStyle(
+                                  color: ROOMY_ORANGE,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Obx(() {
-                          return Container(
-                            color: Colors.white,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(list.length, (ind) {
-                                return Container(
-                                  height: 10,
-                                  width: 10,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color:
-                                        ind == controller._carouselIndex.value
-                                            ? ROOMY_PURPLE
-                                            : Colors.grey,
-                                  ),
-                                );
-                              }),
-                            ),
-                          );
-                        }),
-                        TextField(
+                      const Expanded(child: AdvertisingWidget()),
+                      Container(
+                        color: Get.theme.scaffoldBackgroundColor,
+                        padding: const EdgeInsets.fromLTRB(30, 0, 30, 0),
+                        child: TextField(
                           readOnly: true,
                           onTap: controller._showFilter,
                           decoration: InputDecoration(
                             fillColor: Colors.white,
                             hintText: "Filter by gender, budget",
-                            suffixIcon: IconButton(
-                              onPressed: controller._showFilter,
-                              icon: const Icon(Icons.filter_list),
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: GestureDetector(
+                                onTap: controller._showFilter,
+                                child: Image.asset(
+                                  "assets/icons/filter.png",
+                                  height: 30,
+                                  width: 30,
+                                ),
+                              ),
                             ),
                             contentPadding:
                                 const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -425,10 +389,10 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                           ),
                           textInputAction: TextInputAction.search,
                         ),
-                        Container(color: Colors.white, height: 10),
-                      ],
-                    );
-                  }),
+                      ),
+                      Container(color: Colors.white, height: 10),
+                    ],
+                  ),
                 ),
               ),
               if (controller.hasFetchError.isTrue)
@@ -468,16 +432,19 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final ad = controller.ads[index];
-                      return PropertyAdWidget(
-                        ad: ad,
-                        onTap: () async {
-                          if (AppController.me.isGuest) {
-                            showToast("Please register to see ad details");
-                            return;
-                          }
-                          await Get.to(() => ViewPropertyAd(ad: ad));
-                          controller.update();
-                        },
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: PropertyAdWidget(
+                          ad: ad,
+                          onTap: () async {
+                            if (AppController.me.isGuest) {
+                              showToast("Please register to see ad details");
+                              return;
+                            }
+                            await Get.to(() => ViewPropertyAd(ad: ad));
+                            controller.update();
+                          },
+                        ),
                       );
                     },
                     childCount: controller.ads.length,

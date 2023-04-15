@@ -15,6 +15,7 @@ import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/city_location.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -31,10 +32,9 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 
 class _PostRoommateAdController extends LoadingController {
-  final bool isPremium;
   final RoommateAd? oldData;
 
-  _PostRoommateAdController({required this.isPremium, this.oldData});
+  _PostRoommateAdController({this.oldData});
 
   final _movingDateController = TextEditingController();
 
@@ -61,35 +61,27 @@ class _PostRoommateAdController extends LoadingController {
     "type": "Studio",
     "rentType": "Monthly",
     "action": "HAVE ROOM",
-    "budget": "",
-    "description": "",
-    "movingDate": "",
   }.obs;
 
   final aboutYou = <String, Object?>{
-    "nationality": "Arabs",
-    "astrologicalSign": "ARIES",
-    "gender": "Male",
-    "age": "",
-    "occupation": "Student",
-    "lifeStyle": "Early Bird",
+    // "nationality": "Arab",
+    // "astrologicalSign": "ARIES",
+    // "gender": "Male",
+    // "age": "",
+    // "occupation": "Professional",
+    // "lifeStyle": "Early Bird",
   }.obs;
 
   final address = <String, String>{
-    "country": "",
-    "city": "",
-    "location": "",
-    "buildingName": "",
-    "appartmentNumber": "",
-    "floorNumber": "",
+    // "city": "",
+    // "location": "",
     "countryCode": AppController.instance.country.value.code,
   }.obs;
 
   final socialPreferences = {
-    "numberOfPeople": "1",
     "grouping": "Single",
     "gender": "Male",
-    "nationality": "Arabs",
+    "nationality": "Arab",
     "smoking": false,
     "cooking": false,
     "drinking": false,
@@ -112,29 +104,25 @@ class _PostRoommateAdController extends LoadingController {
       information["type"] = oldData!.type;
       information["rentType"] = oldData!.rentType;
       information["action"] = oldData!.action;
-      information["isPremium"] = oldData!.isPremium;
       information["budget"] = oldData!.budget.toString();
       information["description"] = oldData!.description;
       _movingDateController.text =
           _movingDateController.text = Jiffy(oldData!.movingDate).yMEd;
-      information["movingDate"] = oldData!.movingDate.toIso8601String();
+      if (oldData!.movingDate != null) {
+        information["movingDate"] = oldData!.movingDate?.toIso8601String();
+      }
 
-      address["country"] = oldData!.address["country"].toString();
-      address["city"] = oldData!.address["city"].toString();
-      address["location"] = oldData!.address["location"].toString();
-      address["buildingName"] = oldData!.address["buildingName"].toString();
-      address["appartmentNumber"] =
-          oldData!.address["appartmentNumber"].toString();
-      address["floorNumber"] = oldData!.address["floorNumber"].toString();
-      address["countryCode"] = oldData!.address["countryCode"].toString();
+      address["city"] = oldData!.address["city"] as String;
+      address["location"] = oldData!.address["location"] as String;
+      address["countryCode"] = oldData!.address["countryCode"] as String;
 
-      aboutYou["nationality"] = oldData!.aboutYou["nationality"].toString();
+      aboutYou["nationality"] = oldData!.aboutYou["nationality"] as String?;
       aboutYou["astrologicalSign"] =
-          oldData!.aboutYou["astrologicalSign"].toString();
-      aboutYou["gender"] = oldData!.aboutYou["gender"].toString();
-      aboutYou["age"] = oldData!.aboutYou["age"].toString();
-      aboutYou["occupation"] = oldData!.aboutYou["occupation"].toString();
-      aboutYou["lifeStyle"] = oldData!.aboutYou["lifeStyle"].toString();
+          oldData!.aboutYou["astrologicalSign"] as String?;
+      aboutYou["gender"] = oldData!.aboutYou["gender"] as String?;
+      aboutYou["age"] = oldData!.aboutYou["age"] as String?;
+      aboutYou["occupation"] = oldData!.aboutYou["occupation"] as String?;
+      aboutYou["lifeStyle"] = oldData!.aboutYou["lifeStyle"] as String?;
 
       languages.value =
           List<String>.from(oldData!.aboutYou["languages"] as List);
@@ -223,11 +211,9 @@ class _PostRoommateAdController extends LoadingController {
     List<String> videosUrls = [];
     try {
       aboutYou["languages"] = languages;
-      address["country"] = AppController.me.country;
 
       final data = {
         ...information,
-        "isPremium": isPremium,
         "address": address,
         "aboutYou": aboutYou,
         "socialPreferences": socialPreferences,
@@ -268,6 +254,9 @@ class _PostRoommateAdController extends LoadingController {
       data["images"] = [...imagesUrls, ...oldImages];
       data["videos"] = videosUrls;
 
+      if (data["description"] == null ||
+          "${data["description"]}".trim().isEmpty) data.remove("description");
+
       if (oldData == null) {
         final res =
             await ApiService.getDio.post("/ads/roommate-ad", data: data);
@@ -295,7 +284,7 @@ class _PostRoommateAdController extends LoadingController {
       } else {
         final res = await ApiService.getDio
             .put("/ads/roommate-ad/${oldData?.id}", data: data);
-
+        // print(res.data["details"]);
         if (res.statusCode != 200) {
           deleteManyFilesFromUrl(imagesUrls);
           deleteManyFilesFromUrl(videosUrls);
@@ -397,16 +386,13 @@ class _PostRoommateAdController extends LoadingController {
 }
 
 class PostRoommateAdScreen extends StatelessWidget {
-  const PostRoommateAdScreen(
-      {super.key, required this.isPremium, this.oldData});
+  const PostRoommateAdScreen({super.key, this.oldData});
 
-  final bool isPremium;
   final RoommateAd? oldData;
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(_PostRoommateAdController(
-      isPremium: isPremium,
       oldData: oldData,
     ));
     return WillPopScope(
@@ -461,33 +447,30 @@ class PostRoommateAdScreen extends StatelessWidget {
                   onTap: () {
                     controller.aboutYou["lifeStyle"] = "${e["value"]}";
                   },
-                  child: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      Container(
-                        decoration: shadowedBoxDecoration,
-                        padding: const EdgeInsets.all(10),
-                        alignment: Alignment.center,
-                        child: Column(
-                          children: [
-                            Expanded(child: Image.asset("${e["asset"]}")),
-                            Text(
-                              "${e["value"]}",
-                              style: const TextStyle(
-                                color: ROOMY_PURPLE,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                  child: Container(
+                    decoration: shadowedBoxDecoration,
+                    padding: const EdgeInsets.all(10),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Image.asset(
+                            "${e["asset"]}",
+                            color:
+                                controller.aboutYou["lifeStyle"] == e["value"]
+                                    ? null
+                                    : Colors.grey,
+                          ),
                         ),
-                      ),
-                      Icon(
-                        controller.aboutYou["lifeStyle"] == e["value"]
-                            ? Icons.check_circle_outline_outlined
-                            : Icons.circle_outlined,
-                        color: ROOMY_ORANGE,
-                      )
-                    ],
+                        Text(
+                          "${e["value"]}",
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -539,17 +522,15 @@ class PostRoommateAdScreen extends StatelessWidget {
                         "imageUrl": e,
                         "isFile": false,
                         "onViewImage": () {
-                          showModalBottomSheet(
-                            isScrollControlled: true,
-                            context: Get.context!,
-                            builder: (context) {
-                              return SafeArea(
-                                child: CachedNetworkImage(
-                                  imageUrl: e,
-                                ),
-                              );
-                            },
-                          );
+                          Get.to(transition: Transition.zoom, () {
+                            return ViewImages(
+                              images: controller.oldImages
+                                  .map((e) => CachedNetworkImageProvider(e))
+                                  .toList(),
+                              initialIndex: controller.oldImages.indexOf(e),
+                              title: oldData == null ? "Images" : "Old images",
+                            );
+                          });
                         }
                       };
                     }),
@@ -559,15 +540,15 @@ class PostRoommateAdScreen extends StatelessWidget {
                         "imageUrl": e.path,
                         "isFile": true,
                         "onViewImage": () {
-                          showModalBottomSheet(
-                            isScrollControlled: true,
-                            context: Get.context!,
-                            builder: (context) {
-                              return SafeArea(
-                                child: Image.file(File(e.path)),
-                              );
-                            },
-                          );
+                          Get.to(transition: Transition.zoom, () {
+                            return ViewImages(
+                              images: controller.images
+                                  .map((e) => FileImage(File(e.path)))
+                                  .toList(),
+                              initialIndex: controller.images.indexOf(e),
+                              title: oldData == null ? "Images" : "New images",
+                            );
+                          });
                         }
                       };
                     }),
@@ -734,7 +715,12 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ? null
                             : () => controller._pickPicture(),
                         icon: const Icon(Icons.image),
-                        label: Text("Images".tr),
+                        label: Text(
+                          "Images".tr,
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -747,7 +733,12 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ? null
                             : () => controller._pickPicture(gallery: false),
                         icon: const Icon(Icons.camera),
-                        label: Text("camera".tr),
+                        label: Text(
+                          "camera".tr,
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -760,7 +751,12 @@ class PostRoommateAdScreen extends StatelessWidget {
                             ? null
                             : controller._pickVideo,
                         icon: const Icon(Icons.video_camera_back),
-                        label: Text("Videos".tr),
+                        label: Text(
+                          "Videos".tr,
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -822,23 +818,12 @@ class PostRoommateAdScreen extends StatelessWidget {
                     }).toList()
                   ],
                 ),
-                // InlineDropdown<String>(
-                //   labelText: 'Property type'.tr,
-                //   value: controller.information["type"] as String,
-                //   items: const ["Studio", "Appartment", "House"],
-                //   onChanged: controller.isLoading.isTrue
-                //       ? null
-                //       : (val) {
-                //           if (val != null) {
-                //             controller.information["type"] = val;
-                //           }
-                //         },
-                // ),
+
                 const SizedBox(height: 20),
                 // Rent type
                 InlineDropdown<String>(
                   labelText: 'rentType'.tr,
-                  value: controller.information["rentType"] as String,
+                  value: controller.information["rentType"] as String?,
                   items: const ["Monthly", "Weekly", "Daily"],
                   onChanged: controller.isLoading.isTrue
                       ? null
@@ -856,21 +841,10 @@ class PostRoommateAdScreen extends StatelessWidget {
                   suffixText: AppController.instance.country.value.currencyCode,
                   hintText:
                       'Example 5000 ${AppController.instance.country.value.currencyCode}',
-                  initialValue: controller.information["budget"] as String,
+                  initialValue: controller.information["budget"] as String?,
                   enabled: controller.isLoading.isFalse,
                   onChanged: (value) =>
                       controller.information["budget"] = value,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'thisFieldIsRequired'.tr;
-                    }
-                    final numValue = int.tryParse(value);
-
-                    if (numValue == null || numValue < 0) {
-                      return 'invalidRoommateAdBudgetMessage'.tr;
-                    }
-                    return null;
-                  },
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(priceRegex)
@@ -886,15 +860,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                   controller: controller._movingDateController,
                   onChanged: (_) {},
                   enabled: controller.isLoading.isFalse,
-                  validator: (value) {
-                    final date = DateTime.tryParse(
-                        "${controller.information["movingDate"]}");
-                    if (date == null) {
-                      return 'thisFieldIsRequired'.tr;
-                    }
-
-                    return null;
-                  },
                   onTap: controller.pickMovingDate,
                 ),
                 const Divider(height: 40),
@@ -904,7 +869,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                   hintText: AppController.instance.country.value.isUAE
                       ? 'Example : Dubai'
                       : "Example : Riyadh",
-                  value: controller.address["city"]!.isEmpty
+                  value: controller.address["city"]?.isEmpty == true
                       ? null
                       : controller.address["city"],
                   items: CITIES_FROM_CURRENT_COUNTRY,
@@ -928,7 +893,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'Area',
                   hintText: "Select for area",
-                  value: controller.address["location"]!.isEmpty
+                  value: controller.address["location"]?.isEmpty == true
                       ? null
                       : controller.address["location"],
                   items: getLocationsFromCity(
@@ -978,7 +943,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                children: allAmenties
+                children: allAmenities
                     .map(
                       (e) => GestureDetector(
                         onTap: () {
@@ -988,38 +953,33 @@ class PostRoommateAdScreen extends StatelessWidget {
                             controller.amenities.add("${e["value"]}");
                           }
                         },
-                        child: Stack(
-                          alignment: Alignment.topRight,
-                          children: [
-                            Container(
-                              decoration: shadowedBoxDecoration,
-                              padding: const EdgeInsets.all(10),
-                              alignment: Alignment.center,
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 10),
-                                  Expanded(
-                                    child: Image.asset("${e["asset"]}"),
-                                  ),
-                                  Text(
-                                    "${e["value"]}",
-                                    style: const TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                        child: Container(
+                          decoration: shadowedBoxDecoration,
+                          padding: const EdgeInsets.all(10),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: Image.asset(
+                                  "${e["asset"]}",
+                                  color:
+                                      controller.amenities.contains(e["value"])
+                                          ? null
+                                          : Colors.grey,
+                                ),
                               ),
-                            ),
-                            Icon(
-                              controller.amenities.contains(e["value"])
-                                  ? Icons.check_circle_outline_outlined
-                                  : Icons.circle_outlined,
-                              color: ROOMY_ORANGE,
-                            )
-                          ],
+                              Text(
+                                "${e["value"]}",
+                                style: const TextStyle(
+                                  color: ROOMY_PURPLE,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     )
@@ -1046,31 +1006,10 @@ class PostRoommateAdScreen extends StatelessWidget {
                 ),
               ),
               const Divider(height: 30),
-
-              // People Count
               if (controller.information["action"] == "HAVE ROOM") ...[
-                // InlineDropdown<String>(
-                //   // labelWidth: Get.width * 0.3,
-                //   labelText: 'numberOfPeople'.tr,
-                //   value:
-                //       controller.socialPreferences["numberOfPeople"]
-                //           as String,
-                //   items: const ["1", "2"],
-                //   onChanged: controller.isLoading.isTrue
-                //       ? null
-                //       : (val) {
-                //           if (val != null) {
-                //             controller.socialPreferences[
-                //                 "numberOfPeople"] = val;
-                //           }
-                //         },
-                // ),
-                // const SizedBox(height: 20),
-                // Gender
-
                 InlineDropdown<String>(
                   labelText: 'gender'.tr,
-                  value: controller.socialPreferences["gender"] as String,
+                  value: controller.socialPreferences["gender"] as String?,
                   items: const ["Male", "Female", "Mix"],
                   onChanged: controller.isLoading.isTrue
                       ? null
@@ -1084,17 +1023,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Nationalities
                 InlineDropdown<String>(
                   labelText: 'nationality'.tr,
-                  value: controller.socialPreferences["nationality"] as String,
-                  items: const [
-                    "Arabs",
-                    "Pakistani",
-                    "Indian",
-                    "European",
-                    "Filipinos",
-                    "African",
-                    "Russian",
-                    "Mix",
-                  ],
+                  value: controller.socialPreferences["nationality"] as String?,
+                  items: allNationalities,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1105,7 +1035,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                 ),
                 const Divider(height: 40),
               ],
-
               const Center(
                 child: Text(
                   "Comfortable with :",
@@ -1116,7 +1045,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1136,36 +1064,32 @@ class PostRoommateAdScreen extends StatelessWidget {
                           controller.socialPreferences["${e["value"]}"] = true;
                         }
                       },
-                      child: Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          Container(
-                            decoration: shadowedBoxDecoration,
-                            padding: const EdgeInsets.all(10),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 10),
-                                Expanded(
-                                  child: Image.asset("${e["asset"]}"),
-                                ),
-                                Text(
-                                  "${e["label"]}",
-                                  style: const TextStyle(
-                                    color: ROOMY_PURPLE,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                      child: Container(
+                        decoration: shadowedBoxDecoration,
+                        padding: const EdgeInsets.all(10),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: Image.asset(
+                                "${e["asset"]}",
+                                color:
+                                    controller.socialPreferences[e["value"]] ==
+                                            true
+                                        ? null
+                                        : Colors.grey,
+                              ),
                             ),
-                          ),
-                          Icon(
-                            controller.socialPreferences[e["value"]] == true
-                                ? Icons.check_circle_outline_outlined
-                                : Icons.circle_outlined,
-                            color: ROOMY_ORANGE,
-                          )
-                        ],
+                            Text(
+                              "${e["label"]}",
+                              style: const TextStyle(
+                                color: ROOMY_PURPLE,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
@@ -1195,7 +1119,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Gender
                 InlineDropdown<String>(
                   labelText: 'gender'.tr,
-                  value: controller.aboutYou["gender"] as String,
+                  value: controller.aboutYou["gender"] as String?,
                   items: const ["Male", "Female"],
                   onChanged: controller.isLoading.isTrue
                       ? null
@@ -1211,21 +1135,18 @@ class PostRoommateAdScreen extends StatelessWidget {
                   labelText: 'age'.tr,
                   suffixText: "Years old",
                   hintText: "Enter your age",
-                  initialValue: controller.aboutYou["age"] as String,
+                  initialValue: controller.aboutYou["age"] as String?,
                   enabled: controller.isLoading.isFalse,
                   onChanged: (value) {
                     controller.aboutYou["age"] = value;
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'thisFieldIsRequired'.tr;
+                      return null;
                     }
                     final numValue = int.tryParse(value);
 
-                    if (numValue == null || numValue < 1) {
-                      return 'invalidPropertyAdQuantityMessage'.tr;
-                    }
-                    if (numValue > 80) {
+                    if (numValue == null || numValue > 80) {
                       return 'The maximum age is 80'.tr;
                     }
                     return null;
@@ -1239,7 +1160,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Occupation
                 InlineDropdown<String>(
                   labelText: 'occupation'.tr,
-                  value: controller.aboutYou["occupation"].toString(),
+                  value: controller.aboutYou["occupation"] as String?,
                   items: const ["Professional", "Student", "Other"],
                   onChanged: controller.isLoading.isTrue
                       ? null
@@ -1253,17 +1174,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Nationalities
                 InlineDropdown<String>(
                   labelText: 'nationality'.tr,
-                  value: controller.aboutYou["nationality"] as String,
-                  items: const [
-                    "Arabs",
-                    "Pakistani",
-                    "Indian",
-                    "European",
-                    "Filipinos",
-                    "African",
-                    "Russian",
-                    "Mix",
-                  ],
+                  value: controller.aboutYou["nationality"] as String?,
+                  items: allNationalities,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1276,7 +1188,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // astrologicalSign
                 InlineDropdown<String>(
                   labelText: 'astrologicalSign'.tr,
-                  value: controller.aboutYou["astrologicalSign"].toString(),
+                  value: controller.aboutYou["astrologicalSign"] as String?,
                   items: astrologicalSigns,
                   onChanged: controller.isLoading.isTrue
                       ? null
@@ -1357,7 +1269,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 : Colors.grey.shade200,
                       ),
                       initialValue:
-                          controller.information["description"] as String,
+                          controller.information["description"] as String?,
                       enabled: controller.isLoading.isFalse,
                       onChanged: (value) =>
                           controller.information["description"] = value,
@@ -1404,38 +1316,33 @@ class PostRoommateAdScreen extends StatelessWidget {
                             controller.interests.add("${e["value"]}");
                           }
                         },
-                        child: Stack(
-                          alignment: Alignment.topRight,
-                          children: [
-                            Container(
-                              decoration: shadowedBoxDecoration,
-                              padding: const EdgeInsets.all(10),
-                              alignment: Alignment.center,
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 10),
-                                  Expanded(
-                                    child: Image.asset("${e["asset"]}"),
-                                  ),
-                                  Text(
-                                    "${e["value"]}",
-                                    style: const TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                        child: Container(
+                          decoration: shadowedBoxDecoration,
+                          padding: const EdgeInsets.all(10),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: Image.asset(
+                                  "${e["asset"]}",
+                                  color:
+                                      controller.interests.contains(e["value"])
+                                          ? null
+                                          : Colors.grey,
+                                ),
                               ),
-                            ),
-                            Icon(
-                              controller.interests.contains(e["value"])
-                                  ? Icons.check_circle_outline_outlined
-                                  : Icons.circle_outlined,
-                              color: ROOMY_ORANGE,
-                            )
-                          ],
+                              Text(
+                                "${e["value"]}",
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     )
@@ -1472,7 +1379,8 @@ class PostRoommateAdScreen extends StatelessWidget {
                         ? Colors.grey
                         : Colors.grey.shade200,
                   ),
-                  initialValue: controller.information["description"] as String,
+                  initialValue:
+                      controller.information["description"] as String?,
                   enabled: controller.isLoading.isFalse,
                   onChanged: (value) =>
                       controller.information["description"] = value,
@@ -1540,40 +1448,32 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 controller.images.clear();
                               },
                               child: Card(
-                                child: Stack(
-                                  alignment: Alignment.topRight,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      alignment: Alignment.center,
-                                      decoration: const BoxDecoration(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(10),
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            blurRadius: 3,
-                                            blurStyle: BlurStyle.outer,
-                                            color: Colors.black54,
-                                            spreadRadius: -1,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        e,
-                                        style: const TextStyle(
-                                          color: ROOMY_PURPLE,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(10),
                                     ),
-                                    Icon(
-                                      controller.information["action"] == e
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    )
-                                  ],
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        blurRadius: 3,
+                                        blurStyle: BlurStyle.outer,
+                                        color: Colors.black54,
+                                        spreadRadius: -1,
+                                      ),
+                                    ],
+                                    color: controller.information["action"] == e
+                                        ? ROOMY_ORANGE
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    e,
+                                    style: const TextStyle(
+                                      color: ROOMY_PURPLE,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -1631,14 +1531,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 controller._moveToNextPage();
                                 break;
                               case 1:
-                                if (controller.images.isEmpty &&
-                                    controller.oldImages.isEmpty) {
-                                  showToast(
-                                    "You need at least one image",
-                                    severity: Severity.error,
-                                  );
-                                  return;
-                                }
                                 controller._moveToNextPage();
                                 break;
                               case 2:
@@ -1661,13 +1553,6 @@ class PostRoommateAdScreen extends StatelessWidget {
                                     ?.validate();
 
                                 if (isValid != true) return;
-
-                                if (controller.languages.isEmpty) {
-                                  showToast(
-                                    "Please choose at least one language",
-                                  );
-                                  return;
-                                }
 
                                 controller._moveToNextPage();
 
@@ -1694,23 +1579,9 @@ class PostRoommateAdScreen extends StatelessWidget {
 
                                 if (isValid != true) return;
 
-                                if (controller.languages.isEmpty) {
-                                  showToast(
-                                    "Please choose at least one language",
-                                  );
-                                  return;
-                                }
                                 controller._moveToNextPage();
                                 break;
                               case 2:
-                                if (controller.images.isEmpty &&
-                                    controller.oldImages.isEmpty) {
-                                  showToast(
-                                    "You need at least one image",
-                                    severity: Severity.error,
-                                  );
-                                  return;
-                                }
                                 controller._moveToNextPage();
 
                                 break;
@@ -1755,29 +1626,3 @@ class PostRoommateAdScreen extends StatelessWidget {
     );
   }
 }
-
-const astrologicalSigns = [
-  "ARIES",
-  "TAURUS",
-  "GEMINI",
-  "CANCER",
-  "LEO",
-  "VIRGO",
-  "LIBRA",
-  "SCORPIO",
-  "SAGITTARIUS",
-  "CAPRICORN",
-  "AQUARIUS",
-  "PISCES",
-];
-
-const allLanguages = [
-  "Arabic",
-  "English",
-  "French",
-  "Hindi",
-  "Indian",
-  "Persian",
-  "Russian",
-  "Ukrainian",
-];

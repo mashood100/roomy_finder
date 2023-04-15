@@ -8,6 +8,7 @@ import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 String relativeTimeText(DateTime dateTime) {
@@ -63,10 +64,10 @@ Future<bool> changeAppCountry(BuildContext context) async {
   return false;
 }
 
-String formatMoney(num price) {
+String formatMoney(num price, {String? name}) {
   final NumberFormat formatter = NumberFormat.currency(
     locale: "fr_FR",
-    name: "${AppController.instance.country.value.currencyCode} ",
+    name: name ?? AppController.instance.country.value.currencyCode,
     decimalDigits: price.toInt() == price.toDouble() ? 0 : 2,
   );
 
@@ -111,41 +112,28 @@ Future<List<T>> filterListData<T>(
                       child: Card(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color.fromRGBO(255, 123, 77, 1),
+                            color: selectInterests.contains(e)
+                                ? ROOMY_ORANGE
+                                : Colors.grey,
                             borderRadius: BorderRadius.circular(5),
                           ),
                           height: 100,
                           alignment: Alignment.center,
                           padding: const EdgeInsets.all(5),
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: selectInterests.contains(e),
-                                onChanged: (_) {
-                                  if (selectInterests.contains(e)) {
-                                    selectInterests.remove(e);
-                                  } else {
-                                    selectInterests.add(e);
-                                  }
-                                  setState(() {});
-                                },
+                          child: Builder(builder: (context) {
+                            if (itemBuilder != null) {
+                              return itemBuilder(
+                                  e, selectInterests.contains(e));
+                            }
+                            return Text(
+                              "$e",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
                               ),
-                              Builder(builder: (context) {
-                                if (itemBuilder != null) {
-                                  return itemBuilder(
-                                      e, selectInterests.contains(e));
-                                }
-                                return Text(
-                                  "$e",
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }),
-                            ],
-                          ),
+                              textAlign: TextAlign.center,
+                            );
+                          }),
                         ),
                       ),
                     ),

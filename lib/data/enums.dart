@@ -4,7 +4,7 @@ enum ChatMessageType { normal, info }
 
 enum UserAccountType { landlord, roommate }
 
-enum AdType { property, roommateMatch, roommatePremium }
+enum AdType { property, roommate }
 
 enum PropertyAdType { bed, partition, room, masterRoom, mix }
 

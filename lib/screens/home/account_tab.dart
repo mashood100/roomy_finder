@@ -1,44 +1,21 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
-import 'package:roomy_finder/screens/user/about.dart';
+import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
+import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
-class _AccountTabController extends LoadingController {
-  Future<void> _logout(BuildContext context) async {
-    final shouldLogout = await showCupertinoDialog(
-        context: context,
-        builder: (context) {
-          return CupertinoAlertDialog(
-            title: const Text('Roomy Finder'),
-            content: const Text("Are you sure yo want to logout?"),
-            actions: [
-              CupertinoDialogAction(
-                child: Text("no".tr),
-                onPressed: () => Get.back(result: false),
-              ),
-              CupertinoDialogAction(
-                child: Text("yes".tr),
-                onPressed: () => Get.back(result: true),
-              ),
-            ],
-          );
-        });
-    if (shouldLogout == true) {
-      AppController.instance.logout();
-      Get.offAllNamed('/login');
-    }
-  }
-}
+class _AccountTabController extends LoadingController {}
 
 class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   const AccountTab({super.key});
@@ -229,19 +206,68 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
               ),
             ),
-            // ListTile(
-            //   onTap: () => controller._logout(context),
-            //   leading: const CircleAvatar(
-            //     child: Icon(Icons.logout, color: Colors.red),
-            //   ),
-            //   title: Text('Logout'.tr),
-            //   textColor: Colors.red,
-            //   trailing: const IconButton(
-            //     onPressed: null,
-            //     icon: Icon(Icons.chevron_right),
-            //   ),
-            // ),
-            // const Divider(),
+            if (AppController.me.isLandlord)
+              Card(
+                child: ListTile(
+                  dense: true,
+                  title: Text(
+                    "Account balance".tr,
+                    style: Get.theme.textTheme.bodySmall!,
+                  ),
+                  subtitle: Text(
+                    formatMoney(AppController.instance.accountBalance),
+                  ),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ROOMY_ORANGE,
+                    ),
+                    onPressed: () {
+                      Get.to(() => const WithdrawScreen());
+                    },
+                    child: const Text(
+                      'WITHDRAW',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            if (AppController.me.isLandlord)
+              Card(
+                child: ListTile(
+                  onTap: () {
+                    showToast("Coming soon...");
+                  },
+                  // leading: const CircleAvatar(
+                  //     child: Icon(
+                  //   Icons.info_outlined,
+                  //   color: ROOMY_ORANGE,
+                  // )),
+                  title: const Text('Roomy balance'),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
+                  ),
+                ),
+              ),
+            if (AppController.me.isRoommate)
+              Card(
+                child: ListTile(
+                  onTap: () {
+                    showToast("Coming soon...");
+                  },
+                  // leading: const CircleAvatar(
+                  //     child: Icon(
+                  //   Icons.info_outlined,
+                  //   color: ROOMY_ORANGE,
+                  // )),
+                  title: const Text('Roomy wallet'),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
+                  ),
+                ),
+              ),
+
             Row(
               children: const [],
             )
@@ -253,30 +279,23 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   AppBar get appBar {
-    final controller = Get.put(_AccountTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
       title: const Text('My Account'),
       centerTitle: false,
       elevation: 0,
-      actions: [
-        SizedBox(
-          height: 35,
-          child: OutlinedButton.icon(
-            onPressed: () => controller._logout(Get.context!),
-            icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text('Logout', style: TextStyle(color: Colors.red)),
-          ),
-        )
-      ],
     );
   }
 
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/account.png", height: 30),
-      icon: Image.asset("assets/icons/account_white.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/account.png", height: 30),
+      icon: Image.asset(
+        "assets/icons/home/account.png",
+        height: 30,
+        color: Colors.white,
+      ),
       label: 'Account'.tr,
     );
   }

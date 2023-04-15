@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 
 class User {
@@ -54,6 +55,15 @@ class User {
     }
   }
 
+  ChatUser get chatUser => ChatUser(
+        id: id,
+        firstName: firstName,
+        lastName: lastName,
+        profilePicture: profilePicture,
+        fcmToken: fcmToken,
+        createdAt: createdAt,
+      );
+
   User copyWith({
     String? id,
     String? type,
@@ -61,7 +71,6 @@ class User {
     String? phone,
     String? firstName,
     String? lastName,
-    String? password,
     String? country,
     String? gender,
     String? profilePicture,
@@ -150,7 +159,7 @@ class User {
   }) {
     final innerRadius = borderColor ? size - 2 : size;
     return CircleAvatar(
-      backgroundColor: Colors.blue,
+      backgroundColor: Colors.black,
       radius: size,
       child: Builder(builder: (context) {
         final logoText = firstName[0] + lastName[0];

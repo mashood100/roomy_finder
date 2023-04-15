@@ -10,6 +10,7 @@ List<String> get CITIES_FROM_CURRENT_COUNTRY {
       "Dubai",
       "Abu Dhabi",
       "Sharjah",
+      "Ras alkhima",
       "Umm al-Quwain",
       "Fujairah",
       "Ajman",
@@ -31,10 +32,10 @@ List<String> getLocationsFromCity(String city) {
         return abuDahbiCities;
       case "Sharjah":
         return sharjahCities;
+      case "Ras alkhima":
+        return rasAlkimaCities;
       case "Umm al-Quwain":
         return ummAlQuwainCities;
-      case "Fujairah":
-        return fujairahCities;
       case "Ajman":
         return ajmanCities;
     }

@@ -1,47 +1,45 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/models/user.dart' as app_user;
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+
+import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/models/chat_message.dart';
+import 'package:roomy_finder/models/chat_user.dart';
 
 class ChatConversation {
-  final app_user.User me;
-  final app_user.User friend;
-  final List<types.Message> messages;
+  final ChatUser me;
+  final ChatUser friend;
   final DateTime createdAt;
+  ChatMessage? lastMessage;
+  final int unReadMessagesCount;
 
   ChatConversation({
-    required this.messages,
     required this.me,
     required this.friend,
     required this.createdAt,
+    required this.lastMessage,
+    this.unReadMessagesCount = 0,
   });
-
-  static String get conversationsKey => "chat_conversations";
 
   /// This value is set went entered in a chat. This will be uses by
   /// the Notification controller.
   static String? currrentChatKey;
 
-  ChatConversation.newConversation(this.me, this.friend)
-      : createdAt = DateTime.now(),
-        messages = [];
+  ChatConversation.newConversation({
+    required this.me,
+    required this.friend,
+    this.lastMessage,
+    this.unReadMessagesCount = 0,
+  }) : createdAt = DateTime.now();
 
-  String get key => "${conversationsKey}_${me.id}_${friend.id}";
-  int get hasUreadMessages => messages.where((e) => false).length;
-
-  void newMessage(types.Message msg) {
-    if (messages.contains(msg)) messages.remove(msg);
-    messages.insert(0, msg);
-    saveChat();
-  }
+  String get key => "${me.id}-${friend.id}";
 
   static String createConvsertionKey(String myId, String friendId) {
-    return "${conversationsKey}_${myId}_$friendId";
+    return "$myId-$friendId";
   }
 
   Future<void> updateChatInfo() async {
@@ -62,52 +60,71 @@ class ChatConversation {
     try {
       final directory = await getApplicationDocumentsDirectory();
 
-      final file =
-          File(path.join(directory.path, "conversations", "$key.json"));
-      if (!(await file.exists())) {
+      final file = File(path.join(directory.path, "chats" "${me.id}.json"));
+
+      final chats = <ChatConversation>[];
+
+      if (file.existsSync()) {
+        final content = file.readAsStringSync();
+        if (content.isNotEmpty) {
+          chats.addAll((json.decode(content) as List).map((e) {
+            return ChatConversation.fromJson(e);
+          }).where((e) => e != this));
+        }
+      } else {
         file.createSync(recursive: true);
       }
 
-      await file.writeAsString(toJson());
+      chats.insert(0, this);
+
+      await file
+          .writeAsString(jsonEncode(chats.map((e) => e.toJson()).toList()));
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
     }
   }
 
-  Future<bool> loadMessages() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
+  Future<List<ChatMessage>> loadMessages() async {
+    final directory = await getApplicationDocumentsDirectory();
 
-      final file =
-          File(path.join(directory.path, "conversations", "$key.json"));
+    final file = File(path.join(directory.path, "messages", "$key.json"));
 
-      if (!file.existsSync()) return false;
+    if (!file.existsSync()) return [];
 
-      final content = file.readAsStringSync();
+    final content = file.readAsStringSync();
 
-      final chat = ChatConversation.fromJson(content);
-
-      messages.clear();
-      messages.addAll(chat.messages);
-      return true;
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-      return false;
+    final messages = <ChatMessage>[];
+    if (content.isNotEmpty) {
+      messages.addAll((json.decode(content) as List).map((e) {
+        return ChatMessage.fromJson(e);
+      }));
     }
+
+    return messages;
   }
 
   Future<bool?> deleteChat() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
 
-      final file =
-          File(path.join(directory.path, "conversations", "$key.json"));
+      final file = File(path.join(directory.path, "chats" "${me.id}.json"));
 
-      if (file.existsSync()) file.deleteSync();
+      if (file.existsSync()) {
+        final content = file.readAsStringSync();
 
-      return true;
+        if (content.isNotEmpty) {
+          final chats = (json.decode(content) as List).map((e) {
+            return ChatConversation.fromJson(e);
+          }).where((e) => e != this);
+
+          await file
+              .writeAsString(jsonEncode(chats.map((e) => e.toJson()).toList()));
+        }
+        return true;
+      } else {
+        return false;
+      }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -118,55 +135,94 @@ class ChatConversation {
   static Future<List<ChatConversation>> getAllSavedChats(String userId) async {
     final directory = await getApplicationDocumentsDirectory();
 
-    final conversationDirectory =
-        Directory(path.join(directory.path, "conversations"));
+    final file = File(path.join(directory.path, "chats" "$userId.json"));
 
-    final files = conversationDirectory.listSync().where((e) {
-      return e.path.contains(userId);
-    });
+    if (!file.existsSync()) return [];
 
-    final List<ChatConversation> conversations = [];
+    final content = file.readAsStringSync();
 
-    for (var item in files) {
-      try {
-        if (path.extension(item.path) == ".json") {
-          final file = File(item.path);
-          final data = file.readAsStringSync();
-
-          conversations.add(ChatConversation.fromJson(data));
-        }
-      } catch (_) {}
-    }
-
-    return conversations;
+    return (json.decode(content) as List)
+        .map((e) => ChatConversation.fromJson(e))
+        .toList();
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'messages': messages.map((x) => x.toJson()).toList(),
       'me': me.toMap(),
       'friend': friend.toMap(),
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'lastMessage': lastMessage?.toMap(),
+      'unReadMessagesCount': unReadMessagesCount,
     };
   }
 
   factory ChatConversation.fromMap(Map<String, dynamic> map) {
     return ChatConversation(
-      messages: List<types.Message>.from(
-        (map['messages'] as List).map<types.Message>(
-          (x) => types.Message.fromJson(x as Map<String, dynamic>),
-        ),
-      ),
-      me: app_user.User.fromMap(map['me'] as Map<String, dynamic>),
-      friend: app_user.User.fromMap(map['friend'] as Map<String, dynamic>),
-      createdAt: DateTime.parse(map['createdAt']),
+      me: ChatUser.fromMap(map['me'] as Map<String, dynamic>),
+      friend: ChatUser.fromMap(map['friend'] as Map<String, dynamic>),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
+      lastMessage: map['lastMessage'] != null
+          ? ChatMessage.fromMap(map['lastMessage'] as Map<String, dynamic>)
+          : null,
+      unReadMessagesCount: map['unReadMessagesCount'] as int,
     );
   }
 
-  String toJson() {
-    return json.encode(toMap());
-  }
+  String toJson() => json.encode(toMap());
 
   factory ChatConversation.fromJson(String source) =>
       ChatConversation.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  // void markMessagesAsRead(DateTime startDate) {
+  //   for (var i = messages.length - 1; i >= 0; i--) {
+  //     final m = messages[i];
+  //     if (m.createdAt.isBefore(startDate)) {
+  //       m.isRecieved = true;
+  //       m.isRead = true;
+  //     } else {
+  //       break;
+  //     }
+  //   }
+
+  //   saveChat();
+  // }
+
+  // void markMessageAsRecieved(ChatMessage message) {
+  //   final m = messages.firstWhereOrNull((e) => e == message);
+  //   m?.isRecieved = true;
+  //   saveChat();
+  // }
+
+  static Future<List<ChatMessage>> fetchMessages(DateTime? lastDate) async {
+    final query = <String, dynamic>{};
+
+    if (lastDate != null) query["lastDate"] = lastDate.toIso8601String();
+
+    final res = await ApiService.getDio.get(
+      '/messages',
+      queryParameters: query,
+    );
+
+    if (res.statusCode == 200) {
+      final list =
+          (res.data as List).map((e) => ChatMessage.fromMap(e)).toList();
+
+      return list;
+    } else {
+      throw Exception(
+          "Failed to get messages with status code of ${res.statusCode}");
+    }
+  }
+
+  @override
+  bool operator ==(covariant ChatConversation other) {
+    if (identical(this, other)) return true;
+
+    return key == key;
+  }
+
+  @override
+  int get hashCode {
+    return key.hashCode;
+  }
 }

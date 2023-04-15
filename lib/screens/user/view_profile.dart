@@ -16,9 +16,7 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
-import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
@@ -495,32 +493,6 @@ class ViewProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (AppController.me.isLandlord)
-                          Card(
-                            child: ListTile(
-                              dense: true,
-                              title: Text(
-                                "Account balance".tr,
-                                style: textTheme.bodySmall!,
-                              ),
-                              subtitle: Text(
-                                formatMoney(
-                                    AppController.instance.accountBalance),
-                              ),
-                              trailing: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: ROOMY_ORANGE,
-                                ),
-                                onPressed: () {
-                                  Get.to(() => const WithdrawScreen());
-                                },
-                                child: const Text(
-                                  'WITHDRAW',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ),
                         Card(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -535,7 +507,13 @@ class ViewProfileScreen extends StatelessWidget {
                                 Label(label: "Phone", value: me.phone),
                                 Label(label: "Gender", value: me.gender),
                                 Label(label: "Country", value: me.country),
-                                Label(label: "Who i am", value: me.type),
+                                Label(
+                                  label: "Status",
+                                  value: me.type.replaceFirst(
+                                    me.type[0],
+                                    me.type[0].toUpperCase(),
+                                  ),
+                                ),
                                 Label(
                                   label: "Premium",
                                   value: me.isPremium ? "Yes" : "No",

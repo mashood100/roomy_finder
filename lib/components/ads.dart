@@ -92,7 +92,7 @@ class PropertyAdWidget extends StatelessWidget {
                                 .instance.country.value.aedCurrencyConvertRate,
                       ),
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     );
@@ -138,6 +138,7 @@ class PropertyAdWidget extends StatelessWidget {
                   ),
                   const Spacer(),
                   SizedBox(
+                    height: 30,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         backgroundColor: ROOMY_ORANGE,
@@ -178,6 +179,7 @@ class PropertyAdWidget extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -215,13 +217,13 @@ class PropertyAdMiniWidget extends StatelessWidget {
                 },
               ),
               DefaultTextStyle.merge(
-                style: TextStyle(
-                  color: Get.isDarkMode ? Colors.white : ROOMY_PURPLE,
+                style: const TextStyle(
+                  color: Colors.black,
                   fontSize: 12,
                 ),
                 child: Container(
-                  color: Get.theme.scaffoldBackgroundColor.withOpacity(0.5),
-                  padding: const EdgeInsets.all(5.0),
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -248,21 +250,58 @@ class PropertyAdMiniWidget extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: ROOMY_ORANGE,
-                        ),
-                        child: Text(
-                          "${ad.quantity - ad.quantityTaken}".padLeft(2, "0"),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.all(8),
+                      //   decoration: const BoxDecoration(
+                      //     shape: BoxShape.circle,
+                      //     color: ROOMY_ORANGE,
+                      //   ),
+                      //   child: Text(
+                      //     "${ad.quantity - ad.quantityTaken}".padLeft(2, "0"),
+                      //     style: const TextStyle(color: Colors.white),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
-              )
+              ),
+              Container(
+                height: double.infinity,
+                width: double.infinity,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 5,
+                    horizontal: 10,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 30),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.7),
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatMoney(ad.prefferedRentDisplayPrice),
+                        style: const TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                      // Text(
+                      //   ad.preferedRentType,
+                      //   style: const TextStyle(
+                      //     color: Colors.white,
+                      //     fontSize: 10,
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -329,8 +368,8 @@ class RoommateAdWidget extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text("${ad.aboutYou["occupation"]},"
-                          " Age(${ad.aboutYou["age"]})"),
+                      Text("${ad.aboutYou["occupation"] ?? ""}"
+                          " Age(${ad.aboutYou["age"] ?? "N/A"})"),
                     ],
                   ),
                   const Spacer(),
@@ -373,7 +412,7 @@ class RoommateAdWidget extends StatelessWidget {
                         style: TextStyle(fontSize: 14),
                       ),
                       Text(
-                        formatMoney(ad.budget),
+                        formatMoney(ad.budget * AppController.convertionRate),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -390,7 +429,9 @@ class RoommateAdWidget extends StatelessWidget {
                         style: TextStyle(fontSize: 14),
                       ),
                       Text(
-                        Jiffy(ad.createdAt).yMEd,
+                        ad.movingDate != null
+                            ? Jiffy(ad.movingDate!).yMEd
+                            : "N/A",
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -438,12 +479,12 @@ class RoommateAdMiniWidget extends StatelessWidget {
                 },
               ),
               DefaultTextStyle.merge(
-                style: TextStyle(
-                  color: Get.isDarkMode ? Colors.white : ROOMY_PURPLE,
+                style: const TextStyle(
+                  color: Colors.black,
                   fontSize: 12,
                 ),
                 child: Container(
-                  color: Get.theme.scaffoldBackgroundColor.withOpacity(0.5),
+                  color: Colors.white,
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -477,7 +518,6 @@ class RoommateAdMiniWidget extends StatelessWidget {
                           formatMoney(ad.budget * AppController.convertionRate),
                           textAlign: TextAlign.end,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
                             color: ROOMY_ORANGE,
                           ),
                         ),

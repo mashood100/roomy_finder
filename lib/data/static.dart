@@ -1,6 +1,45 @@
-import 'package:flutter/material.dart';
+const allNationalities = [
+  "Mix",
+  "Arab",
+  "Indian",
+  "Pakistani",
+  "European",
+  "Eastern European",
+  "American",
+  "Latino",
+  "Filipino",
+  "Asian",
+  "African",
+  "Australian",
+];
 
-const allAmenties = [
+const astrologicalSigns = [
+  "ARIES",
+  "TAURUS",
+  "GEMINI",
+  "CANCER",
+  "LEO",
+  "VIRGO",
+  "LIBRA",
+  "SCORPIO",
+  "SAGITTARIUS",
+  "CAPRICORN",
+  "AQUARIUS",
+  "PISCES",
+];
+
+const allLanguages = [
+  "Arabic",
+  "English",
+  "French",
+  "Hindi",
+  "Indian",
+  "Persian",
+  "Russian",
+  "Ukrainian",
+];
+
+const allAmenities = [
   {
     "value": "WIFI",
     "asset": "assets/icons/wifi.png",
@@ -31,11 +70,11 @@ const allAmenties = [
   },
   {
     "value": "Cleaning Included",
-    "asset": "assets/icons/cleanning.png",
+    "asset": "assets/icons/cleaning.png",
   },
   {
     "value": "Washer",
-    "asset": "assets/icons/washing.png",
+    "asset": "assets/icons/washer.png",
   },
   {
     "value": "Near Grocery",
@@ -70,7 +109,7 @@ const roommateInterests = [
   },
   {
     "value": "Cooking",
-    "asset": "assets/icons/hot_bowl.png",
+    "asset": "assets/icons/cooking.png",
   },
   {
     "value": "Hiking",
@@ -78,23 +117,23 @@ const roommateInterests = [
   },
   {
     "value": "Game",
-    "asset": "assets/icons/joy_stick.png",
+    "asset": "assets/icons/game.png",
   },
   {
     "value": "Music",
-    "asset": "assets/icons/music_pitch.png",
+    "asset": "assets/icons/music.png",
   },
   {
     "value": "Arts",
-    "asset": "assets/icons/color_paint.png",
+    "asset": "assets/icons/art.png",
   },
   {
     "value": "Dance",
-    "asset": "assets/icons/child_female.png",
+    "asset": "assets/icons/dancing.png",
   },
   {
     "value": "Volunteering",
-    "asset": "assets/icons/love_hand.png",
+    "asset": "assets/icons/volunteering.png",
   },
   {
     "value": "Fishing",
@@ -106,7 +145,7 @@ const allSocialPreferences = [
   {
     "value": "smoking",
     "label": "Smoking",
-    "asset": "assets/icons/cigarette.png",
+    "asset": "assets/icons/smoking.png",
   },
   {
     "value": "drinking",
@@ -116,7 +155,7 @@ const allSocialPreferences = [
   {
     "value": "visitors",
     "label": "Visitors",
-    "asset": "assets/icons/people.png",
+    "asset": "assets/icons/people_3.png",
   },
   {
     "value": "friendParty",
@@ -126,20 +165,6 @@ const allSocialPreferences = [
   {
     "value": "pet",
     "label": "Pets",
-    "asset": "assets/icons/dog_foot.png",
+    "asset": "assets/icons/pet.png",
   },
 ];
-
-const shadowedBoxDecoration = BoxDecoration(
-  borderRadius: BorderRadius.all(
-    Radius.circular(10),
-  ),
-  boxShadow: [
-    BoxShadow(
-      blurRadius: 3,
-      blurStyle: BlurStyle.outer,
-      color: Colors.black54,
-      spreadRadius: -1,
-    ),
-  ],
-);
