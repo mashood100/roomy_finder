@@ -20,16 +20,18 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/chat_message.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import "package:path/path.dart" as path;
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:roomy_finder/models/chat_user.dart';
 
 class FlyerChatScreenController extends GetxController
     with WidgetsBindingObserver {
   final ChatConversation conversation;
+  final List<ChatMessage> messages = [];
 
   final _newMessageController = TextEditingController();
 
@@ -42,9 +44,29 @@ class FlyerChatScreenController extends GetxController
 
   late final AudioPlayer _audioPlayer;
 
+  Map<String, String?> get _sender => {
+        "id": conversation.me.id,
+        "firstName": conversation.me.firstName,
+        "lastName": conversation.me.lastName,
+        "profilePicture": conversation.me.profilePicture,
+        "fcmToken": conversation.me.fcmToken,
+        "createdAt": conversation.me.createdAt.toIso8601String(),
+      };
+  Map<String, String?> get _reciever => {
+        "id": conversation.friend.id,
+        "firstName": conversation.friend.firstName,
+        "lastName": conversation.friend.lastName,
+        "profilePicture": conversation.friend.profilePicture,
+        "fcmToken": conversation.friend.fcmToken,
+        "createdAt": conversation.friend.createdAt.toIso8601String(),
+      };
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    conversation.loadMessages().then((value) => update());
+    conversation.loadMessages().then((msgs) {
+      messages.addAll(msgs);
+      update();
+    });
     super.didChangeAppLifecycleState(state);
   }
 
@@ -56,27 +78,32 @@ class FlyerChatScreenController extends GetxController
 
     WidgetsBinding.instance.addObserver(this);
 
-    conversation.loadMessages().then((_) => update());
+    conversation.loadMessages().then((msgs) {
+      messages.addAll(msgs);
+      update();
+    });
+
     conversation.updateChatInfo().then((_) => update());
 
     _audioPlayer = AudioPlayer();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
-      final data = event.data;
+    FirebaseMessaging.onMessage.asBroadcastStream().listen((remoteMessage) {
       AppController.instance.haveNewMessage(false);
 
-      if (data["event"] == "new-message") {
+      if (remoteMessage.data["event"] == "new-message") {
         try {
-          final msg = types.Message.fromJson(jsonDecode(data["message"]));
+          final payload = json.decode(remoteMessage.data["payload"]);
 
-          final sender = User.fromJson(data["sender"]);
-          final reciever = User.fromJson(data["reciever"]);
+          final message = ChatMessage.fromMap(payload["message"]);
 
-          final convKey =
-              ChatConversation.createConvsertionKey(reciever.id, sender.id);
+          final convKey = ChatConversation.createConvsertionKey(
+            message.recieverId,
+            message.senderId,
+          );
+          message.saveToSameKeyLocaleMessages(convKey);
 
           if (convKey == conversation.key) {
-            conversation.messages.insert(0, msg);
+            messages.insert(0, message);
             update();
             _audioPlayer
                 .setAsset("assets/audio/in_chat_new_message_sound.mp3")
@@ -188,28 +215,29 @@ class FlyerChatScreenController extends GetxController
 
         final fileUrl = await (await uploadTask).ref.getDownloadURL();
 
-        final message = types.FileMessage(
-          author: _user,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          name: file.name,
-          size: file.size,
-          uri: fileUrl,
-          repliedMessage: _currentRepliedMessage,
-        );
-
         final res = await ApiService.getDio.post(
-          '/messages',
+          '/messages/send',
           data: {
-            "message": jsonEncode(message.toJson()),
-            "reciever": conversation.friend.toJson(),
-            "sender": conversation.me.toJson(),
+            "notificationTitle": conversation.friend.fullName,
+            "type": 'file',
+            "body": "Sent a file",
+            "recieverId": conversation.friend.id,
+            "recieverFcmToken": conversation.friend.fcmToken,
+            "fileUri": fileUrl,
+            "fileName": file.name,
+            "fileSize": file.size,
+            "replyId": _currentRepliedMessage?.id,
+            "sender": _sender,
+            "reciever": _reciever,
           },
         );
 
         if (res.statusCode == 200) {
-          conversation.newMessage(message);
+          final message = ChatMessage.fromMap(res.data)
+            ..saveToSameKeyLocaleMessages(conversation.key);
+          messages.insert(0, message);
           update();
+          conversation.lastMessage = message;
           conversation.saveChat();
         } else if (res.statusCode == 404) {
           showToast("Failed to send message, Reciever account not found");
@@ -287,52 +315,45 @@ class FlyerChatScreenController extends GetxController
 
       _isSendingMessage(true);
 
-      final types.Message message;
-
-      final createdAt = DateTime.now().millisecondsSinceEpoch;
+      final String messageType;
 
       switch (type) {
         case AttachedTypes.imageGallery:
         case AttachedTypes.imageCamera:
-          message = types.ImageMessage(
-            author: _user,
-            createdAt: createdAt,
-            id: const Uuid().v4(),
-            name: result.name,
-            size: bytes.length,
-            uri: fileUrl,
-            repliedMessage: _currentRepliedMessage,
-          );
+          messageType = "image";
           break;
 
         case AttachedTypes.videoGallery:
         case AttachedTypes.videoCammera:
-          message = types.VideoMessage(
-            author: _user,
-            createdAt: createdAt,
-            id: const Uuid().v4(),
-            name: result.name,
-            size: bytes.length,
-            uri: fileUrl,
-            repliedMessage: _currentRepliedMessage,
-          );
+          messageType = "video";
           break;
         default:
           return;
       }
 
       final res = await ApiService.getDio.post(
-        '/messages',
+        '/messages/send',
         data: {
-          "message": jsonEncode(message.toJson()),
-          "reciever": conversation.friend.toJson(),
-          "sender": conversation.me.toJson(),
+          "notificationTitle": conversation.friend.fullName,
+          "type": messageType,
+          "body": "Sent a $messageType",
+          "recieverId": conversation.friend.id,
+          "recieverFcmToken": conversation.friend.fcmToken,
+          "fileUri": fileUrl,
+          "fileName": result.name,
+          "fileSize": bytes.length,
+          "replyId": _currentRepliedMessage?.id,
+          "sender": _sender,
+          "reciever": _reciever,
         },
       );
 
       if (res.statusCode == 200) {
-        conversation.newMessage(message);
+        final message = ChatMessage.fromMap(res.data)
+          ..saveToSameKeyLocaleMessages(conversation.key);
+        messages.insert(0, message);
         update();
+        conversation.lastMessage = message;
         conversation.saveChat();
       } else if (res.statusCode == 404) {
         showToast("Failed to send message, Reciever account not found");
@@ -357,15 +378,7 @@ class FlyerChatScreenController extends GetxController
 
         if (message.uri.startsWith('http')) {
           try {
-            final index = conversation.messages
-                .indexWhere((element) => element.id == message.id);
-            final updatedMessage =
-                (conversation.messages[index] as types.FileMessage).copyWith(
-              isLoading: true,
-            );
-
             update();
-            conversation.messages[index] = updatedMessage;
 
             final request = await Dio().get(
               message.uri,
@@ -385,15 +398,15 @@ class FlyerChatScreenController extends GetxController
               await file.writeAsBytes(request.data);
             }
           } finally {
-            final index = conversation.messages
-                .indexWhere((element) => element.id == message.id);
-            final updatedMessage =
-                (conversation.messages[index] as types.FileMessage).copyWith(
-              isLoading: null,
-            );
+            // final index = conversation.messages
+            //     .indexWhere((element) => element.id == message.id);
+            // final updatedMessage =
+            //     (conversation.messages[index] as types.FileMessage).copyWith(
+            //   isLoading: null,
+            // );
 
-            conversation.messages[index] = updatedMessage;
-            update();
+            // conversation.messages[index] = updatedMessage;
+            // update();
           }
         }
 
@@ -410,42 +423,43 @@ class FlyerChatScreenController extends GetxController
     types.TextMessage message,
     types.PreviewData previewData,
   ) {
-    final index =
-        conversation.messages.indexWhere((element) => element.id == message.id);
-    final updatedMessage =
-        (conversation.messages[index] as types.TextMessage).copyWith(
-      previewData: previewData,
-    );
+    // final index =
+    //     conversation.messages.indexWhere((element) => element.id == message.id);
+    // final updatedMessage =
+    //     (conversation.messages[index] as types.TextMessage).copyWith(
+    //   previewData: previewData,
+    // );
 
-    conversation.messages[index] = updatedMessage;
+    // conversation.messages[index] = updatedMessage;
     update();
   }
 
-  Future<void> _handleSendPressed(types.PartialText message) async {
+  Future<void> _handleSendPressed(types.PartialText partialMessage) async {
     try {
       _isSendingMessage(true);
       update();
 
-      final textMessage = types.TextMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: const Uuid().v4(),
-        text: message.text,
-      );
-
       final res = await ApiService.getDio.post(
-        '/messages',
+        '/messages/send',
         data: {
-          "message": jsonEncode(textMessage.toJson()),
-          "reciever": conversation.friend.toJson(),
-          "sender": conversation.me.toJson(),
+          "notificationTitle": conversation.friend.fullName,
+          "type": 'text',
+          "body": partialMessage.text,
+          "recieverId": conversation.friend.id,
+          "recieverFcmToken": conversation.friend.fcmToken,
+          "replyId": _currentRepliedMessage?.id,
+          "sender": _sender,
+          "reciever": _reciever,
         },
       );
 
       if (res.statusCode == 200) {
-        conversation.messages.add(textMessage);
-        conversation.newMessage(textMessage);
+        final message = ChatMessage.fromMap(res.data)
+          ..saveToSameKeyLocaleMessages(conversation.key);
+        messages.insert(0, message);
+        conversation.lastMessage = message;
         conversation.saveChat();
+
         _newMessageController.clear();
         _canMakeVoice(true);
         _currentRepliedMessage = null;
@@ -456,6 +470,7 @@ class FlyerChatScreenController extends GetxController
         showToast("Failed to send message");
       }
     } catch (e) {
+      Get.log("$e");
       showToast("Failed to send messsage");
     } finally {
       _isSendingMessage(false);
@@ -464,14 +479,15 @@ class FlyerChatScreenController extends GetxController
   }
 
   // User
-  types.User get _user {
+  ChatUser get _user {
     final me = conversation.me;
-    return types.User(
+    return ChatUser(
       id: me.id,
       firstName: me.firstName,
       lastName: me.lastName,
-      imageUrl: me.profilePicture,
-      createdAt: me.createdAt.millisecondsSinceEpoch,
+      profilePicture: me.profilePicture,
+      createdAt: me.createdAt,
+      fcmToken: me.fcmToken,
     );
   }
 
@@ -487,7 +503,11 @@ class FlyerChatScreenController extends GetxController
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text("Delete"),
               onTap: () {
-                conversation.messages.remove(message);
+                final msg =
+                    messages.firstWhereOrNull((e) => e.id == message.id);
+
+                msg?.removeSameKeyLocaleMessages(conversation.key);
+                messages.removeWhere((e) => e.id == message.id);
                 Get.back();
               },
             ),
@@ -512,9 +532,9 @@ class FlyerChatScreenController extends GetxController
         final shouldClear = await showConfirmDialog(
             "All the messages in this chat will be deleted");
         if (shouldClear == true) {
-          conversation.messages.clear();
-          conversation.saveChat();
+          messages.clear();
           update();
+          ChatMessage.deleteSameKeyLocaleMessages(conversation.key);
         }
 
         break;
@@ -522,6 +542,7 @@ class FlyerChatScreenController extends GetxController
         final shouldClear =
             await showConfirmDialog("This conversation will be deleted");
         if (shouldClear == true) {
+          await ChatMessage.deleteSameKeyLocaleMessages(conversation.key);
           await conversation.deleteChat();
           Get.back();
         }
@@ -580,7 +601,12 @@ class FlyerChatScreen extends StatelessWidget {
       body: Builder(builder: (context) {
         return GetBuilder<FlyerChatScreenController>(builder: (controller) {
           return Chat(
-            messages: conversation.messages,
+            messages: controller.messages.map((e) {
+              final author = e.senderId == conversation.me.id
+                  ? conversation.me
+                  : conversation.friend;
+              return e.getFlyerMessage(author);
+            }).toList(),
             onMessageTap: controller._handleMessageTap,
             onPreviewDataFetched: controller._handlePreviewDataFetched,
             onSendPressed: controller._handleSendPressed,
@@ -706,7 +732,12 @@ class FlyerChatScreen extends StatelessWidget {
               messageInsetsHorizontal: 5,
               messageBorderRadius: 20,
             ),
-            user: controller._user,
+            user: types.User(
+              id: controller._user.id,
+              firstName: controller._user.firstName,
+              lastName: controller._user.lastName,
+              createdAt: controller._user.createdAt.millisecondsSinceEpoch,
+            ),
             // customBottomWidget: TextField(
             //   controller: controller.newMessageController,
             //   decoration: InputDecoration(
@@ -767,3 +798,40 @@ enum AttachedTypes {
   videoCammera,
   any
 }
+
+// Future<void> updateChatMessage(RemoteMessage remoteMessage) async {
+//   AppController.instance.haveNewMessage(false);
+
+//   if (remoteMessage.data["event"] == "new-message") {
+//     try {
+//       final payload = json.decode(remoteMessage.data["payload"]);
+
+//       final message = ChatMessage.fromMap(payload["message"]);
+//       final sender = ChatUser.fromMap(payload["sender"]);
+//       final reciever = ChatUser.fromMap(payload["reciever"]);
+
+//       final conv = ChatConversation.newConversation(reciever, sender);
+//       await conv.loadMessages();
+
+//       final messageIndex = conv.messages.indexOf(message);
+
+//       if (messageIndex == -1) return;
+
+//       conv.messages[messageIndex].isRead
+
+//       final convKey =
+//           ChatConversation.createConvsertionKey(reciever.id, sender.id);
+
+//       if (convKey == conversation.key) {
+//         conversation.messages.insert(0, message);
+//         update();
+//         _audioPlayer
+//             .setAsset("assets/audio/in_chat_new_message_sound.mp3")
+//             .then((value) => _audioPlayer.play());
+//       }
+//     } catch (e, trace) {
+//       Get.log('$e');
+//       Get.log('$trace');
+//     }
+//   }
+// }

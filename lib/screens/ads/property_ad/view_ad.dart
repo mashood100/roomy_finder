@@ -8,12 +8,12 @@ import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/amenities_widget.dart';
 import 'package:roomy_finder/components/inputs.dart';
-import 'package:roomy_finder/components/label.dart';
+import 'package:roomy_finder/components/square_box_wrapper.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/share_ad.dart';
@@ -22,6 +22,7 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -35,7 +36,9 @@ class _VewPropertyController extends LoadingController {
   late final Rx<DateTime> checkIn;
   late final Rx<DateTime> checkOut;
   final quantity = 1.obs;
-  final _showAllDescription = false.obs;
+
+  // Caroussel
+  final CarouselController carouselController = CarouselController();
 
   @override
   onInit() {
@@ -175,7 +178,7 @@ class _VewPropertyController extends LoadingController {
 
   Future<void> deleteAd(PropertyAd ad) async {
     final shouldContinue = await showConfirmDialog(
-      "Do you really want to delete this ad",
+      "Please confirm",
     );
     if (shouldContinue != true) return;
     try {
@@ -232,7 +235,6 @@ class _VewPropertyController extends LoadingController {
       isLoading(true);
 
       final res = await ApiService.getDio.post("/bookings/property-ad/", data: {
-        'landlordId': ad.poster.id,
         'adId': ad.id,
         'checkIn': checkIn.value.toIso8601String(),
         'checkOut': checkOut.value.toIso8601String(),
@@ -246,7 +248,8 @@ class _VewPropertyController extends LoadingController {
         update();
 
         await showConfirmDialog(
-          "Your request have been sent to the landlord",
+          "Your booking request has been approved. "
+          "Please pay the rent fee to proceed with the booking",
           isAlert: true,
         );
       } else if (res.statusCode == 400) {
@@ -327,15 +330,6 @@ class _VewPropertyController extends LoadingController {
       isLoading(false);
     }
   }
-
-  void _viewImage(String source) {
-    showModalBottomSheet(
-      context: Get.context!,
-      builder: (context) {
-        return CachedNetworkImage(imageUrl: source);
-      },
-    );
-  }
 }
 
 class ViewPropertyAd extends StatelessWidget {
@@ -366,651 +360,681 @@ class ViewPropertyAd extends StatelessWidget {
             icon: const Icon(Icons.share),
           )
         ],
-        bottom: ad.isMine
-            ? PreferredSize(
-                preferredSize: const Size(double.infinity, 50),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: Colors.red),
-                        ),
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () {
-                                controller.deleteAd(ad);
-                              },
-                        icon: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: Colors.green),
-                        ),
-                        onPressed: controller.isLoading.isTrue
-                            ? null
-                            : () => controller.editAd(ad),
-                        icon: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : null,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 1),
-            CarouselSlider(
-              items: [
-                ...ad.images.map(
-                  (e) => GestureDetector(
-                    onTap: () => controller._viewImage(e),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(5),
-                        ),
-                        child: CachedNetworkImage(
-                          imageUrl: e,
-                          height: 250,
-                          width: Get.width,
-                          fit: BoxFit.cover,
-                          errorWidget: (ctx, e, trace) {
-                            return const SizedBox(
-                              child: CupertinoActivityIndicator(
-                                radius: 30,
-                                animating: false,
-                              ),
-                            );
-                          },
-                          progressIndicatorBuilder:
-                              (context, url, downloadProgress) {
-                            return Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: CircularProgressIndicator(
-                                value: downloadProgress.progress,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                ...ad.videos.map(
-                  (e) => GestureDetector(
-                    onTap: () => Get.to(() {
-                      return PlayVideoScreen(source: e, isAsset: false);
-                    }),
-                    child: Stack(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            children: [
+              const SizedBox(height: 1),
+              SquareBoxWrapper(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
                       alignment: Alignment.center,
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(5),
-                            child: FutureBuilder(
-                              builder: (ctx, asp) {
-                                if (asp.hasData) {
-                                  return Image.file(
-                                    File(asp.data!),
-                                    alignment: Alignment.center,
-                                    height: 250,
-                                    fit: BoxFit.fitHeight,
+                        CarouselSlider(
+                          carouselController: controller.carouselController,
+                          items: [
+                            ...ad.images.map(
+                              (e) => GestureDetector(
+                                onTap: () {
+                                  Get.to(
+                                    () => ViewImages(
+                                      images: ad.images
+                                          .map((e) =>
+                                              CachedNetworkImageProvider(e))
+                                          .toList(),
+                                      initialIndex: ad.images.indexOf(e),
+                                    ),
+                                    transition: Transition.zoom,
                                   );
-                                }
-                                return Container();
-                              },
-                              future: VideoThumbnail.thumbnailFile(
-                                video: e,
-                                quality: 50,
+                                },
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 1),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(5),
+                                    ),
+                                    child: CachedNetworkImage(
+                                      imageUrl: e,
+                                      height: 250,
+                                      width: Get.width,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (ctx, e, trace) {
+                                        return const SizedBox(
+                                          child: CupertinoActivityIndicator(
+                                            radius: 30,
+                                            animating: false,
+                                          ),
+                                        );
+                                      },
+                                      progressIndicatorBuilder:
+                                          (context, url, downloadProgress) {
+                                        return Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: CircularProgressIndicator(
+                                            value: downloadProgress.progress,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
+                            ...ad.videos.map(
+                              (e) => GestureDetector(
+                                onTap: () => Get.to(() {
+                                  return PlayVideoScreen(
+                                      source: e, isAsset: false);
+                                }),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 1),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: FutureBuilder(
+                                          builder: (ctx, asp) {
+                                            if (asp.hasData) {
+                                              return Image.file(
+                                                File(asp.data!),
+                                                alignment: Alignment.center,
+                                                height: 250,
+                                                fit: BoxFit.fitHeight,
+                                              );
+                                            }
+                                            return Container();
+                                          },
+                                          future: VideoThumbnail.thumbnailFile(
+                                            video: e,
+                                            quality: 50,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.all(20),
+                                      child: Icon(
+                                        Icons.play_arrow,
+                                        size: 40,
+                                        color: Color.fromARGB(255, 2, 3, 2),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          options: CarouselOptions(
+                            autoPlayInterval: const Duration(seconds: 10),
+                            pageSnapping: true,
+                            autoPlay: true,
+                            viewportFraction: 1,
+                            enlargeStrategy: CenterPageEnlargeStrategy.zoom,
+                            enableInfiniteScroll: false,
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Icon(
-                            Icons.play_arrow,
-                            size: 40,
-                            color: Color.fromARGB(255, 2, 3, 2),
+                        if (ad.images.length > 1)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  controller.carouselController.previousPage();
+                                },
+                                icon: const Icon(
+                                  Icons.chevron_left,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  controller.carouselController.nextPage();
+                                },
+                                icon: const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
+                        if (ad.isMine)
+                          Positioned(
+                              top: 10,
+                              right: 10,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    style: IconButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.7),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(50),
+                                      ),
+                                    ),
+                                    onPressed: controller.isLoading.isTrue
+                                        ? null
+                                        : () => controller.editAd(ad),
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    style: IconButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.7),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(50),
+                                      ),
+                                    ),
+                                    onPressed: controller.isLoading.isTrue
+                                        ? null
+                                        : () {
+                                            controller.deleteAd(ad);
+                                          },
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ))
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "${ad.type} to rent",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Obx(() {
+                          return Text(
+                            formatMoney(
+                              ad.prefferedRentDisplayPrice *
+                                  AppController.instance.country.value
+                                      .aedCurrencyConvertRate,
+                            ),
+                            style: const TextStyle(fontSize: 16),
+                          );
+                        }),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.room, color: ROOMY_ORANGE),
+                            const SizedBox(width: 5),
+                            Text(
+                              "${ad.address["city"]}, ${ad.address["location"]}",
+                              style: const TextStyle(fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Available ${ad.quantity - ad.quantityTaken}",
+                              style: const TextStyle(
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              "Taken ${ad.quantityTaken}",
+                              style: const TextStyle(
+                                color: ROOMY_ORANGE,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ),
+                    if (ad.description != null && ad.description!.isNotEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ReadMoreText(
+                          ad.description!,
+                          trimLines: 3,
+                          trimCollapsedText: "Read more",
+                          trimExpandedText: "Read less",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey),
+                          trimMode: TrimMode.Line,
+                          colorClickableText: ROOMY_PURPLE,
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-              options: CarouselOptions(
-                autoPlayInterval: const Duration(seconds: 10),
-                pageSnapping: true,
-                autoPlay: true,
-                viewportFraction: 1,
-                enlargeStrategy: CenterPageEnlargeStrategy.zoom,
               ),
-            ),
-            const SizedBox(height: 5),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${ad.type} to rent",
-                        style: const TextStyle(
-                          fontSize: 16,
+              if (ad.description != null && ad.description!.isNotEmpty)
+                const SizedBox(height: 20),
+
+              // Pricing
+              SquareBoxWrapper(
+                child: Builder(builder: (context) {
+                  var data = [
+                    {
+                      "label": "Monthly",
+                      "value": formatMoney(
+                        (ad.monthlyPrice + ad.monthlyCommission) *
+                            AppController.convertionRate,
+                        name: "",
+                      ),
+                    },
+                    {
+                      "label": "Weekly",
+                      "value": formatMoney(
+                        (ad.weeklyPrice + ad.weeklyCommission) *
+                            AppController.convertionRate,
+                        name: "",
+                      ),
+                    },
+                    {
+                      "label": "Daily",
+                      "value": formatMoney(
+                        (ad.dailyPrice + ad.dailyCommission) *
+                            AppController.convertionRate,
+                        name: "",
+                      ),
+                    },
+                  ];
+                  if (ad.deposit && ad.depositPrice != null) {
+                    data.add({
+                      "label": "Deposit",
+                      "value": formatMoney(
+                        (ad.depositPrice!) * AppController.convertionRate,
+                        name: "",
+                      ),
+                    });
+                  }
+                  return DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontFamily: "Avro",
+                      fontWeight: FontWeight.bold,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: data.map((e) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${e["label"]}",
+                              style: const TextStyle(
+                                color: ROOMY_ORANGE,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              "${e["value"]}",
+                              style: const TextStyle(fontSize: 14),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              AppController.instance.country.value.currencyCode,
+                              style: const TextStyle(fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Amenities
+              SquareBoxWrapper(child: AmenitiesWidget(ad: ad)),
+              const SizedBox(height: 20),
+              // Preferrences
+              SquareBoxWrapper(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(
+                      child: Text(
+                        "SHARING/HOUSING PREFERENCES",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: ROOMY_ORANGE,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Obx(() {
-                        return Text(
-                          formatMoney(
-                            ad.prefferedRentDisplayPrice *
-                                AppController.instance.country.value
-                                    .aedCurrencyConvertRate,
+                    ),
+                    const SizedBox(height: 10),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      childAspectRatio: 1.6,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      children: [
+                        {
+                          "label": "People    ",
+                          "asset": "assets/icons/people_2.png",
+                          "value": "${ad.socialPreferences["numberOfPeople"]}",
+                        },
+                        {
+                          "label": "Nationality",
+                          "asset": "assets/icons/globe.png",
+                          "value": "${ad.socialPreferences["nationality"]}",
+                        },
+                        {
+                          "label": "Visitors",
+                          "asset": "assets/icons/people_3.png",
+                          "value": ad.socialPreferences["visitors"] == true
+                              ? "Allowed"
+                              : "Not Allowed",
+                          "color": ad.socialPreferences["visitors"] == true
+                              ? Colors.green
+                              : Colors.red,
+                        },
+                        {
+                          "label": "Drinking",
+                          "asset": "assets/icons/drink.png",
+                          "value": ad.socialPreferences["drinking"] == true
+                              ? "Allowed"
+                              : "Not Allowed",
+                          "color": ad.socialPreferences["drinking"] == true
+                              ? Colors.green
+                              : Colors.red,
+                        },
+                        {
+                          "label": "Gender  ",
+                          "asset": "assets/icons/gender.png",
+                          "value": ad.socialPreferences["gender"],
+                        },
+                        {
+                          "label": "Smoking",
+                          "asset": "assets/icons/smoking.png",
+                          "value": ad.socialPreferences["smoking"] == true
+                              ? "Allowed"
+                              : "Not Allowed",
+                          "color": ad.socialPreferences["smoking"] == true
+                              ? Colors.green
+                              : Colors.red,
+                        },
+                      ].map((e) {
+                        return Container(
+                          decoration: shadowedBoxDecoration,
+                          padding: const EdgeInsets.all(5),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Image.asset(
+                                  "${e["asset"]}",
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  color: ROOMY_ORANGE,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "${e["label"]}",
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.black,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    "${e["value"]}",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          e["color"] as Color? ?? Colors.black,
+                                      fontSize: 10,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          style: const TextStyle(fontSize: 16),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Google map representing the location of the properrty
+              if (ad.cameraPosition != null)
+                SquareBoxWrapper(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Map location",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      SizedBox(
+                        height: 200,
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: ad.cameraPosition?.target ??
+                                const LatLng(1254, 412),
+                            zoom: 10,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              // Booking
+              if (!ad.isMine)
+                SquareBoxWrapper(
+                  // padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ...[
+                        const Center(
+                          child: Text(
+                            "BOOKING",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: ROOMY_ORANGE,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text('Which rent type do you want?'.tr),
+                        InlineDropdown<String>(
+                          labelWidth: 0,
+                          value: controller.rentType.value,
+                          items: const ["Monthly", "Weekly", "Daily"],
+                          onChanged: controller.isLoading.isTrue
+                              ? null
+                              : (val) {
+                                  if (val != null) {
+                                    controller.rentType(val);
+                                    controller._resetDates();
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 20),
+                        Obx(() {
+                          return Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text("Check In :"),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                        Jiffy(controller.checkIn.value).yMMMEd),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text("Check Out :"),
+                                    const SizedBox(width: 10),
+                                    Text(Jiffy(controller.checkOut.value)
+                                        .yMMMEd),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text("Total : "),
+                                    const SizedBox(width: 10),
+                                    Text(controller.checkDifference),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    OutlinedButton(
+                                      onPressed: () async {
+                                        final date = await controller._pickDate(
+                                            isCheckIn: true);
+
+                                        if (date != null) {
+                                          controller.checkIn(date);
+                                          controller._resetDates();
+                                        }
+                                      },
+                                      child: const Text("Change check In"),
+                                    ),
+                                    OutlinedButton(
+                                      onPressed: () async {
+                                        final date =
+                                            await controller._pickDate();
+
+                                        if (date != null) {
+                                          controller.checkOut(date);
+                                        }
+                                      },
+                                      child: const Text("Change check Out"),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(thickness: 5),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Quantity  :  ${controller.quantity}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    IconButton(
+                                      onPressed: controller.quantity <= 1
+                                          ? null
+                                          : () => controller.quantity(
+                                              controller.quantity.value - 1),
+                                      icon: const Icon(Icons.remove_outlined),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    IconButton(
+                                      onPressed: controller.quantity >=
+                                              (controller.ad.quantity -
+                                                  controller.ad.quantityTaken)
+                                          ? null
+                                          : () => controller.quantity(
+                                              controller.quantity.value + 1),
+                                      icon: const Icon(Icons.add_outlined),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                      const SizedBox(height: 20),
+                      GetBuilder<_VewPropertyController>(builder: (controller) {
+                        return SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ROOMY_PURPLE,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              side: const BorderSide(color: ROOMY_PURPLE),
+                            ),
+                            onPressed: controller.isLoading.isTrue
+                                ? null
+                                : () {
+                                    if (controller.bookingId != null) {
+                                      controller.cancelBooking(ad);
+                                    } else {
+                                      controller.bookProperty(ad);
+                                    }
+                                  },
+                            child: Text(
+                              controller.bookingId != null
+                                  ? "Cancel booking"
+                                  : "Book property",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         );
                       }),
                     ],
                   ),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.room, color: ROOMY_ORANGE),
-                          const SizedBox(width: 5),
-                          Text(
-                            "${ad.address["city"]}, ${ad.address["location"]}",
-                            style: const TextStyle(fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Available ${ad.quantity - ad.quantityTaken}",
-                            style: const TextStyle(
-                              color: Colors.green,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            "Taken ${ad.quantityTaken}",
-                            style: const TextStyle(
-                              color: ROOMY_ORANGE,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  if (ad.description != null && ad.description!.isNotEmpty) ...[
-                    const SizedBox(height: 5),
-                    ReadMoreText(
-                      ad.description!,
-                      trimLines: 3,
-                      trimCollapsedText: "Read more",
-                      trimExpandedText: "Read less",
-                      style: Theme.of(context).textTheme.bodySmall,
-                      trimMode : TrimMode.Line,
-                      colorClickableText : ROOMY_PURPLE,
-                    ),
-                  ],
-
-                  const SizedBox(height: 10),
-
-                  Label(
-                    label: "Monthly price",
-                    value: formatMoney(
-                      (ad.monthlyPrice + ad.monthlyCommission) *
-                          AppController.convertionRate,
-                    ),
-                    fontSize: 15,
-                    valueColor: ROOMY_ORANGE,
-                    boldValue: true,
-                  ),
-                  Label(
-                    label: "Weekly price",
-                    value: formatMoney(
-                      (ad.weeklyPrice + ad.weeklyCommission) *
-                          AppController.convertionRate,
-                    ),
-                    fontSize: 15,
-                    valueColor: ROOMY_ORANGE,
-                    boldValue: true,
-                  ),
-                  Label(
-                    label: "Daily price",
-                    value: formatMoney(
-                      (ad.dailyPrice + ad.dailyCommission) *
-                          AppController.convertionRate,
-                    ),
-                    fontSize: 15,
-                    valueColor: ROOMY_ORANGE,
-                    boldValue: true,
-                  ),
-
-                  if (ad.deposit)
-                    Label(
-                      label: "Deposit fee",
-                      value: formatMoney(
-                        (ad.depositPrice!) * AppController.convertionRate,
-                      ),
-                      fontSize: 15,
-                      valueColor: ROOMY_ORANGE,
-                      boldValue: true,
-                    ),
-
-                  const Divider(height: 20),
-                  DefaultTextStyle.merge(
-                    style: const TextStyle(fontSize: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  "assets/icons/washer_grey.png",
-                                  height: 25,
-                                ),
-                                const SizedBox(width: 5),
-                                const Text(
-                                  "APPLIANCES",
-                                  style: TextStyle(
-                                    color: ROOMY_ORANGE,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            ...ad.homeAppliancesAmenities
-                                .map((e) => Text("-  $e"))
-                                .toList()
-                          ],
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  "assets/icons/wifi_grey.png",
-                                  height: 25,
-                                ),
-                                const SizedBox(width: 5),
-                                const Text(
-                                  "TECH",
-                                  style: TextStyle(
-                                    color: ROOMY_ORANGE,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            ...ad.technologyAmenities
-                                .map((e) =>
-                                    Text("-  $e", textAlign: TextAlign.center))
-                                .toList()
-                          ],
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  "assets/icons/utilities_grey.png",
-                                  height: 25,
-                                ),
-                                const SizedBox(width: 5),
-                                const Text(
-                                  "UTILITIES",
-                                  style: TextStyle(
-                                    color: ROOMY_ORANGE,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            ...ad.utilitiesAmenities
-                                .map(
-                                  (e) => Text("- $e", textAlign: TextAlign.end),
-                                )
-                                .toList()
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Divider(height: 20),
-                  const Center(
-                    child: Text(
-                      "SHARING/HOUSING PREFERENCES",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ROOMY_ORANGE,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 3,
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    childAspectRatio: 1.6,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    children: [
-                      {
-                        "label": "People",
-                        "asset": "assets/icons/people_2_grey.png",
-                        "value": "${ad.socialPreferences["numberOfPeople"]}",
-                      },
-                      {
-                        "label": "Nationality",
-                        "asset": "assets/icons/globe_grey.png",
-                        "value": "${ad.socialPreferences["nationality"]}",
-                      },
-                      {
-                        "label": "Visitors",
-                        "asset": "assets/icons/people_3_grey.png",
-                        "value": ad.socialPreferences["visitors"] == true
-                            ? "Allowed"
-                            : "Not Allowed",
-                        "color": ad.socialPreferences["visitors"] == true
-                            ? Colors.green
-                            : Colors.red,
-                      },
-                      {
-                        "label": "Drinking",
-                        "asset": "assets/icons/drink_grey.png",
-                        "value": ad.socialPreferences["drinking"] == true
-                            ? "Allowed"
-                            : "Not Allowed",
-                        "color": ad.socialPreferences["drinking"] == true
-                            ? Colors.green
-                            : Colors.red,
-                      },
-                      {
-                        "label": "Gender",
-                        "asset": "assets/icons/gender_grey.png",
-                        "value": ad.socialPreferences["gender"],
-                      },
-                      {
-                        "label": "Smoking",
-                        "asset": "assets/icons/smoking_grey.png",
-                        "value": ad.socialPreferences["smoking"] == true
-                            ? "Allowed"
-                            : "Not Allowed",
-                        "color": ad.socialPreferences["smoking"] == true
-                            ? Colors.green
-                            : Colors.red,
-                      },
-                    ].map((e) {
-                      return Container(
-                        decoration: shadowedBoxDecoration,
-                        padding: const EdgeInsets.all(10),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Image.asset(
-                                "${e["asset"]}",
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "${e["label"]}",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: e["color"] as Color? ?? Colors.grey,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  "${e["value"]}",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: e["color"] as Color? ?? ROOMY_PURPLE,
-                                    fontSize: 12,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const Divider(height: 20),
-
-                  // Google map representing the location of the properrty
-                  if (ad.cameraPosition != null)
-                    const Text("Map location", style: TextStyle(fontSize: 14)),
-                  if (ad.cameraPosition != null)
-                    SizedBox(
-                      height: 200,
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: ad.cameraPosition?.target ??
-                              const LatLng(1254, 412),
-                          zoom: 10,
-                        ),
-                      ),
-                    ),
-
-                  if (!ad.isMine && controller.bookingId == null) ...[
-                    const Text(
-                      "Booking",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text('Which rent type do you want?'.tr),
-                    InlineDropdown<String>(
-                      labelWidth: 0,
-                      value: controller.rentType.value,
-                      items: const ["Monthly", "Weekly", "Daily"],
-                      onChanged: controller.isLoading.isTrue
-                          ? null
-                          : (val) {
-                              if (val != null) {
-                                controller.rentType(val);
-                                controller._resetDates();
-                              }
-                            },
-                    ),
-                    const SizedBox(height: 20),
-                    Obx(() {
-                      return Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text("Check In :"),
-                                const SizedBox(width: 10),
-                                Text(Jiffy(controller.checkIn.value).yMMMEd),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text("Check Out :"),
-                                const SizedBox(width: 10),
-                                Text(Jiffy(controller.checkOut.value).yMMMEd),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text("Total : "),
-                                const SizedBox(width: 10),
-                                Text(controller.checkDifference),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () async {
-                                    final date = await controller._pickDate(
-                                        isCheckIn: true);
-
-                                    if (date != null) {
-                                      controller.checkIn(date);
-                                      controller._resetDates();
-                                    }
-                                  },
-                                  child: const Text("Change check In"),
-                                ),
-                                OutlinedButton(
-                                  onPressed: () async {
-                                    final date = await controller._pickDate();
-
-                                    if (date != null) {
-                                      controller.checkOut(date);
-                                    }
-                                  },
-                                  child: const Text("Change check Out"),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            Row(
-                              children: [
-                                Text(
-                                  "Quantity : ${controller.quantity} "
-                                  "${controller.ad.type}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const Spacer(),
-                                IconButton(
-                                  onPressed: controller.quantity <= 1
-                                      ? null
-                                      : () => controller.quantity(
-                                          controller.quantity.value - 1),
-                                  icon: const Icon(Icons.remove_outlined),
-                                ),
-                                const SizedBox(width: 10),
-                                IconButton(
-                                  onPressed: controller.quantity >=
-                                          (controller.ad.quantity -
-                                              controller.ad.quantityTaken)
-                                      ? null
-                                      : () => controller.quantity(
-                                          controller.quantity.value + 1),
-                                  icon: const Icon(Icons.add_outlined),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  const SizedBox(height: 20),
-                  if (!ad.isMine)
-                    GetBuilder<_VewPropertyController>(builder: (controller) {
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ROOMY_PURPLE,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            side: const BorderSide(color: ROOMY_PURPLE),
-                          ),
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () {
-                                  if (controller.bookingId != null) {
-                                    controller.cancelBooking(ad);
-                                  } else {
-                                    controller.bookProperty(ad);
-                                  }
-                                },
-                          child: Text(
-                            controller.bookingId != null
-                                ? "Cancel booking"
-                                : "Book property",
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }),
-                ],
-              ),
-            )
-          ],
+                ),
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );

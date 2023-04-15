@@ -9,7 +9,6 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import '../../functions/utility.dart';
 // import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -39,6 +38,7 @@ class ChatTabController extends LoadingController {
           await ChatConversation.getAllSavedChats(AppController.me.id);
       conversations.clear();
       conversations.addAll(notifications);
+      conversations.sort((a, b) => a.createdAt.isAfter(b.createdAt) ? 1 : -1);
     } catch (_) {
     } finally {
       isLoading(false);
@@ -78,7 +78,12 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                 AwesomeNotifications()
                     .cancelNotificationsByChannelKey("chat_channel_group_key");
               },
-              leading: conv.friend.ppWidget(size: 20, borderColor: false),
+              leading: CircleAvatar(
+                radius: 20,
+                foregroundImage: NetworkImage(
+                  conv.friend.profilePicture,
+                ),
+              ),
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -86,14 +91,9 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                     conv.friend.fullName,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  if (conv.messages.isNotEmpty &&
-                      conv.messages.first.createdAt != null)
+                  if (conv.lastMessage != null)
                     Text(
-                      relativeTimeText(
-                        DateTime.fromMillisecondsSinceEpoch(
-                          conv.messages.first.createdAt!,
-                        ),
-                      ),
+                      relativeTimeText(conv.lastMessage!.createdAt),
                       style: const TextStyle(
                         fontStyle: FontStyle.italic,
                         fontSize: 12,
@@ -102,20 +102,17 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                     ),
                 ],
               ),
-              subtitle: conv.messages.isEmpty
+              subtitle: conv.lastMessage == null
                   ? null
                   : Builder(
                       builder: (context) {
-                        final msg = conv.messages.first;
+                        final msg = conv.lastMessage!;
 
-                        if (msg is types.TextMessage) {
-                          return Text(
-                            msg.text,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        }
-                        return const Text("message");
+                        return Text(
+                          msg.body ?? "",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
                       },
                     ),
             );
@@ -178,13 +175,17 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
       activeIcon: Obx(() {
         return Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset("assets/icons/chat.png", height: 30),
+          child: Image.asset("assets/icons/home/chat.png", height: 30),
         );
       }),
       icon: Obx(() {
         return Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset("assets/icons/chat_white.png", height: 30),
+          child: Image.asset(
+            "assets/icons/home/chat.png",
+            height: 30,
+            color: Colors.white,
+          ),
         );
       }),
       label: 'Chat'.tr,

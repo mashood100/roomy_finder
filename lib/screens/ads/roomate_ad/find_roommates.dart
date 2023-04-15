@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/components/advertising.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -16,11 +17,9 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 
 class _FindRoommatesController extends LoadingController {
   final RxMap<String, String?> filter;
-  final _carouselIndex = 0.obs;
 
   final RxList<String> interest = <String>[].obs;
 
@@ -75,6 +74,7 @@ class _FindRoommatesController extends LoadingController {
       ads.addAll(data);
     } catch (e, trace) {
       Get.log("$e");
+      if (e is DioError) {}
       Get.log("$trace");
       hasFetchError(true);
     } finally {
@@ -120,21 +120,44 @@ class _FindRoommatesController extends LoadingController {
                     ),
                     const Divider(),
                     // Action
-                    InlineDropdown<String>(
-                      labelText: 'Action'.tr,
-                      hintText: 'What you want'.tr,
-                      value: filter["action"],
-                      items: const ["ALL", "HAVE ROOM", "NEED ROOM"],
-                      onChanged: (val) {
-                        if (val != null) filter["action"] = val;
-                        if (val == "All") filter.remove("action");
-                      },
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        {"label": "Need Room", "value": "NEED ROOM"},
+                        {"label": "Have Room", "value": "HAVE ROOM"},
+                        {"label": "All", "value": null},
+                      ].map((e) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (e["value"] != null) {
+                                filter['action'] = e["value"];
+                              } else {
+                                filter.remove("action");
+                              }
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: filter["action"] == e["value"]
+                                  ? ROOMY_ORANGE
+                                  : Colors.grey,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.all(10.0),
+                            child: Text("${e["label"]}"),
+                          ),
+                        );
+                      }).toList(),
                     ),
+                    const SizedBox(height: 10),
+
                     const SizedBox(height: 20),
                     // Roommate type
                     InlineDropdown<String>(
                       labelText: 'Type'.tr,
-                      hintText: 'Preferred roommate'.tr,
+                      hintText: 'Appartment type'.tr,
                       value: filter["type"],
                       items: const ["All", "Studio", "Appartment", "House"],
                       onChanged: (val) {
@@ -192,7 +215,7 @@ class _FindRoommatesController extends LoadingController {
                       labelText: 'Gender',
                       hintText: "Select gender",
                       value: filter["gender"],
-                      items: const ["Female", "Male", "Mix"],
+                      items: const ["Female", "Male", "Any"],
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
@@ -201,69 +224,9 @@ class _FindRoommatesController extends LoadingController {
                         }
                       },
                     ),
-                    // const SizedBox(height: 10),
-                    // const Text("Gender", style: TextStyle(fontSize: 18)),
-                    // SingleChildScrollView(
-                    //   scrollDirection: Axis.horizontal,
-                    //   child: Row(
-                    //     children: [
-                    //       ...["Female", "Male", "Mix"].map(
-                    //         (e) {
-                    //           return GestureDetector(
-                    //             onTap: () {
-                    //               setState(() {
-                    //                 filter["gender"] = (e);
-                    //               });
-                    //             },
-                    //             child: Card(
-                    //               elevation: 0,
-                    //               color: filter["gender"] == e
-                    //                   ? Get.theme.appBarTheme.backgroundColor
-                    //                   : null,
-                    //               child: Container(
-                    //                 padding: const EdgeInsets.symmetric(
-                    //                   horizontal: 8,
-                    //                   vertical: 5,
-                    //                 ),
-                    //                 child: Row(
-                    //                   mainAxisSize: MainAxisSize.min,
-                    //                   children: [
-                    //                     Icon(
-                    //                       e == "Female"
-                    //                           ? Icons.person_4_outlined
-                    //                           : e == "Male"
-                    //                               ? Icons.person_outlined
-                    //                               : Icons.group_outlined,
-                    //                       size: 30,
-                    //                       color: filter["gender"] == e
-                    //                           ? Colors.white
-                    //                           : Get.theme.appBarTheme
-                    //                               .backgroundColor,
-                    //                     ),
-                    //                     const SizedBox(width: 10),
-                    //                     Text(
-                    //                       e,
-                    //                       style: TextStyle(
-                    //                         fontSize: 14,
-                    //                         color: filter["gender"] == e
-                    //                             ? Colors.white
-                    //                             : null,
-                    //                       ),
-                    //                     ),
-                    //                     const SizedBox(width: 10),
-                    //                   ],
-                    //                 ),
-                    //               ),
-                    //             ),
-                    //           );
-                    //         },
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
 
                     const SizedBox(height: 10),
-                    const Text("Budget", style: TextStyle(fontSize: 18)),
+                    const Text("Budget", style: TextStyle(fontSize: 14)),
                     Row(
                       children: [
                         Expanded(
@@ -276,10 +239,15 @@ class _FindRoommatesController extends LoadingController {
                             enabled: isLoading.isFalse,
                             onChanged: (value) {
                               setState(() {
-                                filter["minBudget"] = value;
+                                if (num.tryParse(value) != null) {
+                                  filter["minBudget"] = value;
+                                } else {
+                                  filter.remove("minBudget");
+                                }
                               });
                             },
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                signed: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(priceRegex)
                             ],
@@ -296,10 +264,15 @@ class _FindRoommatesController extends LoadingController {
                             enabled: isLoading.isFalse,
                             onChanged: (value) {
                               setState(() {
-                                filter["maxBudget"] = value;
+                                if (num.tryParse(value) != null) {
+                                  filter["maxBudget"] = value;
+                                } else {
+                                  filter.remove("maxBudget");
+                                }
                               });
                             },
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                signed: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(priceRegex)
                             ],
@@ -311,27 +284,42 @@ class _FindRoommatesController extends LoadingController {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        OutlinedButton(
-                          onPressed: () {
-                            filter.clear();
-                            this.filter.clear();
-                            _fetchData();
-                            Get.back();
-                          },
-                          child: const Text("Clear Filter"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Get.back(result: filter);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ROOMY_PURPLE,
+                        SizedBox(
+                          width: 120,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ROOMY_PURPLE,
+                            ),
+                            onPressed: () {
+                              filter.clear();
+                              this.filter.clear();
+                              _fetchData();
+                              Get.back();
+                            },
+                            child: const Text(
+                              "Clear Filter",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                          child: const Text(
-                            "Search",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                        ),
+                        SizedBox(
+                          width: 120,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Get.back(result: filter);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ROOMY_PURPLE,
+                            ),
+                            child: const Text(
+                              "Search",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -405,109 +393,65 @@ class FindRoommatesScreen extends StatelessWidget {
             return CustomScrollView(
               slivers: [
                 SliverAppBar.large(
+                  backgroundColor: Colors.white,
                   automaticallyImplyLeading: false,
                   toolbarHeight: 0,
                   collapsedHeight: 0,
-                  expandedHeight: AppController.me.isGuest ? 300 : 250,
+                  expandedHeight: AppController.me.isGuest ? 330 : 280,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: Builder(builder: (context) {
-                      const list = [
-                        "assets/images/roommates_1.jpg",
-                        "assets/images/roommates_2.jpg",
-                        "assets/images/roommates_3.jpg",
-                      ];
-                      return Column(
-                        children: [
-                          if (AppController.me.isGuest)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () {
-                                    Get.offAllNamed("/registration");
-                                  },
-                                  child: const Text(
-                                    "REGISTER",
-                                    style: TextStyle(
-                                      color: ROOMY_PURPLE,
-                                      fontSize: 16,
-                                    ),
+                    background: Column(
+                      children: [
+                        if (AppController.me.isGuest)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  Get.offAllNamed("/registration");
+                                },
+                                child: const Text(
+                                  "REGISTER",
+                                  style: TextStyle(
+                                    color: ROOMY_PURPLE,
+                                    fontSize: 16,
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Get.offAllNamed("/login");
-                                  },
-                                  child: const Text(
-                                    "LOGIN",
-                                    style: TextStyle(
-                                      color: ROOMY_ORANGE,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          Expanded(
-                            child: SizedBox(
-                              width: Get.width,
-                              child: CarouselSlider(
-                                items: list.map((e) {
-                                  return Image.asset(
-                                    e,
-                                    width: Get.width,
-                                    fit: BoxFit.fitWidth,
-                                  );
-                                }).toList(),
-                                options: CarouselOptions(
-                                  autoPlayInterval: const Duration(seconds: 10),
-                                  pageSnapping: true,
-                                  autoPlay: true,
-                                  viewportFraction: 1,
-                                  onPageChanged: (index, reason) {
-                                    controller._carouselIndex(index);
-                                  },
-                                ),
-                                disableGesture: true,
                               ),
-                            ),
+                              TextButton(
+                                onPressed: () {
+                                  Get.offAllNamed("/login");
+                                },
+                                child: const Text(
+                                  "LOGIN",
+                                  style: TextStyle(
+                                    color: ROOMY_ORANGE,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          Obx(() {
-                            return Container(
-                              color: Colors.white,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(list.length, (ind) {
-                                  return Container(
-                                    height: 10,
-                                    width: 10,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          ind == controller._carouselIndex.value
-                                              ? ROOMY_PURPLE
-                                              : Colors.grey,
-                                    ),
-                                  );
-                                }),
-                              ),
-                            );
-                          }),
-                          TextField(
+                        const Expanded(child: AdvertisingWidget()),
+                        Container(
+                          color: Get.theme.scaffoldBackgroundColor,
+                          padding: const EdgeInsets.fromLTRB(30, 0, 30, 0),
+                          child: TextField(
                             readOnly: true,
                             onTap: controller._showFilter,
                             decoration: InputDecoration(
-                              fillColor: Colors.white,
+                              fillColor: Get.theme.scaffoldBackgroundColor,
                               hintText: "Filter by gender, budget",
-                              suffixIcon: IconButton(
-                                onPressed: controller._showFilter,
-                                icon: const Icon(Icons.filter_list),
+                              suffixIcon: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: GestureDetector(
+                                  onTap: controller._showFilter,
+                                  child: Image.asset(
+                                    "assets/icons/filter.png",
+                                    height: 30,
+                                    width: 30,
+                                  ),
+                                ),
                               ),
                               contentPadding:
                                   const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -517,10 +461,10 @@ class FindRoommatesScreen extends StatelessWidget {
                             ),
                             textInputAction: TextInputAction.search,
                           ),
-                          Container(color: Colors.white, height: 10),
-                        ],
-                      );
-                    }),
+                        ),
+                        Container(color: Colors.white, height: 10),
+                      ],
+                    ),
                   ),
                 ),
                 if (controller.hasFetchError.isTrue)
@@ -609,92 +553,135 @@ class _AdItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          alignment: Alignment.bottomLeft,
           children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(10),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: ad.images.first,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (ctx, url, e) {
-                        return const SizedBox(
-                          width: 150,
-                          height: 150,
-                          child: CupertinoActivityIndicator(
-                            radius: 30,
-                            color: Colors.grey,
-                            animating: false,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      await addAdToFavorite(
-                          ad.toJson(), "favorites-roommate-ads");
-                      showToast("Added to favorite");
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: ROOMY_PURPLE,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(10),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: ad.images.first,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorWidget: (ctx, url, e) {
+                            return const SizedBox(
+                              width: 150,
+                              height: 150,
+                              child: CupertinoActivityIndicator(
+                                radius: 30,
+                                color: Colors.grey,
+                                animating: false,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      child: const Icon(Icons.favorite, color: Colors.white),
-                    ),
-                  )
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    ad.poster.firstName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
+                      InkWell(
+                        onTap: () async {
+                          await addAdToFavorite(
+                              ad.toJson(), "favorites-roommate-ads");
+                          showToast("Added to favorite");
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: ROOMY_PURPLE,
+                          ),
+                          child:
+                              const Icon(Icons.favorite, color: Colors.white),
+                        ),
+                      )
+                    ],
                   ),
-                  Text(
-                    "${ad.aboutYou["gender"]}, ${ad.aboutYou["age"]}",
-                    style: const TextStyle(
-                      fontSize: 16,
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(10),
                     ),
+                    color: Colors.white,
                   ),
-                  Row(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(5.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.room,
-                        color: ROOMY_PURPLE,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 5),
                       Text(
-                        "${ad.address["location"]}",
+                        ad.poster.firstName,
                         style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        "${ad.aboutYou["gender"] ?? "N/A"}, ${ad.aboutYou["age"] ?? "N/A"}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.room,
+                            color: ROOMY_PURPLE,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            "${ad.address["location"]}",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w100,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            Positioned(
+              child: Container(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 5,
+                    horizontal: 5,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.6),
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatMoney(ad.budget),
+                        style: const TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],

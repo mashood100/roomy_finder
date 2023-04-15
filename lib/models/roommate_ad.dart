@@ -9,15 +9,14 @@ class RoommateAd {
   String type; // "Studio", "Appartment", "House"
   String rentType; // Monthly, Weekly, Daily
   String action; // "NEED ROOM", "HAVE ROOM"
-  bool isPremium;
   num budget;
   String? description;
   List<String> images;
   List<String> videos;
   bool isAvailable;
-  DateTime movingDate;
+  DateTime? movingDate;
   DateTime createdAt;
-  Map<String, Object?> address; // keys : city,location,buildingName
+  Map<String, Object?> address; // keys : city,location
   Map<String, Object?> aboutYou; //
   Map<String, Object> socialPreferences;
   List<String> amenities;
@@ -31,7 +30,6 @@ class RoommateAd {
     required this.rentType,
     required this.action,
     required this.budget,
-    required this.isPremium,
     required this.isAvailable,
     this.description,
     required this.images,
@@ -96,13 +94,12 @@ class RoommateAd {
       'rentType': rentType,
       'action': action,
       'budget': budget,
-      'isPremium': isPremium,
       'isAvailable': isAvailable,
       'description': description,
       'images': images,
       'videos': videos,
       'createdAt': createdAt.toIso8601String(),
-      'movingDate': movingDate.toIso8601String(),
+      'movingDate': movingDate?.toIso8601String(),
       'address': address,
       'aboutYou': aboutYou,
       'socialPreferences': socialPreferences,
@@ -120,13 +117,14 @@ class RoommateAd {
       rentType: map['rentType'] as String,
       action: map['action'] as String,
       budget: map['budget'] as num,
-      isPremium: map['isPremium'] as bool,
       isAvailable: map['isAvailable'] as bool,
       description: map['description'] as String?,
       images: List<String>.from((map['images'] as List)),
       videos: List<String>.from((map['videos'] as List)),
       createdAt: DateTime.parse(map['createdAt'] as String),
-      movingDate: DateTime.parse(map['movingDate'] as String),
+      movingDate: map['movingDate'] != null
+          ? DateTime.parse(map['movingDate'] as String)
+          : null,
       address: Map<String, Object?>.from((map['address'] as Map)),
       aboutYou: Map<String, Object?>.from((map['aboutYou'] as Map)),
       socialPreferences:

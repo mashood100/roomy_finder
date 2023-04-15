@@ -1,10 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -268,7 +266,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             //  Ads types
                             Container(
                               margin: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                                horizontal: 20,
                                 vertical: 10,
                               ),
                               padding: const EdgeInsets.all(5),
@@ -318,59 +316,63 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             if (controller._targetAds.value != "All")
                               Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
-                                child: TypeAheadField<String>(
-                                  itemBuilder: (ctx, suggestion) {
-                                    return ListTile(
-                                      title: Text(suggestion),
-                                      dense: true,
-                                    );
-                                  },
-                                  onSuggestionSelected: (suggestion) {
-                                    FocusManager.instance.primaryFocus
-                                        ?.unfocus();
+                                    const EdgeInsets.symmetric(horizontal: 50),
+                                child: SizedBox(
+                                  height: 50,
+                                  child: TypeAheadField<String>(
+                                    itemBuilder: (ctx, suggestion) {
+                                      return ListTile(
+                                        title: Text(suggestion),
+                                        dense: true,
+                                      );
+                                    },
+                                    onSuggestionSelected: (suggestion) {
+                                      FocusManager.instance.primaryFocus
+                                          ?.unfocus();
 
-                                    switch (controller._targetAds.value) {
-                                      case "Room":
-                                        Get.to(() {
-                                          return FindPropertiesAdsScreen(
-                                            filter: {"city": suggestion},
-                                          );
-                                        });
-                                        break;
-                                      case "Roommate":
-                                        Get.to(() {
-                                          return FindRoommatesScreen(
-                                            filter: {"city": suggestion},
-                                          );
-                                        });
-                                        break;
-                                      default:
-                                    }
-                                  },
-                                  suggestionsCallback: (pattern) {
-                                    pattern = pattern.trim().toLowerCase();
-                                    return CITIES_FROM_CURRENT_COUNTRY
-                                        .where((e) {
-                                      e = e.trim().toLowerCase();
+                                      switch (controller._targetAds.value) {
+                                        case "Room":
+                                          Get.to(() {
+                                            return FindPropertiesAdsScreen(
+                                              filter: {"city": suggestion},
+                                            );
+                                          });
+                                          break;
+                                        case "Roommate":
+                                          Get.to(() {
+                                            return FindRoommatesScreen(
+                                              filter: {"city": suggestion},
+                                            );
+                                          });
+                                          break;
+                                        default:
+                                      }
+                                    },
+                                    suggestionsCallback: (pattern) {
+                                      pattern = pattern.trim().toLowerCase();
+                                      return CITIES_FROM_CURRENT_COUNTRY
+                                          .where((e) {
+                                        e = e.trim().toLowerCase();
 
-                                      return e.startsWith(pattern) ||
-                                          e.contains(pattern);
-                                    });
-                                  },
-                                  suggestionsBoxDecoration:
-                                      const SuggestionsBoxDecoration(
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(10),
+                                        return e.startsWith(pattern) ||
+                                            e.contains(pattern);
+                                      });
+                                    },
+                                    suggestionsBoxDecoration:
+                                        const SuggestionsBoxDecoration(
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10),
+                                      ),
                                     ),
-                                  ),
-                                  textFieldConfiguration:
-                                      TextFieldConfiguration(
-                                    decoration: InputDecoration(
-                                      fillColor: Colors.white,
-                                      hintText: "Search by city",
-                                      suffixIcon: SizedBox(
-                                        child: IconButton(
+                                    textFieldConfiguration:
+                                        TextFieldConfiguration(
+                                      decoration: InputDecoration(
+                                        fillColor: Colors.white,
+                                        hintText: "Search by city",
+                                        suffixIcon: IconButton(
+                                          style: IconButton.styleFrom(
+                                            padding: const EdgeInsets.all(5),
+                                          ),
                                           onPressed: () {
                                             switch (
                                                 controller._targetAds.value) {
@@ -396,17 +398,20 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                             child: const Icon(
                                               Icons.search,
                                               color: Colors.white,
+                                              size: 15,
                                             ),
                                           ),
                                         ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                vertical: 0, horizontal: 12),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(50),
+                                        ),
                                       ),
-                                      contentPadding: const EdgeInsets.fromLTRB(
-                                          12, 10, 12, 12),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(50),
-                                      ),
+                                      textInputAction: TextInputAction.search,
                                     ),
-                                    textInputAction: TextInputAction.search,
                                   ),
                                 ),
                               ),
@@ -416,16 +421,14 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                               width: Get.width * 0.4,
                               child: ElevatedButton(
                                 onPressed: () {
+                                  // Get.to(() => const PostRoommateAdScreen());
+                                  // return;
                                   if (AppController.me.isGuest) {
                                     Get.offAllNamed('/login');
                                   } else if (AppController.me.isLandlord) {
                                     Get.to(() => const PostPropertyAdScreen());
                                   } else if (AppController.me.isRoommate) {
-                                    Get.to(() {
-                                      return const PostRoommateAdScreen(
-                                        isPremium: true,
-                                      );
-                                    });
+                                    Get.to(() => const PostRoommateAdScreen());
                                   }
                                 },
                                 child: DefaultTextStyle(
@@ -441,7 +444,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                       if (AppController.me.isLandlord) {
                                         return const Text("Post Property");
                                       }
-                                      return const Text("Post Roommate");
+                                      return const Text("Post Ad");
                                     },
                                   ),
                                 ),
@@ -480,7 +483,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                         crossAxisCount: 2,
                         shrinkWrap: true,
                         children: List.generate(
-                          (controller._homePropertyAds.length ~/ 2) * 2,
+                          controller._homePropertyAds.length,
                           (ind) {
                             if (controller._isLoadingHomeAds.isTrue) {
                               return const Card(
@@ -504,20 +507,37 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              "Roommates",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: ROOMY_ORANGE,
+                            TextButton(
+                              onPressed: () {
+                                Get.to(() {
+                                  return const FindRoommatesScreen(
+                                    filter: {"action": "HAVE ROOM"},
+                                  );
+                                });
+                              },
+                              child: const Text(
+                                "Have room",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: ROOMY_ORANGE,
+                                ),
                               ),
                             ),
                             TextButton(
                               onPressed: () {
                                 Get.to(() {
-                                  return const FindRoommatesScreen();
+                                  return const FindRoommatesScreen(
+                                    filter: {"action": "NEED ROOM"},
+                                  );
                                 });
                               },
-                              child: const Text("See all"),
+                              child: const Text(
+                                "Need room",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: ROOMY_ORANGE,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -527,7 +547,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                         crossAxisCount: 2,
                         shrinkWrap: true,
                         children: List.generate(
-                          (controller._homeRoommateAds.length ~/ 2) * 2,
+                          controller._homeRoommateAds.length,
                           (ind) {
                             if (controller._isLoadingHomeAds.isTrue) {
                               return const Card(
@@ -669,18 +689,18 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 Text(
                   "Roomy",
                   style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontFamily: "Avro"),
                 ),
                 Text(
                   "FINDER",
                   style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: ROOMY_ORANGE,
-                    fontSize: 18,
-                  ),
+                      fontWeight: FontWeight.w900,
+                      color: ROOMY_ORANGE,
+                      fontSize: 18,
+                      fontFamily: "Avro"),
                 ),
               ],
             ),
@@ -725,195 +745,16 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home.png", height: 30),
-      icon: Image.asset("assets/icons/home_white.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/home.png", height: 30),
+      icon: Image.asset(
+        "assets/icons/home/home.png",
+        height: 30,
+        color: Colors.white,
+      ),
       label: 'Home'.tr,
     );
   }
 
   @override
   FloatingActionButton? get floatingActionButton => null;
-}
-
-class HomeUserInfo extends StatelessWidget {
-  const HomeUserInfo({super.key});
-
-  Future<String> get _formattedPhoneNumber async {
-    final phoneNumber = PhoneNumber(
-      phoneNumber: AppController.me.phone,
-    );
-    try {
-      final data = await PhoneNumber.getParsableNumber(phoneNumber);
-      return "(${phoneNumber.dialCode}) $data";
-    } on Exception catch (_) {
-      return phoneNumber.phoneNumber ?? "";
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Card(
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      AppController.me.fullName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        overflow: TextOverflow.fade,
-                      ),
-                      maxLines: 1,
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.mail),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            AppController.me.email,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.phone_android),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FutureBuilder(
-                            builder: (ctx, asp) => Text(
-                              "${asp.data}",
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            future: _formattedPhoneNumber,
-                          ),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(CupertinoIcons.location_solid),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            AppController.me.country,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(CupertinoIcons.person_alt_circle_fill),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            AppController.me.type.replaceFirst(
-                              AppController.me.type[0],
-                              AppController.me.type[0].toUpperCase(),
-                            ),
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: CachedNetworkImage(
-              imageUrl: AppController.me.profilePicture,
-              height: 130,
-              errorWidget: (ctx, url, e) {
-                Get.log('$e');
-                return Card(
-                  child: SizedBox(
-                    height: 130,
-                    child: Icon(
-                      AppController.me.gender == "Male"
-                          ? Icons.person
-                          : Icons.person_2,
-                      size: 80,
-                    ),
-                  ),
-                );
-              },
-              // height: 130,
-            ),
-          )
-        ],
-      );
-    });
-  }
-}
-
-class HomeCard extends StatelessWidget {
-  final String label;
-  final String assetImage;
-  final void Function()? onTap;
-
-  const HomeCard({
-    super.key,
-    required this.label,
-    required this.assetImage,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(assetImage),
-              fit: BoxFit.cover,
-            ),
-            borderRadius: const BorderRadius.all(Radius.circular(10)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  )),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 25,
-                color: Colors.white,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

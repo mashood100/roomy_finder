@@ -11,12 +11,15 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/models/chat_message.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:roomy_finder/models/chat_user.dart';
 
 class NotificationController {
   static ReceivedAction? initialAction;
@@ -48,41 +51,49 @@ class NotificationController {
   /// on a notification or action button
   @pragma("vm:entry-point")
   static Future<void> onActionReceivedMethod(ReceivedAction action) async {
-    if (action.actionType == ActionType.Default) {
-      final payload = action.payload;
-      if (payload == null) return;
-
-      switch (payload["event"]) {
-        case "new-booking":
-        case "booking-offered":
-        case "pay-property-rent-fee-completed-client":
-        case "pay-property-rent-fee-completed-landlord":
-          _handleBookingTappedEvents(payload);
-          break;
-        case "new-message":
-          _handleChatMessageTappedEvents(payload);
-          break;
-        default:
-      }
-    }
     final payload = action.payload;
     if (payload == null) return;
-    try {
-      switch (payload["event"]) {
-        case "new-booking":
-        case "booking-offered":
-          final res =
-              await Dio().get("$API_URL/bookings/${payload["bookingId"]}");
-          if (res.statusCode == 200) {
-            final booking = PropertyBooking.fromMap(res.data);
-            Get.to(() => ViewPropertyBookingScreen(booking: booking));
+
+    switch (payload["event"]) {
+      case "new-booking":
+      case "booking-offered":
+      case "pay-property-rent-fee-completed-client":
+      case "pay-property-rent-fee-completed-landlord":
+        _handleBookingTappedEvents(payload);
+        break;
+      case "new-message":
+        _handleChatMessageTappedEvents(payload);
+        break;
+      case "pay-cash-survey-landlord":
+        try {
+          final data = json.decode(action.payload!["payload"]!);
+          final bookingId = data["bookingId"];
+          final String pressAction;
+          if (action.buttonKeyPressed.isNotEmpty) {
+            pressAction = action.buttonKeyPressed;
+          } else {
+            final result = await showConfirmDialog(
+              data["message"]!,
+              barrierDismissible: false,
+            );
+
+            pressAction = result == true ? "yes" : "no";
           }
-          break;
-        default:
-      }
-    } catch (e, trace) {
-      Get.log("NOTIFICATION : $e");
-      Get.log("NOTIFICATION : $trace");
+
+          final res = await Dio().post(
+            "$API_URL/bookings/property-ad/pay-cash/survey-response/landlord",
+            data: {"bookingId": bookingId, "action": pressAction},
+          );
+          if (res.statusCode == 200) {
+            if (action.id != null) AwesomeNotifications().cancel(action.id!);
+          }
+        } catch (_) {}
+        break;
+      case "pay-cash-survey-tenant":
+        _handleTenantBookingSurveyTappedEvents(payload, action.id!);
+
+        break;
+      default:
     }
   }
 
@@ -259,6 +270,54 @@ class NotificationController {
           );
         }
         break;
+      case "pay-cash-survey-landlord":
+        final payload = json.decode(msg.data["payload"]);
+
+        if (payload == null) return;
+
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking survey",
+            body: payload["message"],
+            notificationLayout: NotificationLayout.BigText,
+            payload: Map<String, String?>.from(msg.data),
+            locked: true,
+          ),
+          actionButtons: [
+            NotificationActionButton(
+              key: "yes",
+              label: "Yes",
+              actionType: ActionType.SilentBackgroundAction,
+            ),
+            NotificationActionButton(
+              key: "no",
+              label: "No",
+              actionType: ActionType.SilentBackgroundAction,
+            ),
+          ],
+        );
+        break;
+      case "pay-cash-survey-tenant":
+        final payload = json.decode(msg.data["payload"]);
+
+        if (payload == null) return;
+
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
+            title: "Booking survey",
+            body: payload["message"],
+            notificationLayout: NotificationLayout.BigText,
+            payload: Map<String, String?>.from(msg.data),
+            locked: true,
+          ),
+        );
+        break;
 
       default:
         break;
@@ -266,29 +325,24 @@ class NotificationController {
   }
 
   static Future<void> _messageNotificationHandler(
-    RemoteMessage msg,
+    RemoteMessage remoteMessage,
     bool isForeGroundMessage,
   ) async {
     try {
-      final message = types.Message.fromJson(jsonDecode(msg.data["message"]));
-      final sender = User.fromJson(msg.data["sender"]);
-      final reciever = User.fromJson(msg.data["reciever"]);
+      final payload = json.decode(remoteMessage.data["payload"]);
 
-      final conv = ChatConversation.newConversation(reciever, sender);
-      await conv.loadMessages();
-      conv.newMessage(message);
+      final message = ChatMessage.fromMap(payload["message"]);
+      final sender = ChatUser.fromMap(payload["sender"]);
+      final reciever = ChatUser.fromMap(payload["reciever"]);
 
-      final String notificationMessage;
+      final conv = ChatConversation.newConversation(
+        me: reciever,
+        friend: sender,
+        lastMessage: message,
+      );
 
-      if (message is types.TextMessage) {
-        notificationMessage = message.text;
-      } else if (message is types.ImageMessage) {
-        notificationMessage = "Sent an image";
-      } else if (message is types.AudioMessage) {
-        notificationMessage = "Sent a voice message";
-      } else {
-        notificationMessage = "Sent a file";
-      }
+      conv.saveChat();
+      await message.saveToSameKeyLocaleMessages(conv.key);
 
       if (ChatConversation.currrentChatKey == conv.key) {
         return;
@@ -300,12 +354,11 @@ class NotificationController {
             id: Random().nextInt(1000),
             channelKey: "chat_channel_key",
             groupKey: "chat_channel_group_key",
-            title: sender.fullName,
-            body: notificationMessage,
+            title: remoteMessage.notification?.title,
+            body: remoteMessage.notification?.body,
             notificationLayout: NotificationLayout.Messaging,
-            payload: Map<String, String?>.from(msg.data),
+            payload: Map<String, String?>.from(remoteMessage.data),
             summary: 'Chat notification',
-            largeIcon: sender.profilePicture,
           ),
         );
       }
@@ -374,13 +427,78 @@ class NotificationController {
   static Future<void> _handleChatMessageTappedEvents(
       Map<String, dynamic> data) async {
     try {
-      final sender = User.fromJson(data["sender"]);
-      final reciever = User.fromJson(data["reciever"]);
-      final conv = ChatConversation.newConversation(reciever, sender);
+      final payload = json.decode(data["payload"]);
+
+      final message = ChatMessage.fromMap(payload["message"]);
+
+      final sender = ChatUser.fromMap(payload["sender"]);
+      final reciever = ChatUser.fromMap(payload["reciever"]);
+
+      final conv = ChatConversation.newConversation(
+        me: reciever,
+        friend: sender,
+        lastMessage: message,
+      );
 
       Get.to(() => FlyerChatScreen(conversation: conv));
     } catch (e) {
       Get.log("$e");
+    }
+  }
+
+  static Future<void> _handleTenantBookingSurveyTappedEvents(
+    Map<String, dynamic> payload,
+    int notificationKey,
+  ) async {
+    try {
+      final data = json.decode(payload["payload"]);
+      final answers = List<Map<String, dynamic>>.from(data["answers"]);
+
+      final result = await showModalBottomSheet(
+        isDismissible: false,
+        context: Get.context!,
+        builder: (context) {
+          return Column(
+            children: [
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    data["message"],
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              const Divider(),
+              ...answers.map((e) {
+                return ListTile(
+                  leading: CircleAvatar(
+                    child: Text((answers.indexOf(e) + 1).toString()),
+                  ),
+                  onTap: () => Get.back(result: e["value"]),
+                  title: Text(
+                    "${e["label"]}",
+                    style: const TextStyle(color: ROOMY_PURPLE),
+                  ),
+                );
+              })
+            ],
+          );
+        },
+      );
+
+      if (result == null) return;
+      final res = await Dio().post(
+        "$API_URL/bookings/property-ad/pay-cash/survey-response/tenant",
+        data: {
+          "bookingId": data["bookingId"],
+          "action": result,
+        },
+      );
+      if (res.statusCode == 200) AwesomeNotifications().cancel(notificationKey);
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
     }
   }
 }

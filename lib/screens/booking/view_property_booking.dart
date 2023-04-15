@@ -12,7 +12,7 @@ import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
-import 'package:roomy_finder/screens/booking/pay_rent/pay_property_booking.dart';
+import 'package:roomy_finder/screens/booking/pay_property_booking.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -58,7 +58,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
 
   Future<void> declineBooking(PropertyBooking booking) async {
     final shouldContinue = await showConfirmDialog(
-      "Do you really want to decline this booking",
+      "Decline request?",
     );
     if (shouldContinue != true) return;
     try {
@@ -141,14 +141,18 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   }
 
   Future<void> chatWithClient(PropertyBooking booking) async {
-    final conv =
-        ChatConversation.newConversation(AppController.me, booking.client);
+    final conv = ChatConversation.newConversation(
+      me: AppController.me.chatUser,
+      friend: booking.client.chatUser,
+    );
     Get.to(() => FlyerChatScreen(conversation: conv));
   }
 
   Future<void> chatWithLandlord(PropertyBooking booking) async {
-    final conv =
-        ChatConversation.newConversation(AppController.me, booking.poster);
+    final conv = ChatConversation.newConversation(
+      me: AppController.me.chatUser,
+      friend: booking.poster.chatUser,
+    );
     Get.to(() => FlyerChatScreen(conversation: conv));
   }
 }
@@ -284,12 +288,15 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+
                       // About landlord
                       if (!booking.isMine && booking.isPayed) ...[
                         const SizedBox(height: 10),
-                        const Text(
-                          "About Landlond",
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          booking.ad.posterType == "Landlord"
+                              ? "About Landlond"
+                              : "About agent/Broker",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                       if (!booking.isMine && booking.isPayed)
@@ -299,26 +306,51 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                             padding: const EdgeInsets.all(10.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Label(
-                                    label: "Name",
-                                    value: booking.poster.fullName),
-                                Label(
-                                    label: "Country",
-                                    value: booking.poster.country),
-                                Label(
-                                    label: "Email",
-                                    value: booking.poster.email),
-                                Label(
-                                    label: "Phone",
-                                    value: booking.poster.phone),
-                                Label(
-                                    label: "Gender",
-                                    value: booking.poster.gender),
-                              ],
+                              children: booking.ad.posterType == "Landlord"
+                                  ? [
+                                      Label(
+                                        label: "Name",
+                                        value: booking.poster.fullName,
+                                      ),
+                                      Label(
+                                        label: "Country",
+                                        value: booking.poster.country,
+                                      ),
+                                      Label(
+                                        label: "Email",
+                                        value: booking.poster.email,
+                                      ),
+                                      Label(
+                                        label: "Phone",
+                                        value: booking.poster.phone,
+                                      ),
+                                      Label(
+                                        label: "Gender",
+                                        value: booking.poster.gender,
+                                      ),
+                                    ]
+                                  : [
+                                      Label(
+                                        label: "Name",
+                                        value:
+                                            "${booking.ad.agentInfo?["firstName"]} "
+                                            "${booking.ad.agentInfo?["lastName"]}",
+                                      ),
+                                      Label(
+                                        label: "Email",
+                                        value:
+                                            "${booking.ad.agentInfo?["email"]}",
+                                      ),
+                                      Label(
+                                        label: "Phone",
+                                        value:
+                                            "${booking.ad.agentInfo?["phone"]}",
+                                      ),
+                                    ],
                             ),
                           ),
                         ),
+
                       // About client
                       if (booking.isMine && booking.isPayed) ...[
                         const SizedBox(height: 10),

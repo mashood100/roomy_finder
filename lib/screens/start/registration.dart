@@ -24,6 +24,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/login.dart';
+import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 // import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
@@ -42,6 +43,7 @@ class _RegistrationController extends LoadingController {
   final showPassword = false.obs;
   final showConfirmPassword = false.obs;
   final acceptTermsAndConditions = false.obs;
+  final acceptLandlordPolicy = false.obs;
   PhoneNumber phoneNumber = PhoneNumber(dialCode: "971", isoCode: "AE");
 
   String _emailVerificationCode = "";
@@ -271,16 +273,17 @@ class _RegistrationController extends LoadingController {
         imageUrl = await (await uploadTask).ref.getDownloadURL();
       }
 
-      final res = await ApiService.getDio.post(
-        "/auth/credentials",
-        data: {
-          ...information,
-          "type": accountType.value.name,
-          "phone": phoneNumber.phoneNumber,
-          "fcmToken": await FirebaseMessaging.instance.getToken(),
-          "profilePicture": imageUrl,
-        },
-      );
+      final data = {
+        ...information,
+        "type": accountType.value.name,
+        "phone": phoneNumber.phoneNumber,
+        "fcmToken": await FirebaseMessaging.instance.getToken(),
+        "profilePicture": imageUrl,
+      };
+
+      data.remove("confirmPassword");
+
+      final res = await ApiService.getDio.post("/auth/credentials", data: data);
 
       if (res.statusCode == 409) {
         showGetSnackbar(
@@ -353,6 +356,10 @@ class _RegistrationController extends LoadingController {
 
       if (acceptTermsAndConditions.isFalse) {
         showToast("Please accept terms and conditions");
+        return false;
+      }
+      if (acceptLandlordPolicy.isFalse && isLandlord) {
+        showToast("Please accept landlord policies");
         return false;
       }
       if (_canVerifyEmail) {
@@ -795,14 +802,19 @@ class RegistrationScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            GestureDetector(
-                              onTap: () {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                                controller.acceptTermsAndConditions.toggle();
-                              },
-                              child: Row(
-                                children: [
-                                  const Text(
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Get.to(() {
+                                      return const ViewPdfScreen(
+                                        title: "Terms and conditions",
+                                        asset:
+                                            "assets/pdf/terms-and-conditions.pdf",
+                                      );
+                                    });
+                                  },
+                                  child: const Text(
                                     "Terms and conditions",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -810,16 +822,62 @@ class RegistrationScreen extends StatelessWidget {
                                       color: ROOMY_ORANGE,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  Icon(
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () {
+                                    FocusManager.instance.primaryFocus
+                                        ?.unfocus();
+                                    controller.acceptTermsAndConditions
+                                        .toggle();
+                                  },
+                                  child: Icon(
                                     controller.acceptTermsAndConditions.value
                                         ? Icons.check_circle_outline_outlined
                                         : Icons.circle_outlined,
                                     color: ROOMY_ORANGE,
                                   ),
+                                ),
+                              ],
+                            ),
+                            if (controller.isLandlord)
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.to(() {
+                                        return const ViewPdfScreen(
+                                          title: "Landlord Agreement",
+                                          asset:
+                                              "assets/pdf/landlord_agreement.pdf",
+                                        );
+                                      });
+                                    },
+                                    child: const Text(
+                                      "Landlord Agreement",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: ROOMY_ORANGE,
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      FocusManager.instance.primaryFocus
+                                          ?.unfocus();
+                                      controller.acceptLandlordPolicy.toggle();
+                                    },
+                                    child: Icon(
+                                      controller.acceptLandlordPolicy.value
+                                          ? Icons.check_circle_outline_outlined
+                                          : Icons.circle_outlined,
+                                      color: ROOMY_ORANGE,
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ),
                             // const Divider(height: 30),
                             // Center(
                             //   child: TextButton(
@@ -876,6 +934,7 @@ class RegistrationScreen extends StatelessWidget {
                                 } else {
                                   controller.saveCredentials(val);
                                 }
+                                // controller.saveCredentials(val);
                               },
                               controller: controller._piniputController,
                               defaultPinTheme: PinTheme(

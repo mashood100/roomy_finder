@@ -10,12 +10,14 @@ Future<bool?> showConfirmDialog(
   bool? isAlert,
   String? refuseText,
   String? confirmText,
+  bool? barrierDismissible,
 }) async {
   final context = Get.context;
   if (context == null) return null;
 
   final response = await showCupertinoDialog<bool>(
     context: context,
+    barrierDismissible: barrierDismissible ?? true,
     builder: (context) {
       return CupertinoAlertDialog(
         title: title != null ? Text(title) : null,

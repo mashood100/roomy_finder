@@ -24,6 +24,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
@@ -74,7 +75,7 @@ class _PostPropertyAdController extends LoadingController {
   final address = <String, String>{
     "city": "",
     "location": "",
-    "buildingNane": "",
+    "buildingName": "",
     "floorNumber": "",
     "countryCode": AppController.instance.country.value.code,
   }.obs;
@@ -82,8 +83,8 @@ class _PostPropertyAdController extends LoadingController {
   final socialPreferences = {
     "numberOfPeople": "1 to 5",
     "grouping": "Single",
-    "gender": "Male",
-    "nationality": "Arabs",
+    "gender": "Mix",
+    "nationality": "Mix",
     "smoking": false,
     "cooking": false,
     "drinking": false,
@@ -216,6 +217,10 @@ class _PostPropertyAdController extends LoadingController {
     List<String> imagesUrls = [];
     List<String> videosUrls = [];
     try {
+      if (information["description"] == null ||
+          "${information["description"]}".trim().isEmpty) {
+        information.remove("description");
+      }
       final data = {
         ...information,
         "address": address,
@@ -262,6 +267,10 @@ class _PostPropertyAdController extends LoadingController {
       data["images"] = imagesUrls;
       data["videos"] = videosUrls;
 
+      if (data["posterType"] != "Landlord") {
+        data.remove("agentInfo");
+      }
+
       final res = await ApiService.getDio.post("/ads/property-ad", data: data);
 
       if (res.statusCode != 200) {
@@ -296,6 +305,11 @@ class _PostPropertyAdController extends LoadingController {
 
     List<String> imagesUrls = [];
     List<String> videosUrls = [];
+
+    if (information["description"] == null ||
+        "${information["description"]}".trim().isEmpty) {
+      information.remove("description");
+    }
     try {
       final data = {
         ...information,
@@ -344,6 +358,8 @@ class _PostPropertyAdController extends LoadingController {
 
       final res = await ApiService.getDio
           .put("/ads/property-ad/${oldData?.id}", data: data);
+
+      // print(res.data["details"]);
 
       if (res.statusCode != 200) {
         deleteManyFilesFromUrl(imagesUrls);
@@ -603,7 +619,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               },
                               {
                                 "value": "Room",
-                                "label": "Reguler Room",
+                                "label": "Regular Room",
                                 "asset": "assets/icons/master_room.png",
                               },
                               {
@@ -618,37 +634,32 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   controller.information["type"] =
                                       "${e["value"]}";
                                 },
-                                child: Stack(
-                                  alignment: Alignment.topRight,
-                                  children: [
-                                    Container(
-                                      decoration: shadowedBoxDecoration,
-                                      padding: const EdgeInsets.all(10),
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        children: [
-                                          const SizedBox(height: 20),
-                                          Expanded(
-                                              child:
-                                                  Image.asset("${e["asset"]}")),
-                                          Text(
-                                            "${e["label"]}",
-                                            style: const TextStyle(
-                                              color: ROOMY_PURPLE,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                child: Container(
+                                  decoration: shadowedBoxDecoration,
+                                  padding: const EdgeInsets.all(10),
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(height: 20),
+                                      Expanded(
+                                        child: Image.asset(
+                                          "${e["asset"]}",
+                                          color:
+                                              controller.information["type"] !=
+                                                      e["value"]
+                                                  ? Colors.grey
+                                                  : null,
+                                        ),
                                       ),
-                                    ),
-                                    Icon(
-                                      controller.information["type"] ==
-                                              e["value"]
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    )
-                                  ],
+                                      Text(
+                                        "${e["label"]}",
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             }).toList(),
@@ -1087,6 +1098,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+
                     // property preferences
                     SingleChildScrollView(
                       child: Column(
@@ -1149,16 +1161,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             labelText: 'nationality'.tr,
                             value: controller.socialPreferences["nationality"]
                                 as String,
-                            items: const [
-                              "Arabs",
-                              "Pakistani",
-                              "Indian",
-                              "European",
-                              "Filipinos",
-                              "African",
-                              "Russian",
-                              "Mix",
-                            ],
+                            items: allNationalities,
                             onChanged: controller.isLoading.isTrue
                                 ? null
                                 : (val) {
@@ -1192,7 +1195,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               {
                                 "value": "smoking",
                                 "label": "Smoking",
-                                "asset": "assets/icons/cigarette.png",
+                                "asset": "assets/icons/smoking.png",
                               },
                               {
                                 "value": "drinking",
@@ -1219,38 +1222,30 @@ class PostPropertyAdScreen extends StatelessWidget {
                                         "${e["value"]}"] = true;
                                   }
                                 },
-                                child: Stack(
-                                  alignment: Alignment.topRight,
-                                  children: [
-                                    Container(
-                                      decoration: shadowedBoxDecoration,
-                                      padding: const EdgeInsets.all(10),
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        children: [
-                                          const SizedBox(height: 10),
-                                          Expanded(
-                                            child: Image.asset("${e["asset"]}"),
-                                          ),
-                                          Text(
-                                            "${e["label"]}",
-                                            style: const TextStyle(
-                                              color: ROOMY_PURPLE,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                child: Container(
+                                  decoration: shadowedBoxDecoration,
+                                  padding: const EdgeInsets.all(10),
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(height: 10),
+                                      Expanded(
+                                        child: Image.asset("${e["asset"]}",
+                                            color: controller.socialPreferences[
+                                                        e["value"]] !=
+                                                    true
+                                                ? Colors.grey
+                                                : null),
                                       ),
-                                    ),
-                                    Icon(
-                                      controller.socialPreferences[
-                                                  e["value"]] ==
-                                              true
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    )
-                                  ],
+                                      Text(
+                                        "${e["label"]}",
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             }).toList(),
@@ -1282,7 +1277,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisSpacing: 10,
                             mainAxisSpacing: 10,
-                            children: allAmenties
+                            children: allAmenities
                                 .map(
                                   (e) => GestureDetector(
                                     onTap: () {
@@ -1294,41 +1289,33 @@ class PostPropertyAdScreen extends StatelessWidget {
                                             .add("${e["value"]}");
                                       }
                                     },
-                                    child: Stack(
-                                      alignment: Alignment.topRight,
-                                      children: [
-                                        Container(
-                                          decoration: shadowedBoxDecoration,
-                                          padding: const EdgeInsets.all(10),
-                                          alignment: Alignment.center,
-                                          child: Column(
-                                            children: [
-                                              const SizedBox(height: 10),
-                                              Expanded(
-                                                child: Image.asset(
-                                                    "${e["asset"]}"),
-                                              ),
-                                              Text(
-                                                "${e["value"]}",
-                                                style: const TextStyle(
-                                                  color: ROOMY_PURPLE,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 10,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
+                                    child: Container(
+                                      decoration: shadowedBoxDecoration,
+                                      padding: const EdgeInsets.all(10),
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(height: 10),
+                                          Expanded(
+                                            child: Image.asset(
+                                              "${e["asset"]}",
+                                              color: controller.amenties
+                                                      .contains(e["value"])
+                                                  ? null
+                                                  : Colors.grey,
+                                            ),
                                           ),
-                                        ),
-                                        Icon(
-                                          controller.amenties
-                                                  .contains(e["value"])
-                                              ? Icons
-                                                  .check_circle_outline_outlined
-                                              : Icons.circle_outlined,
-                                          color: ROOMY_ORANGE,
-                                        )
-                                      ],
+                                          Text(
+                                            "${e["value"]}",
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 10,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 )
@@ -1371,17 +1358,19 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     "imageUrl": e,
                                     "isFile": false,
                                     "onViewImage": () {
-                                      showModalBottomSheet(
-                                        isScrollControlled: true,
-                                        context: Get.context!,
-                                        builder: (context) {
-                                          return SafeArea(
-                                            child: CachedNetworkImage(
-                                              imageUrl: e,
-                                            ),
-                                          );
-                                        },
-                                      );
+                                      Get.to(transition: Transition.zoom, () {
+                                        return ViewImages(
+                                          images: controller.oldImages
+                                              .map((e) =>
+                                                  CachedNetworkImageProvider(e))
+                                              .toList(),
+                                          initialIndex:
+                                              controller.oldImages.indexOf(e),
+                                          title: oldData == null
+                                              ? "Images"
+                                              : "Old images",
+                                        );
+                                      });
                                     }
                                   };
                                 }),
@@ -1391,15 +1380,19 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     "imageUrl": e.path,
                                     "isFile": true,
                                     "onViewImage": () {
-                                      showModalBottomSheet(
-                                        isScrollControlled: true,
-                                        context: Get.context!,
-                                        builder: (context) {
-                                          return SafeArea(
-                                            child: Image.file(File(e.path)),
-                                          );
-                                        },
-                                      );
+                                      Get.to(transition: Transition.zoom, () {
+                                        return ViewImages(
+                                          images: controller.images
+                                              .map((e) =>
+                                                  FileImage(File(e.path)))
+                                              .toList(),
+                                          initialIndex:
+                                              controller.images.indexOf(e),
+                                          title: oldData == null
+                                              ? "Images"
+                                              : "New images",
+                                        );
+                                      });
                                     }
                                   };
                                 }),
@@ -1581,7 +1574,10 @@ class PostPropertyAdScreen extends StatelessWidget {
                                         ? null
                                         : () => controller._pickPicture(),
                                     icon: const Icon(Icons.image),
-                                    label: Text("Images".tr),
+                                    label: Text(
+                                      "Images".tr,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1595,7 +1591,10 @@ class PostPropertyAdScreen extends StatelessWidget {
                                         : () => controller._pickPicture(
                                             gallery: false),
                                     icon: const Icon(Icons.camera),
-                                    label: Text("camera".tr),
+                                    label: Text(
+                                      "camera".tr,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1608,7 +1607,10 @@ class PostPropertyAdScreen extends StatelessWidget {
                                         ? null
                                         : controller._pickVideo,
                                     icon: const Icon(Icons.video_camera_back),
-                                    label: Text("Videos".tr),
+                                    label: Text(
+                                      "Videos".tr,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1661,7 +1663,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                             child: TextFormField(
                               initialValue: controller
-                                  .information["description"] as String,
+                                  .information["description"] as String?,
                               enabled: controller.isLoading.isFalse,
                               decoration: InputDecoration(
                                 hintText: 'Type...'.tr,
@@ -1746,15 +1748,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               controller._moveToNextPage();
                               break;
                             case 6:
-                              if (controller.images.isEmpty &&
-                                  controller.oldImages.isEmpty) {
-                                showGetSnackbar(
-                                  "You need atleast one image",
-                                  severity: Severity.error,
-                                );
-                              } else {
-                                controller._moveToNextPage();
-                              }
+                              controller._moveToNextPage();
                               break;
                             case 7:
                               if (oldData != null) {

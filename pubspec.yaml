@@ -57,13 +57,8 @@ dependencies:
   flutter_typeahead: ^4.3.6
   flutter_credit_card: ^3.0.5
   month_year_picker: ^0.2.0+2
-  native_pdf_view: ^6.0.0+1
   package_info_plus: ^1.4.2
-  flutter_inappwebview: ^5.7.2+3
   cached_network_image: ^3.2.3
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   flutter_chat_ui: ^1.5.8
   flutter_chat_types: ^3.6.0
@@ -82,6 +77,8 @@ dependencies:
   share_plus: ^4.5.3
   just_audio: ^0.9.32
   readmore: ^2.2.0
+  photo_view: ^0.13.0
+  syncfusion_flutter_pdfviewer: ^20.4.54
 
 dev_dependencies:
   flutter_test:
@@ -109,8 +106,11 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/images/social/
     - assets/pdf/
     - assets/icons/
+    - assets/icons/home/
+    - assets/icons/drawer/
     - assets/fonts/
     - assets/audio/
 
@@ -132,6 +132,12 @@ flutter:
         - asset: assets/fonts/Roboto/Roboto-Regular.ttf
         - asset: assets/fonts/Roboto/Roboto-Light.ttf
         - asset: assets/fonts/Roboto/Roboto-Italic.ttf
+    - family: Avro
+      fonts:
+        - asset: assets/fonts/Arvo/Arvo-Bold.ttf
+        - asset: assets/fonts/Arvo/Arvo-BoldItalic.ttf
+        - asset: assets/fonts/Arvo/Arvo-Regular.ttf
+        - asset: assets/fonts/Arvo/Arvo-Italic.ttf
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
@@ -147,16 +153,16 @@ flutter_icons:
 # Splash screen
 flutter_native_splash:
   color: "#711785"
-  image: assets/images/splas_log.jpg
+  image: assets/images/roomy_finder_splash_logo.png
   # branding: assets/branding-production.png
   color_dark: "#711785"
-  image_dark: assets/images/splas_log.jpg
+  image_dark: assets/images/roomy_finder_splash_logo.png
   # branding_dark: assets/branding-production.png
 
   android_12:
-    image: assets/images/splas_log.jpg
+    image: assets/images/roomy_finder_splash_logo.png
     icon_background_color: "#711785"
-    image_dark: assets/images/splas_log.jpg
+    image_dark: assets/images/roomy_finder_splash_logo.png
     icon_background_color_dark: "#711785"
 
   web: false
