@@ -68,23 +68,21 @@ class ChatConversation {
 
       final file = File(path.join(directory.path, "chats" "${me.id}.json"));
 
-      final chats = <ChatConversation>[];
+      final chats = <ChatConversation>[this];
 
       if (file.existsSync()) {
         final content = file.readAsStringSync();
         if (content.isNotEmpty) {
-          chats.addAll((json.decode(content) as List).map((e) {
-            return ChatConversation.fromJson(e);
-          }).where((e) => e != this));
+          final oldChats = (json.decode(content) as List)
+              .map((e) => ChatConversation.fromJson(e));
+
+          chats.addAll(oldChats.where((e) => e.key != key));
         }
       } else {
         file.createSync(recursive: true);
       }
 
-      chats.insert(0, this);
-
-      await file
-          .writeAsString(jsonEncode(chats.map((e) => e.toJson()).toList()));
+      await file.writeAsString(json.encode(chats));
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -116,21 +114,22 @@ class ChatConversation {
 
       final file = File(path.join(directory.path, "chats" "${me.id}.json"));
 
+      final chats = <ChatConversation>[];
+
       if (file.existsSync()) {
         final content = file.readAsStringSync();
-
         if (content.isNotEmpty) {
-          final chats = (json.decode(content) as List).map((e) {
-            return ChatConversation.fromJson(e);
-          }).where((e) => e != this);
+          final oldChats = (json.decode(content) as List)
+              .map((e) => ChatConversation.fromJson(e));
 
-          await file
-              .writeAsString(jsonEncode(chats.map((e) => e.toJson()).toList()));
+          chats.addAll(oldChats.where((e) => e.key != key));
         }
-        return true;
       } else {
-        return false;
+        file.createSync(recursive: true);
       }
+
+      await file.writeAsString(json.encode(chats));
+      return true;
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
