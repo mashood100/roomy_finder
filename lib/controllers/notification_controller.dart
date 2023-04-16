@@ -437,6 +437,8 @@ class NotificationController {
         lastMessage: message,
       );
 
+      conv.saveChat();
+
       Get.to(() => FlyerChatScreen(conversation: conv));
       if (ChatConversation.currrentChatOnTapCallBack != null) {
         ChatConversation.currrentChatOnTapCallBack!();

@@ -37,18 +37,18 @@ class _ChatTabController extends LoadingController {
       final chats =
           await ChatConversation.getAllSavedChats(AppController.me.id);
 
-      await Future.wait(
-          chats.where((e) => e.friend.fcmToken == null).map((e) async {
-        await e.updateChatInfo();
-      }));
-
-      for (final c in chats) {
-        c.saveChat();
-      }
-
       conversations.clear();
-      conversations.addAll(chats.where((e) => e.friend.fcmToken != null));
-      conversations.sort((a, b) => a.createdAt.isAfter(b.createdAt) ? 1 : -1);
+      conversations.addAll(chats);
+      conversations.sort((a, b) => a.createdAt.isBefore(b.createdAt) ? 1 : -1);
+      update();
+      for (var c in conversations) {
+        if (c.friend.fcmToken == null) {
+          c.updateChatInfo().then((_) {
+            update();
+            return c.saveChat();
+          });
+        }
+      }
     } catch (_) {
     } finally {
       isLoading(false);
