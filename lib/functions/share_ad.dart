@@ -10,7 +10,7 @@ import 'package:share_plus/share_plus.dart';
 Future<Uri> _createShareChanceLink(ad) async {
   final String title;
   final String description;
-  final String imageUrl;
+  final String? imageUrl;
   final String adId;
   final String adType;
 
@@ -18,13 +18,13 @@ Future<Uri> _createShareChanceLink(ad) async {
     title = "${ad.type} for rent. ${formatMoney(ad.prefferedRentDisplayPrice)}";
     description = "${ad.quantity} ${ad.type}${ad.quantity > 1 ? 's' : ''} "
         "in ${ad.address["city"]}, ${ad.address["location"]}";
-    imageUrl = ad.images[0];
+    imageUrl = ad.images.isNotEmpty ? ad.images[0] : null;
     adId = ad.id;
     adType = "property-ad";
   } else if (ad is RoommateAd) {
     title = "${ad.action}. Budget : ${formatMoney(ad.budget)}";
     description = "${ad.address["city"]}, ${ad.address["location"]}";
-    imageUrl = ad.images[0];
+    imageUrl = ad.images.isNotEmpty ? ad.images[0] : null;
     adId = ad.id;
     adType = "roommate-ad";
   } else {
@@ -37,7 +37,7 @@ Future<Uri> _createShareChanceLink(ad) async {
     androidParameters: AndroidParameters(packageName: packageInfo.packageName),
     iosParameters: IOSParameters(bundleId: packageInfo.packageName),
     socialMetaTagParameters: SocialMetaTagParameters(
-      imageUrl: Uri.parse(imageUrl),
+      imageUrl: imageUrl != null ? Uri.parse(imageUrl) : null,
       title: title,
       description: description,
     ),

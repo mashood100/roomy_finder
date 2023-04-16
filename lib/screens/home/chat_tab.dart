@@ -13,7 +13,7 @@ import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 
 import '../../functions/utility.dart';
 
-class ChatTabController extends LoadingController {
+class _ChatTabController extends LoadingController {
   final conversations = <ChatConversation>[].obs;
 
   @override
@@ -62,7 +62,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ChatTabController());
+    final controller = Get.put(_ChatTabController());
     return Obx(() {
       if (controller.isLoading.isTrue) {
         return const Center(
@@ -73,7 +73,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
         return const Center(child: Text("No Chat for now"));
       }
 
-      return GetBuilder<ChatTabController>(builder: (context) {
+      return GetBuilder<_ChatTabController>(builder: (context) {
         return ListView.builder(
           itemBuilder: (context, index) {
             final conv = controller.conversations[index];
@@ -135,7 +135,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   AppBar get appBar {
-    final controller = Get.put(ChatTabController());
+    final controller = Get.put(_ChatTabController());
     return AppBar(
       backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
 
@@ -204,4 +204,15 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   FloatingActionButton? get floatingActionButton => null;
+
+  @override
+  void onIndexSelected(int index) {
+    final controller = Get.put(_ChatTabController());
+    controller._loadConversations();
+    AppController.instance.haveNewMessage(false);
+    AwesomeNotifications().cancelNotificationsByChannelKey("chat_channel_key");
+    AwesomeNotifications().cancelNotificationsByGroupKey(
+      "chat_channel_group_key",
+    );
+  }
 }

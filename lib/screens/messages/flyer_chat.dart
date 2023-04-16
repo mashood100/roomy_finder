@@ -47,6 +47,7 @@ class FlyerChatScreenController extends GetxController
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     conversation.loadMessages().then((msgs) {
+      messages.clear();
       messages.addAll(msgs);
       update();
     });
@@ -58,10 +59,18 @@ class FlyerChatScreenController extends GetxController
     super.onInit();
 
     ChatConversation.currrentChatKey = conversation.key;
+    ChatConversation.currrentChatOnTapCallBack = () {
+      conversation.loadMessages().then((msgs) {
+        messages.clear();
+        messages.addAll(msgs);
+        update();
+      });
+    };
 
     WidgetsBinding.instance.addObserver(this);
 
     conversation.loadMessages().then((msgs) {
+      messages.clear();
       messages.addAll(msgs);
       update();
     });
@@ -85,7 +94,7 @@ class FlyerChatScreenController extends GetxController
           );
           message.saveToSameKeyLocaleMessages(convKey);
 
-          if (convKey == conversation.key) {
+          if (convKey == conversation.key && !messages.contains(message)) {
             messages.insert(0, message);
             update();
             _audioPlayer
@@ -105,6 +114,8 @@ class FlyerChatScreenController extends GetxController
     _newMessageController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     ChatConversation.currrentChatKey = null;
+    ChatConversation.currrentChatOnTapCallBack = null;
+    conversation.saveChat();
     _audioPlayer.dispose();
     super.onClose();
   }
@@ -201,7 +212,7 @@ class FlyerChatScreenController extends GetxController
         final res = await ApiService.getDio.post(
           '/messages/send',
           data: {
-            "notificationTitle": conversation.friend.fullName,
+            "notificationTitle": conversation.me.fullName,
             "type": 'file',
             "body": "Sent a file",
             "recieverId": conversation.friend.id,
@@ -315,7 +326,7 @@ class FlyerChatScreenController extends GetxController
       final res = await ApiService.getDio.post(
         '/messages/send',
         data: {
-          "notificationTitle": conversation.friend.fullName,
+          "notificationTitle": conversation.me.fullName,
           "type": messageType,
           "body": "Sent a $messageType",
           "recieverId": conversation.friend.id,
@@ -421,7 +432,7 @@ class FlyerChatScreenController extends GetxController
       final res = await ApiService.getDio.post(
         '/messages/send',
         data: {
-          "notificationTitle": conversation.friend.fullName,
+          "notificationTitle": conversation.me.fullName,
           "type": 'text',
           "body": partialMessage.text,
           "recieverId": conversation.friend.id,
@@ -512,6 +523,8 @@ class FlyerChatScreenController extends GetxController
           messages.clear();
           update();
           ChatMessage.deleteSameKeyLocaleMessages(conversation.key);
+          conversation.lastMessage = null;
+          conversation.saveChat();
         }
 
         break;
@@ -552,7 +565,9 @@ class FlyerChatScreen extends StatelessWidget {
                   : null,
             ),
             const SizedBox(width: 10),
-            Text(conversation.friend.fullName)
+            GetBuilder<FlyerChatScreenController>(builder: (controller) {
+              return Text(controller.conversation.friend.fullName);
+            })
           ],
         ),
         actions: [

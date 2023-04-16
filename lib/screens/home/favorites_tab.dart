@@ -262,4 +262,11 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   FloatingActionButton? get floatingActionButton => null;
+
+  @override
+  void onIndexSelected(int index) {
+    final controller = Get.put(_FavoriteTabController());
+    controller._loadFavoritePropertyAds();
+    controller._loadFavoriteRoommateAds();
+  }
 }

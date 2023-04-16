@@ -29,6 +29,7 @@ class ChatConversation {
   /// This value is set went entered in a chat. This will be uses by
   /// the Notification controller.
   static String? currrentChatKey;
+  static void Function()? currrentChatOnTapCallBack;
 
   ChatConversation.newConversation({
     required this.me,

@@ -117,12 +117,19 @@ class MyBookingsCreen extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(5),
-                          child: CachedNetworkImage(
-                            imageUrl: booking.ad.images[0],
-                            height: 120,
-                            width: 140,
-                            fit: BoxFit.cover,
-                          ),
+                          child: booking.ad.images.isEmpty
+                              ? Image.asset(
+                                  "assets/images/default_ad_picture.jpg",
+                                  height: 120,
+                                  width: 140,
+                                  fit: BoxFit.cover,
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: booking.ad.images[0],
+                                  height: 120,
+                                  width: 140,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 5),
