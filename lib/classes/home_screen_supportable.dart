@@ -4,4 +4,5 @@ abstract class HomeScreenSupportable implements Widget {
   AppBar? get appBar;
   BottomNavigationBarItem get navigationBarItem;
   Widget? get floatingActionButton;
+  void onIndexSelected(int index) {}
 }

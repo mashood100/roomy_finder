@@ -758,4 +758,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   FloatingActionButton? get floatingActionButton => null;
+
+  @override
+  void onIndexSelected(int index) {}
 }

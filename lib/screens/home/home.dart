@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -237,21 +236,13 @@ class Home extends GetView<HomeController> {
               : BottomNavigationBar(
                   currentIndex: controller.currentTabIndex.value,
                   onTap: (index) {
+                    controller.tabs[index].onIndexSelected(index);
                     if (controller.tabs[index] is MaintenanceTab) {
                       showToast("Comming soon");
                       return;
                     }
+
                     controller.currentTabIndex(index);
-                    if (controller.tabs[index] is MessagesTab) {
-                      final chatController = Get.put(ChatTabController());
-                      chatController.update();
-                      AppController.instance.haveNewMessage(false);
-                      AwesomeNotifications()
-                          .cancelNotificationsByChannelKey("chat_channel_key");
-                      AwesomeNotifications().cancelNotificationsByGroupKey(
-                        "chat_channel_group_key",
-                      );
-                    }
                   },
                   items:
                       controller.tabs.map((e) => e.navigationBarItem).toList(),

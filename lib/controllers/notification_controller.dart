@@ -438,6 +438,9 @@ class NotificationController {
       );
 
       Get.to(() => FlyerChatScreen(conversation: conv));
+      if (ChatConversation.currrentChatOnTapCallBack != null) {
+        ChatConversation.currrentChatOnTapCallBack!();
+      }
     } catch (e) {
       Get.log("$e");
     }

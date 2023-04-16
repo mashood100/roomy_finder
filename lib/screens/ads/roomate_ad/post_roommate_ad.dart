@@ -850,6 +850,12 @@ class PostRoommateAdScreen extends StatelessWidget {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(priceRegex)
                   ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'thisFieldIsRequired'.tr;
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 
