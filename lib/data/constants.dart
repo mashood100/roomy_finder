@@ -1,7 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
-// const SERVER_URL = "http://192.168.43.128:39000";
-// const SERVER_URL = "http://192.168.43.34:39005";
+// const SERVER_URL = "http://192.168.43.128:45000";
+// const SERVER_URL = "http://192.168.43.34:45000";
 const SERVER_URL = "http://roomy-finder-evennode.ap-1.evennode.com";
 
 const API_URL = "$SERVER_URL/api/v1";

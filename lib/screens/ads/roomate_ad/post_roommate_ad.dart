@@ -66,7 +66,7 @@ class _PostRoommateAdController extends LoadingController {
   final aboutYou = <String, Object?>{
     // "nationality": "Arab",
     // "astrologicalSign": "ARIES",
-    // "gender": "Male",
+    "gender": AppController.me.gender,
     // "age": "",
     // "occupation": "Professional",
     // "lifeStyle": "Early Bird",

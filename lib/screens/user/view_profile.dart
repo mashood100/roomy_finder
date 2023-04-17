@@ -17,6 +17,7 @@ import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
@@ -386,42 +387,41 @@ class ViewProfileScreen extends StatelessWidget {
                       expandedTitleScale: 1.2,
                       title: Text(me.fullName),
                       centerTitle: true,
-                      background: Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          Hero(
-                            tag: "profile-picture-hero",
-                            child: Obx(() {
-                              return CachedNetworkImage(
-                                imageUrl: AppController
-                                    .instance.user.value.profilePicture,
-                                width: double.infinity,
-                                fit: BoxFit.fitWidth,
-                                errorWidget: (context, error, stackTrace) {
-                                  return Container(
-                                    alignment: Alignment.center,
-                                    child: const Icon(
-                                      CupertinoIcons.profile_circled,
-                                      size: 60,
-                                    ),
-                                  );
-                                },
-                              );
-                            }),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                builder: (context) => CachedNetworkImage(
-                                  imageUrl: AppController
-                                      .instance.user.value.profilePicture,
+                      background: Hero(
+                        tag: "profile-picture-hero",
+                        child: Obx(() {
+                          return GestureDetector(
+                            onTap: () {
+                              Get.to(
+                                () => ViewImages(
+                                  title: "Profile picture",
+                                  images: [
+                                    CachedNetworkImageProvider(
+                                      AppController
+                                          .instance.user.value.profilePicture,
+                                    )
+                                  ],
                                 ),
+                                transition: Transition.zoom,
                               );
                             },
-                            icon: const Icon(Icons.fullscreen),
-                          )
-                        ],
+                            child: CachedNetworkImage(
+                              imageUrl: AppController
+                                  .instance.user.value.profilePicture,
+                              width: double.infinity,
+                              fit: BoxFit.fitWidth,
+                              errorWidget: (context, error, stackTrace) {
+                                return Container(
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    CupertinoIcons.profile_circled,
+                                    size: 60,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        }),
                       ),
                     ),
                   ),

@@ -855,7 +855,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
-                                        color: ROOMY_ORANGE,
+                                        color: Colors.black,
                                       ),
                                     ),
                                     const Spacer(),

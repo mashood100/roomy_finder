@@ -28,10 +28,10 @@ class MaintenanceTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/maintenance.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/maintenance.png", height: 20),
       icon: Image.asset(
         "assets/icons/home/maintenance.png",
-        height: 30,
+        height: 20,
         color: Colors.white,
       ),
       label: 'Maintenance'.tr,
