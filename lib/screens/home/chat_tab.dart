@@ -185,7 +185,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
       activeIcon: Obx(() {
         return Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset("assets/icons/home/chat.png", height: 30),
+          child: Image.asset("assets/icons/home/chat.png", height: 20),
         );
       }),
       icon: Obx(() {
@@ -193,7 +193,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
           showBadge: AppController.instance.haveNewMessage.isTrue,
           child: Image.asset(
             "assets/icons/home/chat.png",
-            height: 30,
+            height: 20,
             color: Colors.white,
           ),
         );

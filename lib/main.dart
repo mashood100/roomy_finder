@@ -132,17 +132,9 @@ class _MyAppState extends State<MyApp> {
         backgroundColor: ROOMY_PURPLE,
         showSelectedLabels: false,
         showUnselectedLabels: false,
-        unselectedLabelStyle: TextStyle(fontSize: 15),
-        selectedLabelStyle: TextStyle(fontSize: 15),
+        unselectedLabelStyle: TextStyle(fontSize: 5),
+        selectedLabelStyle: TextStyle(fontSize: 5),
         type: BottomNavigationBarType.fixed,
-        selectedIconTheme: IconThemeData(
-          color: Color.fromRGBO(255, 123, 77, 1),
-          size: 30,
-        ),
-        unselectedIconTheme: IconThemeData(
-          color: Color.fromRGBO(255, 123, 77, 1),
-          size: 30,
-        ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         // backgroundColor: Color.fromARGB(255, 1, 31, 56),

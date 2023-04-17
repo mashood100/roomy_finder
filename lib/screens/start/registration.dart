@@ -854,6 +854,8 @@ class RegistrationScreen extends StatelessWidget {
                                 ],
                               ),
                               if (controller.isLandlord)
+                                const SizedBox(height: 20),
+                              if (controller.isLandlord)
                                 Row(
                                   children: [
                                     GestureDetector(

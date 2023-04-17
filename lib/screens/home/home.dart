@@ -233,19 +233,23 @@ class Home extends GetView<HomeController> {
           ),
           bottomNavigationBar: AppController.me.isGuest
               ? null
-              : BottomNavigationBar(
-                  currentIndex: controller.currentTabIndex.value,
-                  onTap: (index) {
-                    controller.tabs[index].onIndexSelected(index);
-                    if (controller.tabs[index] is MaintenanceTab) {
-                      showToast("Comming soon");
-                      return;
-                    }
+              : SizedBox(
+                  height: 40,
+                  child: BottomNavigationBar(
+                    currentIndex: controller.currentTabIndex.value,
+                    onTap: (index) {
+                      controller.tabs[index].onIndexSelected(index);
+                      if (controller.tabs[index] is MaintenanceTab) {
+                        showToast("Comming soon");
+                        return;
+                      }
 
-                    controller.currentTabIndex(index);
-                  },
-                  items:
-                      controller.tabs.map((e) => e.navigationBarItem).toList(),
+                      controller.currentTabIndex(index);
+                    },
+                    items: controller.tabs
+                        .map((e) => e.navigationBarItem)
+                        .toList(),
+                  ),
                 ),
           floatingActionButton: controller
               .tabs[controller.currentTabIndex.value].floatingActionButton,

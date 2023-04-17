@@ -290,10 +290,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/account.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/account.png", height: 20),
       icon: Image.asset(
         "assets/icons/home/account.png",
-        height: 30,
+        height: 20,
         color: Colors.white,
       ),
       label: 'Account'.tr,

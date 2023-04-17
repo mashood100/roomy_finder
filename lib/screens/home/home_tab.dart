@@ -173,7 +173,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           child: const Text(
                                             "REGISTER",
                                             style: TextStyle(
-                                              color: ROOMY_PURPLE,
+                                              color: Colors.black,
                                               fontSize: 16,
                                             ),
                                           ),
@@ -185,7 +185,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           child: const Text(
                                             "LOGIN",
                                             style: TextStyle(
-                                              color: ROOMY_ORANGE,
+                                              color: Colors.black,
                                               fontSize: 16,
                                             ),
                                           ),
@@ -220,7 +220,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                                   Text(
                                                     AppController.me.fullName,
                                                     style: const TextStyle(
-                                                      color: ROOMY_PURPLE,
+                                                      color: Colors.black,
                                                       fontSize: 16,
                                                     ),
                                                   ),
@@ -245,7 +245,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                                         type[0].toUpperCase(),
                                                       ),
                                                       style: const TextStyle(
-                                                        color: ROOMY_PURPLE,
+                                                        color: Colors.black,
                                                         fontSize: 16,
                                                       ),
                                                     );
@@ -269,9 +269,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 horizontal: 20,
                                 vertical: 10,
                               ),
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
+                              decoration: const BoxDecoration(
                                 color: ROOMY_PURPLE,
                               ),
                               child: Row(
@@ -288,12 +286,10 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           vertical: 10,
                                         ),
                                         decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(50),
                                           color:
                                               controller._targetAds.value == e
-                                                  ? Colors.white
-                                                  : ROOMY_PURPLE,
+                                                  ? ROOMY_PURPLE
+                                                  : Colors.white,
                                         ),
                                         child: Text(
                                           e,
@@ -301,8 +297,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                           style: TextStyle(
                                             color:
                                                 controller._targetAds.value == e
-                                                    ? ROOMY_PURPLE
-                                                    : Colors.white,
+                                                    ? Colors.white
+                                                    : Colors.black,
                                           ),
                                         ),
                                       ),
@@ -405,10 +401,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                                 vertical: 0, horizontal: 12),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(50),
-                                        ),
+                                        border: const OutlineInputBorder(),
                                       ),
                                       textInputAction: TextInputAction.search,
                                     ),
@@ -420,6 +413,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             SizedBox(
                               width: Get.width * 0.4,
                               child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(Radius.zero),
+                                  ),
+                                ),
                                 onPressed: () {
                                   // Get.to(() => const PostRoommateAdScreen());
                                   // return;
@@ -433,9 +431,8 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 },
                                 child: DefaultTextStyle(
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: ROOMY_ORANGE,
-                                  ),
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
                                   child: Builder(
                                     builder: (context) {
                                       if (AppController.me.isGuest) {
@@ -473,7 +470,10 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                   return const FindPropertiesAdsScreen();
                                 });
                               },
-                              child: const Text("See all"),
+                              child: const Text(
+                                "See all",
+                                style: TextStyle(color: Colors.black),
+                              ),
                             ),
                           ],
                         ),
@@ -585,16 +585,14 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                             Text(
                               "Properties",
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: ROOMY_ORANGE,
-                              ),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black),
                             ),
                             Text(
                               "Roommates",
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: ROOMY_ORANGE,
-                              ),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black),
                             ),
                           ],
                         ),
@@ -746,10 +744,10 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   BottomNavigationBarItem get navigationBarItem {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/home.png", height: 30),
+      activeIcon: Image.asset("assets/icons/home/home.png", height: 20),
       icon: Image.asset(
         "assets/icons/home/home.png",
-        height: 30,
+        height: 20,
         color: Colors.white,
       ),
       label: 'Home'.tr,

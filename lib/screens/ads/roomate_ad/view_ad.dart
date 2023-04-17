@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
@@ -100,14 +101,9 @@ class _ViewRoommateAdController extends LoadingController {
   }
 
   void _viewImage(String source) {
-    showModalBottomSheet(
-      isScrollControlled: true,
-      context: Get.context!,
-      builder: (context) {
-        return SafeArea(
-          child: CachedNetworkImage(imageUrl: source),
-        );
-      },
+    Get.to(
+      () => ViewImages(images: [CachedNetworkImageProvider(source)]),
+      transition: Transition.zoom,
     );
   }
 }
@@ -528,13 +524,18 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+                          // if (ad.isHaveRoom)
                           Expanded(
                             child: Row(
-                              children: const [
-                                Icon(Icons.person_add_alt_1,
+                              children: [
+                                const Icon(Icons.person_add_alt_1,
                                     color: ROOMY_ORANGE),
-                                SizedBox(width: 5),
-                                Text("PREFERRED ROOMMATE"),
+                                const SizedBox(width: 5),
+                                Text(
+                                  ad.isHaveRoom
+                                      ? "PREFERRED ROOMMATE"
+                                      : "PREFERRED ROOM",
+                                ),
                               ],
                             ),
                           ),
@@ -605,27 +606,57 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               }).toList(),
                             ),
                           ),
+                          // if (ad.isHaveRoom)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
-                              children: [
-                                {
-                                  "label": "Gender : ",
-                                  "value":
-                                      ad.socialPreferences["gender"] ?? "N/A",
-                                },
-                                {
-                                  "label": "Nationality : ",
-                                  "value":
-                                      ad.socialPreferences["nationality"] ??
-                                          "N/A",
-                                },
-                                {
-                                  "label": "Life style : ",
-                                  "value": ad.aboutYou["lifeStyle"] ?? "N/A",
-                                },
-                              ].map((e) {
+                              children: (ad.isHaveRoom
+                                      ? [
+                                          {
+                                            "label": "Gender : ",
+                                            "value": ad.socialPreferences[
+                                                    "gender"] ??
+                                                "N/A",
+                                          },
+                                          {
+                                            "label": "Nationality : ",
+                                            "value": ad.socialPreferences[
+                                                    "nationality"] ??
+                                                "N/A",
+                                          },
+                                          {
+                                            "label": "Life style : ",
+                                            "value": ad.aboutYou["lifeStyle"] ??
+                                                "N/A",
+                                          },
+                                        ]
+                                      : [
+                                          {
+                                            "label": "Property : ",
+                                            "value": ad.type,
+                                          },
+                                          {
+                                            "label": "City : ",
+                                            "value": ad.address["city"],
+                                          },
+                                          {
+                                            "label": "Area : ",
+                                            "value": ad.address["location"],
+                                          },
+                                          {
+                                            "label": "Rent type : ",
+                                            "value": ad.rentType,
+                                          },
+                                          {
+                                            "label":
+                                                "Moving date : \n         ",
+                                            "value": ad.movingDate != null
+                                                ? Jiffy(ad.movingDate).yMEd
+                                                : "N/A",
+                                          },
+                                        ])
+                                  .map((e) {
                                 return Container(
                                   padding: const EdgeInsets.only(
                                     left: 10,

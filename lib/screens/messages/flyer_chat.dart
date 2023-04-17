@@ -60,7 +60,6 @@ class FlyerChatScreenController extends GetxController
 
     ChatConversation.currrentChatKey = conversation.key;
     ChatConversation.currrentChatOnTapCallBack = () {
-      print("currrentChatOnTapCallBack");
       conversation.loadMessages().then((msgs) {
         messages.clear();
         messages.addAll(msgs);
