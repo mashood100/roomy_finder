@@ -22,7 +22,7 @@ import 'package:roomy_finder/screens/home/account_tab.dart';
 import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/home/chat_tab.dart';
-import 'package:roomy_finder/screens/home/maintenance_tab.dart';
+import 'package:roomy_finder/screens/home/post_ad_tab.dart';
 import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
@@ -32,25 +32,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
-  final currentTabIndex = 2.obs;
+  final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
-  final tabs = <HomeScreenSupportable>[];
+  final tabs = <HomeScreenSupportable>[
+    const AccountTab(),
+    const HomeTab(),
+    if (AppController.me.isLandlord) const PostAdTab(),
+    const MessagesTab(),
+    const FavoriteTab(),
+  ];
 
   @override
   void onInit() {
+    AppController.instance.setIsFirstLaunchToFalse(false);
     if (!AppController.me.isGuest) _fetchNewMessages();
-    tabs.addAll(const [
-      AccountTab(),
-      MessagesTab(),
-      HomeTab(),
-    ]);
-    if (AppController.me.isLandlord) {
-      tabs.add(const MaintenanceTab());
-    }
-    tabs.addAll(const [
-      FavoriteTab(),
-    ]);
+
     if (AppController.dynamicInitialLink != null) {
       dynamicLinkHandler(AppController.dynamicInitialLink!);
     }
@@ -233,23 +230,29 @@ class Home extends GetView<HomeController> {
           ),
           bottomNavigationBar: AppController.me.isGuest
               ? null
-              : SizedBox(
-                  height: 40,
-                  child: BottomNavigationBar(
-                    currentIndex: controller.currentTabIndex.value,
-                    onTap: (index) {
-                      controller.tabs[index].onIndexSelected(index);
-                      if (controller.tabs[index] is MaintenanceTab) {
-                        showToast("Comming soon");
-                        return;
+              : BottomNavigationBar(
+                  currentIndex: controller.currentTabIndex.value,
+                  onTap: (index) {
+                    controller.tabs[index].onIndexSelected(index);
+                    if (controller.tabs[index] is PostAdTab) {
+                      if (AppController.me.isGuest) {
+                        Get.offAllNamed('/login');
+                      } else if (AppController.me.isLandlord) {
+                        Get.to(() => const PostPropertyAdScreen());
+                      } else if (AppController.me.isRoommate) {
+                        Get.to(() => const PostRoommateAdScreen());
                       }
+                      // showToast("Comming soon");
+                      return;
+                    }
 
-                      controller.currentTabIndex(index);
-                    },
-                    items: controller.tabs
-                        .map((e) => e.navigationBarItem)
-                        .toList(),
-                  ),
+                    controller.currentTabIndex(index);
+                  },
+                  items: controller.tabs.map((e) {
+                    return e.navigationBarItem(
+                        controller.currentTabIndex.value ==
+                            controller.tabs.indexOf(e));
+                  }).toList(),
                 ),
           floatingActionButton: controller
               .tabs[controller.currentTabIndex.value].floatingActionButton,
@@ -297,14 +300,7 @@ class HomeDrawer extends StatelessWidget {
               }),
             if (!AppController.me.isGuest)
               ListTile(
-                // leading: Image.asset(
-                //   "assets/icons/drawer/edit.png",
-                //   width: 40,
-                //   height: 40,
-                //   fit: BoxFit.cover,
-                // ),
                 leading: const CircleAvatar(
-                  // foregroundImage: AssetImage("assets/icons/drawer/edit.png"),
                   radius: 18,
                   backgroundColor: Colors.green,
                   child: Icon(Icons.edit, color: Colors.white),
@@ -314,6 +310,32 @@ class HomeDrawer extends StatelessWidget {
                 onTap: () {
                   Get.back();
                   Get.to(() => const UpdateUserProfile());
+                },
+              ),
+            if (AppController.me.isGuest)
+              ListTile(
+                leading: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: ROOMY_ORANGE,
+                  child: Icon(Icons.login, color: Colors.white),
+                ),
+                title: const Text("Login"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Get.offAllNamed("/login");
+                },
+              ),
+            if (AppController.me.isGuest)
+              ListTile(
+                leading: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: ROOMY_PURPLE,
+                  child: Icon(Icons.person_add, color: Colors.white),
+                ),
+                title: const Text("Register"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Get.offAllNamed("/registration");
                 },
               ),
             const Align(
@@ -329,36 +351,21 @@ class HomeDrawer extends StatelessWidget {
               ),
             ),
             ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/home.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
               leading: const CircleAvatar(
                 radius: 18,
-                // foregroundImage: AssetImage("assets/icons/drawer/home.png"),
                 backgroundColor: ROOMY_PURPLE,
                 child: Icon(Icons.home, color: Colors.white),
               ),
               title: const Text("Home"),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                controller.currentTabIndex(2);
+                controller.currentTabIndex(1);
                 Get.back();
               },
             ),
             if (!AppController.me.isGuest)
               ListTile(
-                // leading: Image.asset(
-                //   "assets/icons/drawer/account.png",
-                //   width: 40,
-                //   height: 40,
-                //   fit: BoxFit.cover,
-                // ),
                 leading: const CircleAvatar(
-                  // foregroundImage:
-                  //     AssetImage("assets/icons/drawer/account.png"),
                   radius: 18,
                   backgroundColor: ROOMY_ORANGE,
                   child: Icon(Icons.person, color: Colors.white),
@@ -371,11 +378,6 @@ class HomeDrawer extends StatelessWidget {
                 },
               ),
             ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/plus.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
               // ),
               leading: const CircleAvatar(
                 radius: 18,

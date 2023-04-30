@@ -7,6 +7,7 @@ import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
+import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
@@ -180,24 +181,15 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   }
 
   @override
-  BottomNavigationBarItem get navigationBarItem {
+  BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
-      activeIcon: Obx(() {
-        return Badge(
+      icon: CustomBottomNavbarIcon(
+        icon: Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset("assets/icons/home/chat.png", height: 20),
-        );
-      }),
-      icon: Obx(() {
-        return Badge(
-          showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset(
-            "assets/icons/home/chat.png",
-            height: 20,
-            color: Colors.white,
-          ),
-        );
-      }),
+          child: const Icon(CupertinoIcons.chat_bubble_2),
+        ),
+        isCurrent: isCurrent,
+      ),
       label: 'Chat'.tr,
     );
   }

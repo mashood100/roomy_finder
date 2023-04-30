@@ -79,6 +79,7 @@ dependencies:
   readmore: ^2.2.0
   photo_view: ^0.13.0
   syncfusion_flutter_pdfviewer: ^20.4.54
+  persistent_bottom_nav_bar: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -107,6 +108,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/social/
+    - assets/images/onboarding/
     - assets/pdf/
     - assets/icons/
     - assets/icons/home/
@@ -138,6 +140,12 @@ flutter:
         - asset: assets/fonts/Arvo/Arvo-BoldItalic.ttf
         - asset: assets/fonts/Arvo/Arvo-Regular.ttf
         - asset: assets/fonts/Arvo/Arvo-Italic.ttf
+    - family: Gilroy
+      fonts:
+        - asset: assets/fonts/Gilroy/Gilroy-Bold.ttf
+        - asset: assets/fonts/Gilroy/Gilroy-Light.ttf
+        - asset: assets/fonts/Gilroy/Gilroy-Regular.ttf
+        - asset: assets/fonts/Gilroy/Gilroy-RegularItalic.ttf
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

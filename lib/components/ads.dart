@@ -235,80 +235,28 @@ class PropertyAdMiniWidget extends StatelessWidget {
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text.rich(
-                              TextSpan(children: [
-                                TextSpan(
-                                  text: ad.type,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const TextSpan(text: " for rent"),
-                              ]),
-                            ),
-                            Text(
-                              "${ad.address["location"]},"
-                              " ${ad.address["city"]}",
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Container(
-                      //   padding: const EdgeInsets.all(8),
-                      //   decoration: const BoxDecoration(
-                      //     shape: BoxShape.circle,
-                      //     color: ROOMY_ORANGE,
-                      //   ),
-                      //   child: Text(
-                      //     "${ad.quantity - ad.quantityTaken}".padLeft(2, "0"),
-                      //     style: const TextStyle(color: Colors.white),
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                height: double.infinity,
-                width: double.infinity,
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 10,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 30),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.7),
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(20),
-                    ),
-                  ),
+                  width: double.infinity,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        formatMoney(ad.prefferedRentDisplayPrice),
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        ad.type,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      // Text(
-                      //   ad.preferedRentType,
-                      //   style: const TextStyle(
-                      //     color: Colors.white,
-                      //     fontSize: 10,
-                      //   ),
-                      // ),
+                      Text(
+                        "${ad.address["location"]},"
+                        " ${ad.address["city"]}",
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        formatMoney(
+                          ad.prefferedRentDisplayPrice *
+                              AppController.convertionRate,
+                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
@@ -510,41 +458,41 @@ class RoommateAdMiniWidget extends StatelessWidget {
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: ad.poster.fullName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ]),
+                          Text(
+                            ad.poster.fullName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(
-                            width: Get.width * 0.25,
-                            child: Text(
-                              "${ad.address["city"]},"
-                              " ${ad.address["location"]}",
+                          Text(
+                            "${ad.address["location"]},"
+                            " ${ad.address["city"]}",
+                          ),
+                          const SizedBox(height: 5),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: "Budget ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: formatMoney(
+                                      ad.budget * AppController.convertionRate),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                      Expanded(
-                        child: Text(
-                          formatMoney(ad.budget * AppController.convertionRate),
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            color: ROOMY_ORANGE,
-                          ),
-                        ),
                       ),
                     ],
                   ),

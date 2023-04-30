@@ -51,7 +51,8 @@ class AppController extends GetxController {
 
       initialRoute = "/home";
     } else {
-      initialRoute = "/welcome";
+      final isFirstLaunch = await getIsFirstLaunch();
+      initialRoute = isFirstLaunch ? "/onboarding" : "/welcome";
     }
 
     // Api token
@@ -87,6 +88,24 @@ class AppController extends GetxController {
     } catch (_) {
       return null;
     }
+  }
+
+  // Is first launch
+  Future<bool> getIsFirstLaunch() async {
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final isFirstLaunch = pref.getBool("isFirstLaunch") ?? true;
+      return isFirstLaunch;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> setIsFirstLaunchToFalse(bool value) async {
+    try {
+      final pref = await SharedPreferences.getInstance();
+      pref.setBool("isFirstLaunch", value);
+    } catch (_) {}
   }
 
   Future<void> setApiToken(String token) async {

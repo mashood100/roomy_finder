@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
+import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -288,13 +290,11 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   }
 
   @override
-  BottomNavigationBarItem get navigationBarItem {
+  BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/account.png", height: 20),
-      icon: Image.asset(
-        "assets/icons/home/account.png",
-        height: 20,
-        color: Colors.white,
+      icon: CustomBottomNavbarIcon(
+        icon: const Icon(CupertinoIcons.person),
+        isCurrent: isCurrent,
       ),
       label: 'Account'.tr,
     );
