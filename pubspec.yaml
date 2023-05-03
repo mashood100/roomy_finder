@@ -110,8 +110,6 @@ flutter:
     - assets/images/onboarding/
     - assets/pdf/
     - assets/icons/
-    - assets/icons/home/
-    - assets/icons/drawer/
     - assets/fonts/
     - assets/audio/
 

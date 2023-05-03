@@ -1240,13 +1240,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                                       children: [
                                         const SizedBox(height: 10),
                                         Expanded(
-                                          child: Image.asset("${e["asset"]}",
-                                              color:
-                                                  controller.socialPreferences[
-                                                              e["value"]] !=
-                                                          true
-                                                      ? Colors.grey
-                                                      : null),
+                                          child: Image.asset(
+                                            "${e["asset"]}",
+                                            color: controller.socialPreferences[
+                                                        e["value"]] ==
+                                                    true
+                                                ? ROOMY_ORANGE
+                                                : null,
+                                          ),
                                         ),
                                         Text(
                                           "${e["label"]}",
@@ -1313,7 +1314,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                                 "${e["asset"]}",
                                                 color: controller.amenties
                                                         .contains(e["value"])
-                                                    ? null
+                                                    ? ROOMY_ORANGE
                                                     : Colors.grey,
                                               ),
                                             ),

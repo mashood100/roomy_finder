@@ -491,17 +491,17 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       children: [
                         {
                           "label": "Age",
-                          "asset": "assets/icons/people.png",
+                          "asset": "assets/icons/person.png",
                           "value": ad.aboutYou["age"] ?? "N/A",
                         },
                         {
                           "label": "Occupation",
-                          "asset": "assets/icons/globe.png",
+                          "asset": "assets/icons/occupation.png",
                           "value": ad.aboutYou["occupation"] ?? "N/A",
                         },
                         {
                           "label": "Sign",
-                          "asset": "assets/icons/gender.png",
+                          "asset": "assets/icons/astrological_sign.png",
                           "value": ad.aboutYou["astrologicalSign"] ?? "N/A",
                         },
                         {
@@ -516,12 +516,12 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         },
                         {
                           "label": "Lifestyle",
-                          "asset": "assets/icons/day_night.png",
+                          "asset": "assets/icons/lifestyle.png",
                           "value": ad.socialPreferences["lifestyle"] ?? "N/A",
                         },
                         {
                           "label": "Languages",
-                          "asset": "assets/icons/globe.png",
+                          "asset": "assets/icons/language.png",
                           "value": List<String>.from(
                             ad.aboutYou["languages"] as List,
                           ).join(", ")
@@ -544,8 +544,8 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               ),
                               icon: Image.asset(
                                 e["asset"].toString(),
-                                height: 25,
-                                width: 25,
+                                height: 30,
+                                width: 30,
                                 color: Colors.black54,
                               ),
                             ),
@@ -583,7 +583,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         },
                         {
                           "label": "Lifestyle",
-                          "asset": "assets/icons/day_night.png",
+                          "asset": "assets/icons/lifestyle.png",
                           "value": ad.socialPreferences["lifestyle"] ?? "N/A",
                         },
                       ].map((e) {
@@ -593,8 +593,8 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             subTitle: Text("${e["value"]}"),
                             icon: Image.asset(
                               e["asset"].toString(),
-                              height: 25,
-                              width: 25,
+                              height: 30,
+                              width: 30,
                               color: Colors.black54,
                             ),
                           ),
@@ -653,7 +653,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         },
                         {
                           "label": "Visitors",
-                          "asset": "assets/icons/people_3.png",
+                          "asset": "assets/icons/people.png",
                           "value": ad.socialPreferences["visitors"] == true
                               ? "Yes"
                               : "No",
@@ -706,8 +706,8 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             title: Text("${e["value"]}"),
                             icon: Image.asset(
                               e["asset"].toString(),
-                              height: 25,
-                              width: 25,
+                              height: 30,
+                              width: 30,
                               color: Colors.black54,
                             ),
                           ),

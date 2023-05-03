@@ -229,7 +229,7 @@ class _VewPropertyController extends LoadingController {
 
   Future<void> bookProperty(PropertyAd ad) async {
     if (AppController.me.isGuest) {
-      Get.offAllNamed("/registration");
+      Get.offAllNamed("/login");
       return;
     }
     try {
@@ -660,7 +660,7 @@ class ViewPropertyAd extends StatelessWidget {
                           children: [
                             {
                               "label": "People",
-                              "asset": "assets/icons/people_2.png",
+                              "asset": "assets/icons/person.png",
                               "value":
                                   "${ad.socialPreferences["numberOfPeople"]}",
                             },
@@ -708,7 +708,7 @@ class ViewPropertyAd extends StatelessWidget {
                             },
                             {
                               "label": "Visitors",
-                              "asset": "assets/icons/people_3.png",
+                              "asset": "assets/icons/people.png",
                               "value": ad.socialPreferences["visitors"] == true
                                   ? "Yes"
                                   : "No",

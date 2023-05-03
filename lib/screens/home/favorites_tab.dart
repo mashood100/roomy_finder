@@ -178,7 +178,7 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
                           ad: ad,
                           onTap: () {
                             if (AppController.me.isGuest) {
-                              Get.offAllNamed("/registration");
+                              Get.offAllNamed("/login");
                               return;
                             }
                             if (AppController.me.isPremium) {
@@ -252,7 +252,12 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
-        icon: const Icon(CupertinoIcons.star),
+        icon: Image.asset(
+          "assets/icons/favorite.png",
+          height: 30,
+          width: 30,
+          color: ROOMY_PURPLE,
+        ),
         isCurrent: isCurrent,
       ),
       label: 'Favorites'.tr,

@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 // ignore: unused_element
 class _PostAdTabController extends LoadingController {}
@@ -24,7 +24,12 @@ class PostAdTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
-        icon: const Icon(CupertinoIcons.plus_app),
+        icon: Image.asset(
+          "assets/icons/add_square.png",
+          height: 30,
+          width: 30,
+          color: ROOMY_PURPLE,
+        ),
         isCurrent: isCurrent,
       ),
       label: 'Post Ad'.tr,

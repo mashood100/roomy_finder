@@ -412,8 +412,8 @@ class PostRoommateAdScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  "assets/icons/day_night.png",
-                  height: 100,
+                  "assets/icons/lifestyle.png",
+                  height: 50,
                 ),
                 const SizedBox(width: 10),
                 const Text(
@@ -972,7 +972,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                                   "${e["asset"]}",
                                   color:
                                       controller.amenities.contains(e["value"])
-                                          ? null
+                                          ? ROOMY_ORANGE
                                           : Colors.grey,
                                 ),
                               ),
@@ -1084,7 +1084,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                                 color:
                                     controller.socialPreferences[e["value"]] ==
                                             true
-                                        ? null
+                                        ? ROOMY_ORANGE
                                         : Colors.grey,
                               ),
                             ),
@@ -1416,6 +1416,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ],
           ),
         );
+
         return Scaffold(
           appBar: AppBar(
             title: Text(oldData == null

@@ -77,7 +77,6 @@ class FlyerChatScreenController extends LoadingController {
 
         if (isRefresh == true) messages.clear();
         messages.insertAll(0, data.whereType<ChatMessage>());
-        print(data);
       } else {
         hasFetchError(true);
       }

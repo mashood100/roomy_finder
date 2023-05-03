@@ -20,6 +20,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/chat_message.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 import '../../functions/utility.dart';
 
@@ -119,6 +120,7 @@ class ChatTabController extends LoadingController {
   }
 
   Future<void> _fetchConversations({bool isRefresh = false}) async {
+    if (AppController.me.isGuest) return;
     try {
       isLoading(true);
       hasFetchError(false);
@@ -325,7 +327,12 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
       icon: CustomBottomNavbarIcon(
         icon: Badge(
           showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: const Icon(CupertinoIcons.chat_bubble_2),
+          child: Image.asset(
+            "assets/icons/chat.png",
+            height: 30,
+            width: 30,
+            color: ROOMY_PURPLE,
+          ),
         ),
         isCurrent: isCurrent,
       ),

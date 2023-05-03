@@ -32,7 +32,7 @@ class HomeController extends LoadingController {
   final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
-  final tabs = <HomeScreenSupportable>[
+  final List<HomeScreenSupportable> tabs = [
     const AccountTab(),
     const HomeTab(),
     const PostAdTab(),
@@ -161,7 +161,7 @@ class Home extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(HomeController());
+    final controller = Get.put(HomeController(), permanent: true);
     return WillPopScope(
       onWillPop: controller._onWillPop,
       child: Obx(() {
@@ -281,7 +281,7 @@ class HomeDrawer extends StatelessWidget {
                 title: const Text("Register"),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  Get.offAllNamed("/registration");
+                  Get.offAllNamed("/login");
                 },
               ),
             const Align(

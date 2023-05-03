@@ -419,7 +419,7 @@ class FindRoommatesScreen extends StatelessWidget {
                             children: [
                               TextButton(
                                 onPressed: () {
-                                  Get.offAllNamed("/registration");
+                                  Get.offAllNamed("/login");
                                 },
                                 child: const Text(
                                   "REGISTER",
