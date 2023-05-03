@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/models/chat_message.dart';
@@ -333,17 +334,8 @@ class NotificationController {
 
       final message = ChatMessage.fromMap(payload["message"]);
 
-      final conv = ChatConversation(
-        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
-        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
-        createdAt: DateTime.now(),
-        lastMessage: message,
-      );
-
-      conv.saveChat();
-      await message.saveToSameKeyLocaleMessages(conv.key);
-
-      if (ChatConversation.currrentChatKey == conv.key) {
+      if (ChatConversation.currrentChatKey ==
+          "${message.recieverId}-${message.senderId}") {
         return;
       }
 
@@ -360,6 +352,9 @@ class NotificationController {
             summary: 'Chat notification',
           ),
         );
+      }
+      if (!isForeGroundMessage) {
+        ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
       }
     } catch (e, trace) {
       Get.log("$e");
@@ -430,16 +425,19 @@ class NotificationController {
 
       final message = ChatMessage.fromMap(payload["message"]);
 
-      final conv = ChatConversation(
-        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
-        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
-        createdAt: DateTime.now(),
-        lastMessage: message,
+      final other = ChatUser(id: message.senderId, createdAt: DateTime.now());
+      final conv = ChatConversation(other: other, lastMessage: message);
+      await conv.updateChatInfo();
+      AwesomeNotifications()
+          .cancelNotificationsByChannelKey("chat_channel_group_key");
+
+      Get.to(
+        () => FlyerChatScreen(
+          conversation: conv,
+          myId: AppController.me.id,
+          otherId: other.id,
+        ),
       );
-
-      conv.saveChat();
-
-      Get.to(() => FlyerChatScreen(conversation: conv));
       if (ChatConversation.currrentChatOnTapCallBack != null) {
         ChatConversation.currrentChatOnTapCallBack!();
       }

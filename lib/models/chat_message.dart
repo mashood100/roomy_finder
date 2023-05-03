@@ -1,11 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_chat_types/flutter_chat_types.dart' as flyer_types;
 import 'package:get/get.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/classes/chat_conversation.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 
 import 'package:roomy_finder/models/chat_user.dart';
 
@@ -25,12 +25,14 @@ class ChatMessage {
   bool isRecieved;
   bool isRead;
   bool isDeletedForSender;
-  bool isDeletedForAll;
+  bool isDeletedForReciever;
   DateTime? dateRecieved;
   DateTime? dateRead;
   final DateTime createdAt;
 
   ChatMessage? replyMessage;
+
+  bool get isMine => senderId == AppController.me.id;
 
   ChatMessage? getRepliedMessage(List<ChatMessage> messages) {
     if (replyId == null) return null;
@@ -44,6 +46,14 @@ class ChatMessage {
       lastName: author.lastName,
       createdAt: author.createdAt.millisecondsSinceEpoch,
     );
+    flyer_types.Status status;
+    if (isRecieved) status = flyer_types.Status.delivered;
+    if (isRead) {
+      status = flyer_types.Status.seen;
+    } else {
+      status = flyer_types.Status.sent;
+    }
+
     switch (type) {
       case "text":
         return flyer_types.TextMessage(
@@ -51,6 +61,7 @@ class ChatMessage {
           author: flyAuthor,
           text: body ?? "",
           createdAt: createdAt.millisecondsSinceEpoch,
+          status: status,
         );
       case "image":
         return flyer_types.ImageMessage(
@@ -60,6 +71,7 @@ class ChatMessage {
           uri: fileUri.toString(),
           size: fileSize ?? 0,
           createdAt: createdAt.millisecondsSinceEpoch,
+          status: status,
         );
       case "video":
         return flyer_types.VideoMessage(
@@ -69,6 +81,7 @@ class ChatMessage {
           uri: fileUri.toString(),
           size: fileSize ?? 0,
           createdAt: createdAt.millisecondsSinceEpoch,
+          status: status,
         );
       case "file":
         return flyer_types.FileMessage(
@@ -78,6 +91,7 @@ class ChatMessage {
           uri: fileUri.toString(),
           size: fileSize ?? 0,
           createdAt: createdAt.millisecondsSinceEpoch,
+          status: status,
         );
 
       default:
@@ -101,7 +115,7 @@ class ChatMessage {
     required this.isRecieved,
     required this.isRead,
     required this.isDeletedForSender,
-    required this.isDeletedForAll,
+    required this.isDeletedForReciever,
     required this.dateRecieved,
     required this.dateRead,
     required this.createdAt,
@@ -225,7 +239,7 @@ class ChatMessage {
   })  : isRecieved = false,
         isRead = false,
         isDeletedForSender = false,
-        isDeletedForAll = false,
+        isDeletedForReciever = false,
         dateRecieved = null,
         dateRead = null,
         createdAt = DateTime.now();
@@ -247,7 +261,7 @@ class ChatMessage {
       'isRecieved': isRecieved,
       'isRead': isRead,
       'isDeletedForSender': isDeletedForSender,
-      'isDeletedForAll': isDeletedForAll,
+      'isDeletedForReciever': isDeletedForReciever,
       'dateRecieved': dateRecieved?.toIso8601String(),
       'dateRead': dateRead?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
@@ -272,7 +286,7 @@ class ChatMessage {
       isRecieved: map['isRecieved'] as bool,
       isRead: map['isRead'] as bool,
       isDeletedForSender: map['isDeletedForSender'] as bool,
-      isDeletedForAll: map['isDeletedForAll'] as bool,
+      isDeletedForReciever: map['isDeletedForReciever'] as bool,
       dateRecieved: map['dateRecieved'] != null
           ? DateTime.parse(map['dateRecieved'] as String)
           : null,
@@ -288,81 +302,6 @@ class ChatMessage {
   factory ChatMessage.fromJson(String source) =>
       ChatMessage.fromMap(json.decode(source) as Map<String, dynamic>);
 
-  Future<void> saveToSameKeyLocaleMessages(String key) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-
-      final messages = <ChatMessage>[this];
-
-      final file = File(path.join(directory.path, "messages", "$key.json"));
-      // file.deleteSync();
-
-      if (file.existsSync()) {
-        final content = file.readAsStringSync();
-
-        if (content.isNotEmpty) {
-          final odlMessages = ((json.decode(content) as List).map((e) {
-            return (ChatMessage.fromJson(e));
-          }));
-
-          messages.addAll(odlMessages.where((e) => e != this));
-        }
-      } else {
-        file.createSync(recursive: true);
-      }
-
-      file.writeAsStringSync(json.encode(messages));
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-    }
-  }
-
-  Future<void> removeSameKeyLocaleMessages(String key) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-
-      final messages = <ChatMessage>[];
-
-      final file = File(path.join(directory.path, "messages", "$key.json"));
-
-      if (file.existsSync()) {
-        final content = file.readAsStringSync();
-
-        messages.addAll((json.decode(content) as List).map((e) {
-          return ChatMessage.fromJson(e);
-        }).where((e) => e != this));
-      } else {
-        file.createSync(recursive: true);
-      }
-
-      await file.writeAsString(json.encode(messages));
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-    }
-  }
-
-  static Future<bool> deleteSameKeyLocaleMessages(String key) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-
-      final file = File(path.join(directory.path, "messages", "$key.json"));
-
-      if (file.existsSync()) {
-        file.deleteSync();
-        return true;
-      } else {
-        return true;
-      }
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-
-      return false;
-    }
-  }
-
   @override
   bool operator ==(covariant ChatMessage other) {
     if (identical(this, other)) return true;
@@ -374,4 +313,94 @@ class ChatMessage {
   int get hashCode {
     return id.hashCode;
   }
+
+  Future<void> markAsRead() async {
+    isRecieved = true;
+    dateRecieved ??= DateTime.now();
+    isRead = true;
+    dateRead ??= DateTime.now();
+  }
+
+  Future<void> markAsRecieved() async {
+    isRecieved = true;
+    dateRecieved ??= DateTime.now();
+  }
+
+  static Future<bool> deleteMessages(
+    List<ChatMessage> messages,
+    bool isDeletedForAll,
+  ) async {
+    try {
+      final res = await ApiService.getDio.delete('/message', data: {
+        "messageIds": messages.map((e) => e.id).toList(),
+      });
+
+      if (res.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> deleteConversation(ChatConversation conversation) async {
+    try {
+      final res = await ApiService.getDio.delete(
+        '/message/conversations',
+        data: {"otherId": conversation.other.id},
+      );
+
+      if (res.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> requestMarkAsRead(
+    String senderId,
+    String recieverId,
+  ) async {
+    try {
+      final res = await ApiService.getDio.put(
+        '/messages/mark-as-read',
+        data: {"senderId": senderId, "recieverId": recieverId},
+      );
+
+      if (res.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> requestMarkAsRecieved(
+    String senderId,
+    String recieverId,
+  ) async {
+    try {
+      final res = await ApiService.getDio.put(
+        '/messages/mark-as-recieved',
+        data: {"senderId": senderId, "recieverId": recieverId},
+      );
+
+      if (res.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
+
+// var x = 1 as flyer_types.Message;
+
+// void main(List<String> args) {
+//   x.status; var y = flyer_types.Status
+// }

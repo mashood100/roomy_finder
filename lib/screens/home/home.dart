@@ -1,11 +1,10 @@
 import 'dart:async';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -14,7 +13,6 @@ import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/functions/share_app.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/blog_post/all_posts.dart';
@@ -28,7 +26,6 @@ import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
@@ -38,7 +35,7 @@ class HomeController extends LoadingController {
   final tabs = <HomeScreenSupportable>[
     const AccountTab(),
     const HomeTab(),
-    if (AppController.me.isLandlord) const PostAdTab(),
+    const PostAdTab(),
     const MessagesTab(),
     const FavoriteTab(),
   ];
@@ -46,7 +43,6 @@ class HomeController extends LoadingController {
   @override
   void onInit() {
     AppController.instance.setIsFirstLaunchToFalse(false);
-    if (!AppController.me.isGuest) _fetchNewMessages();
 
     if (AppController.dynamicInitialLink != null) {
       dynamicLinkHandler(AppController.dynamicInitialLink!);
@@ -78,7 +74,10 @@ class HomeController extends LoadingController {
 
           break;
         case "new-message":
-          if (currentTabIndex.value != 2) {
+          if (currentTabIndex.value == 3) {
+            AwesomeNotifications()
+                .cancelNotificationsByChannelKey("chat_channel_group_key");
+          } else {
             AppController.instance.haveNewMessage(true);
           }
 
@@ -155,59 +154,6 @@ class HomeController extends LoadingController {
       Get.offAllNamed('/login');
     }
   }
-
-  Future<void> _fetchNewMessages() async {
-    try {
-      DateTime? lastDate;
-      final pref = await SharedPreferences.getInstance();
-      final value = pref.getString("last-message-fetch-date");
-
-      if (value != null) {
-        lastDate = DateTime.parse(value);
-      } else {
-        lastDate = DateTime.now();
-      }
-
-      final conversations = await ChatConversation.getAllSavedChats(
-        AppController.me.id,
-      );
-
-      final messages = await ChatConversation.fetchMessages(lastDate);
-
-      if (messages.isNotEmpty) {
-        AppController.instance.haveNewMessage(true);
-      }
-
-      for (var m in messages) {
-        final convKey =
-            ChatConversation.createConvsertionKey(m.recieverId, m.senderId);
-
-        final conv = conversations.firstWhereOrNull((e) => e.key == convKey);
-        if (conv != null) {
-          conv.lastMessage = m;
-          conv.saveChat();
-        } else {
-          final newConv = ChatConversation(
-            me: AppController.me.chatUser,
-            friend: ChatUser(id: m.senderId, createdAt: DateTime.now()),
-            createdAt: DateTime.now(),
-            lastMessage: m,
-          );
-
-          conversations.insert(0, newConv);
-          newConv.saveChat();
-        }
-        m.saveToSameKeyLocaleMessages(convKey);
-      }
-
-      pref.setString(
-        "last-message-fetch-date",
-        DateTime.now().toIso8601String(),
-      );
-    } catch (e) {
-      Get.log("$e");
-    }
-  }
 }
 
 class Home extends GetView<HomeController> {
@@ -224,7 +170,7 @@ class Home extends GetView<HomeController> {
           drawer: SafeArea(
             child: HomeDrawer(controller: controller),
           ),
-          body: LazyLoadIndexedStack(
+          body: IndexedStack(
             index: controller.currentTabIndex.value,
             children: controller.tabs,
           ),

@@ -141,19 +141,25 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   }
 
   Future<void> chatWithClient(PropertyBooking booking) async {
-    final conv = ChatConversation.newConversation(
-      me: AppController.me.chatUser,
-      friend: booking.client.chatUser,
-    );
-    Get.to(() => FlyerChatScreen(conversation: conv));
+    final conv = ChatConversation(other: booking.client.chatUser);
+    Get.to(() {
+      return FlyerChatScreen(
+        conversation: conv,
+        myId: AppController.me.id,
+        otherId: booking.client.id,
+      );
+    });
   }
 
   Future<void> chatWithLandlord(PropertyBooking booking) async {
-    final conv = ChatConversation.newConversation(
-      me: AppController.me.chatUser,
-      friend: booking.poster.chatUser,
-    );
-    Get.to(() => FlyerChatScreen(conversation: conv));
+    final conv = ChatConversation(other: booking.poster.chatUser);
+    Get.to(() {
+      return FlyerChatScreen(
+        conversation: conv,
+        myId: AppController.me.id,
+        otherId: booking.client.id,
+      );
+    });
   }
 }
 
@@ -196,6 +202,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                       ),
 
                       Card(
+                        color: Colors.white,
                         margin: EdgeInsets.zero,
                         child: Padding(
                           padding: const EdgeInsets.all(10.0),
@@ -257,6 +264,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                       ],
                       if (booking.isPayed)
                         Card(
+                          color: Colors.white,
                           margin: EdgeInsets.zero,
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
@@ -295,12 +303,13 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                         Text(
                           booking.ad.posterType == "Landlord"
                               ? "About Landlond"
-                              : "About agent/Broker",
+                              : "About Agent/Broker",
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                       if (!booking.isMine && booking.isPayed)
                         Card(
+                          color: Colors.white,
                           margin: EdgeInsets.zero,
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
@@ -361,6 +370,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                       ],
                       if (booking.isMine && booking.isPayed)
                         Card(
+                          color: Colors.white,
                           margin: EdgeInsets.zero,
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),

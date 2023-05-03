@@ -505,3 +505,47 @@ class RoommateAdMiniWidget extends StatelessWidget {
     );
   }
 }
+
+/// To be to use to display information like amenities, preferences,
+/// about me ...
+
+class AdOverViewItem extends StatelessWidget {
+  const AdOverViewItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subTitle,
+    this.subTitleColor,
+  });
+  final Widget icon;
+  final Widget title;
+  final Widget? subTitle;
+  final Color? subTitleColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        icon,
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            title,
+            if (subTitle != null)
+              DefaultTextStyle.merge(
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: subTitleColor,
+                ),
+                child: subTitle!,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
