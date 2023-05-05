@@ -25,7 +25,6 @@ import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class _VewPropertyController extends LoadingController {
   _VewPropertyController(this.ad);
@@ -827,30 +826,7 @@ class ViewPropertyAd extends StatelessWidget {
                   ),
 
                   const Divider(height: 20),
-                  // Google map representing the location of the properrty
-                  if (ad.cameraPosition != null) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          "Map location",
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        SizedBox(
-                          height: 200,
-                          child: GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: ad.cameraPosition?.target ??
-                                  const LatLng(1254, 412),
-                              zoom: 10,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 20),
-                  ],
+
                   //  Booking date
                   if (!ad.isMine) ...[
                     const Text(
@@ -943,7 +919,36 @@ class ViewPropertyAd extends StatelessWidget {
                         ],
                       );
                     }),
+                    const Divider(height: 20),
+                  ], // Google map representing the location of the properrty
+                  // if (ad.cameraPosition != null) ...[
+                  ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          "Location",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "${ad.address['buildingName']}, "
+                          "${ad.address['location']}, "
+                          "${ad.address['city']}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Image.asset("assets/images/map.jpg")
+                      ],
+                    ),
                     const SizedBox(height: 20),
+                  ],
+
+                  //  Booking Button
+                  if (!ad.isMine) ...[
                     GetBuilder<_VewPropertyController>(builder: (controller) {
                       return SizedBox(
                         width: double.infinity,
