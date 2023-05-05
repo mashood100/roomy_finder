@@ -396,6 +396,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                           ),
                         ),
                       const SizedBox(height: 10),
+
                       if (!booking.isMine && booking.isPending)
                         SizedBox(
                           width: double.infinity,

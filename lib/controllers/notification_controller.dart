@@ -339,20 +339,18 @@ class NotificationController {
         return;
       }
 
-      if (isForeGroundMessage) {
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "chat_channel_key",
-            groupKey: "chat_channel_group_key",
-            title: remoteMessage.notification?.title,
-            body: remoteMessage.notification?.body,
-            notificationLayout: NotificationLayout.Messaging,
-            payload: Map<String, String?>.from(remoteMessage.data),
-            summary: 'Chat notification',
-          ),
-        );
-      }
+      AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: Random().nextInt(1000),
+          channelKey: "chat_channel_key",
+          groupKey: "chat_channel_group_key",
+          title: payload["notificationTitle"]?.toString(),
+          body: message.body,
+          notificationLayout: NotificationLayout.Messaging,
+          payload: Map<String, String?>.from(remoteMessage.data),
+          summary: 'Chat notification',
+        ),
+      );
       if (!isForeGroundMessage) {
         ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
       }

@@ -653,82 +653,61 @@ class ViewPropertyAd extends StatelessWidget {
                       color: Colors.black54,
                       fontSize: 12,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      crossAxisSpacing: 10,
                       children: [
-                        Row(
-                          children: [
-                            {
-                              "label": "People",
-                              "asset": "assets/icons/person.png",
-                              "value":
-                                  "${ad.socialPreferences["numberOfPeople"]}",
-                            },
-                            {
-                              "label": "Nationality",
-                              "asset": "assets/icons/globe.png",
-                              "value": "${ad.socialPreferences["nationality"]}",
-                            },
-                            {
-                              "label": "Smoking",
-                              "asset": "assets/icons/smoking.png",
-                              "value": ad.socialPreferences["smoking"] == true
-                                  ? "Yes"
-                                  : "No",
-                            },
-                          ].map((e) {
-                            return Expanded(
-                              child: AdOverViewItem(
-                                title: Text("${e["label"]}"),
-                                subTitle: Text("${e["value"]}"),
-                                icon: Image.asset(
-                                  e["asset"].toString(),
-                                  height: 25,
-                                  width: 25,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            {
-                              "label": "Gender",
-                              "asset": "assets/icons/gender.png",
-                              "value": ad.socialPreferences["gender"],
-                            },
-                            {
-                              "label": "Drinking",
-                              "asset": "assets/icons/drink.png",
-                              "value": ad.socialPreferences["drinking"] == true
-                                  ? "Yes"
-                                  : "No",
-                            },
-                            {
-                              "label": "Visitors",
-                              "asset": "assets/icons/people.png",
-                              "value": ad.socialPreferences["visitors"] == true
-                                  ? "Yes"
-                                  : "No",
-                            },
-                          ].map((e) {
-                            return Expanded(
-                              child: AdOverViewItem(
-                                title: Text("${e["label"]}"),
-                                subTitle: Text("${e["value"]}"),
-                                icon: Image.asset(
-                                  e["asset"].toString(),
-                                  height: 25,
-                                  width: 25,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                        {
+                          "label": "People",
+                          "asset": "assets/icons/person.png",
+                          "value": "${ad.socialPreferences["numberOfPeople"]}",
+                        },
+                        {
+                          "label": "Nationality",
+                          "asset": "assets/icons/globe.png",
+                          "value": "${ad.socialPreferences["nationality"]}",
+                        },
+                        {
+                          "label": "Smoking",
+                          "asset": "assets/icons/smoking.png",
+                          "value": ad.socialPreferences["smoking"] == true
+                              ? "Yes"
+                              : "No",
+                        },
+                        {
+                          "label": "Gender",
+                          "asset": "assets/icons/gender.png",
+                          "value": ad.socialPreferences["gender"],
+                        },
+                        {
+                          "label": "Drinking",
+                          "asset": "assets/icons/drink.png",
+                          "value": ad.socialPreferences["drinking"] == true
+                              ? "Yes"
+                              : "No",
+                        },
+                        {
+                          "label": "Visitors",
+                          "asset": "assets/icons/people.png",
+                          "value": ad.socialPreferences["visitors"] == true
+                              ? "Yes"
+                              : "No",
+                        },
+                      ].map((e) {
+                        return AdOverViewItem(
+                          title: Text("${e["label"]}"),
+                          subTitle: Text("${e["value"]}"),
+                          icon: Image.asset(
+                            e["asset"].toString(),
+                            height: 30,
+                            width: 30,
+                            color: Colors.black54,
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
 
@@ -744,23 +723,23 @@ class ViewPropertyAd extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.black54,
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      // fontWeight: FontWeight.bold,
                     ),
-                    child: Wrap(
-                      runSpacing: 10,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
                       children: allAmenities
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
-                        return SizedBox(
-                          width: Get.width <= 400 ? Get.width / 2 - 15 : 150,
-                          child: AdOverViewItem(
-                            title: Text("${e["value"]}"),
-                            icon: Image.asset(
-                              e["asset"].toString(),
-                              height: 25,
-                              width: 25,
-                              color: Colors.black54,
-                            ),
+                        return AdOverViewItem(
+                          title: Text("${e["value"]}"),
+                          icon: Image.asset(
+                            e["asset"].toString(),
+                            height: 30,
+                            width: 30,
+                            color: Colors.black54,
                           ),
                         );
                       }).toList(),
@@ -920,9 +899,13 @@ class ViewPropertyAd extends StatelessWidget {
                                     controller._resetDates();
                                   }
                                 },
-                                icon: const Icon(CupertinoIcons.calendar),
+                                icon: const Icon(
+                                  CupertinoIcons.calendar,
+                                  color: Colors.grey,
+                                ),
                                 label: Text(
                                   Jiffy(controller.checkIn.value).yMd,
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
                             ],
@@ -946,9 +929,13 @@ class ViewPropertyAd extends StatelessWidget {
                                     controller.checkOut(date);
                                   }
                                 },
-                                icon: const Icon(CupertinoIcons.calendar),
+                                icon: const Icon(
+                                  CupertinoIcons.calendar,
+                                  color: Colors.grey,
+                                ),
                                 label: Text(
                                   Jiffy(controller.checkOut.value).yMd,
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
                             ],

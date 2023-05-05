@@ -374,7 +374,8 @@ const rasAlkimaCities = [
   'Julan',
   'Julfar',
   'Khuzam',
-  'Maareed● Mamourah',
+  'Mamourah',
+  'Maareed',
   'Nakheel'
 ];
 

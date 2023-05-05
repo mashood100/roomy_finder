@@ -19,6 +19,7 @@ class AppController extends GetxController {
   static late String apiToken;
   static late bool isFirstStart;
   static Uri? dynamicInitialLink;
+  static bool haveOpenInitialMessage = false;
 
   static AppController instance = Get.find<AppController>(tag: "appController");
   static User get me => instance.user.value;

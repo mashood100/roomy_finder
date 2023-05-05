@@ -230,7 +230,7 @@ class PropertyAdMiniWidget extends StatelessWidget {
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
                 child: Container(
                   color: Colors.white,
@@ -453,7 +453,7 @@ class RoommateAdMiniWidget extends StatelessWidget {
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
                 child: Container(
                   color: Colors.white,
@@ -530,20 +530,22 @@ class AdOverViewItem extends StatelessWidget {
       children: [
         icon,
         const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            title,
-            if (subTitle != null)
-              DefaultTextStyle.merge(
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: subTitleColor,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              title,
+              if (subTitle != null)
+                DefaultTextStyle.merge(
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: subTitleColor,
+                  ),
+                  child: subTitle!,
                 ),
-                child: subTitle!,
-              ),
-          ],
+            ],
+          ),
         ),
       ],
     );

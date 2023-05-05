@@ -485,9 +485,12 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       color: Colors.black54,
                       fontSize: 12,
                     ),
-                    child: Wrap(
-                      runSpacing: 10,
-                      spacing: 20,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      crossAxisSpacing: 10,
                       children: [
                         {
                           "label": "Age",
@@ -519,40 +522,71 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           "asset": "assets/icons/lifestyle.png",
                           "value": ad.socialPreferences["lifestyle"] ?? "N/A",
                         },
-                        {
-                          "label": "Languages",
-                          "asset": "assets/icons/language.png",
-                          "value": List<String>.from(
-                            ad.aboutYou["languages"] as List,
-                          ).join(", ")
-                        },
                       ].map((e) {
-                        return Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 100,
-                            maxHeight: 200,
+                        return AdOverViewItem(
+                          title: Text("${e["label"]}"),
+                          subTitle: Text(
+                            "${e["value"]}",
+                            style: const TextStyle(fontSize: 10),
                           ),
-                          child: Expanded(
-                            child: AdOverViewItem(
-                              title: Text(
-                                "${e["label"]}",
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                              subTitle: Text(
-                                "${e["value"]}",
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                              icon: Image.asset(
-                                e["asset"].toString(),
-                                height: 30,
-                                width: 30,
-                                color: Colors.black54,
-                              ),
-                            ),
+                          icon: Image.asset(
+                            e["asset"].toString(),
+                            height: 30,
+                            width: 30,
+                            color: Colors.black54,
                           ),
                         );
                       }).toList(),
                     ),
+                  ),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Image.asset(
+                        "assets/icons/language.png",
+                        height: 30,
+                        width: 30,
+                        color: Colors.black54,
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "Languages",
+                            style:
+                                TextStyle(color: Colors.black54, fontSize: 12),
+                          ),
+                          Builder(
+                            builder: (context) {
+                              final data = List<String>.from(
+                                  ad.aboutYou["languages"] as List);
+
+                              for (int i = 0; i < data.length; i++) {
+                                var e = data[i];
+                                if (i == data.length - 1) break;
+                                if (i.isEven) {
+                                  data[i] = "$e, ";
+                                } else {
+                                  data[i] = "$e,\n";
+                                }
+                              }
+
+                              return Text(
+                                data.isNotEmpty ? data.join('') : "N/A",
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
 
                   const Divider(height: 20),
@@ -560,7 +594,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   // Preference
                   const Text(
                     "Preffered roommate",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 5),
 
@@ -587,7 +621,8 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           "value": ad.socialPreferences["lifestyle"] ?? "N/A",
                         },
                       ].map((e) {
-                        return Expanded(
+                        return SizedBox(
+                          width: (Get.width - 20) / 3,
                           child: AdOverViewItem(
                             title: Text("${e["label"]}"),
                             subTitle: Text("${e["value"]}"),
@@ -619,9 +654,12 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       color: Colors.black54,
                       fontSize: 12,
                     ),
-                    child: Wrap(
-                      runSpacing: 10,
-                      spacing: 20,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      crossAxisSpacing: 20,
                       children: [
                         {
                           "label": "Pets",
@@ -659,19 +697,16 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               : "No",
                         },
                       ].map((e) {
-                        return Container(
-                          constraints: const BoxConstraints(minWidth: 100),
-                          child: AdOverViewItem(
-                            title: Text("${e["label"]}"),
-                            subTitle: Text("${e["value"]}"),
-                            subTitleColor:
-                                e["value"] == "Yes" ? Colors.green : Colors.red,
-                            icon: Image.asset(
-                              e["asset"].toString(),
-                              height: 30,
-                              width: 30,
-                              color: Colors.black54,
-                            ),
+                        return AdOverViewItem(
+                          title: Text("${e["label"]}"),
+                          subTitle: Text("${e["value"]}"),
+                          subTitleColor:
+                              e["value"] == "Yes" ? Colors.green : Colors.red,
+                          icon: Image.asset(
+                            e["asset"].toString(),
+                            height: 30,
+                            width: 30,
+                            color: Colors.black54,
                           ),
                         );
                       }).toList(),
@@ -691,25 +726,24 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   DefaultTextStyle.merge(
                     style: const TextStyle(
                       color: Colors.black54,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
-                    child: Wrap(
-                      runSpacing: 10,
-                      spacing: 20,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2.5,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      crossAxisSpacing: 10,
                       children: allAmenities
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
-                        return Container(
-                          constraints: const BoxConstraints(minWidth: 150),
-                          child: AdOverViewItem(
-                            title: Text("${e["value"]}"),
-                            icon: Image.asset(
-                              e["asset"].toString(),
-                              height: 30,
-                              width: 30,
-                              color: Colors.black54,
-                            ),
+                        return AdOverViewItem(
+                          title: Text("${e["value"]}"),
+                          icon: Image.asset(
+                            e["asset"].toString(),
+                            height: 30,
+                            width: 30,
+                            color: Colors.black54,
                           ),
                         );
                       }).toList(),
@@ -743,7 +777,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             Expanded(
                               child: Image.asset(
                                 "${e["asset"]}",
-                                color: ROOMY_ORANGE,
+                                color: Colors.grey,
                               ),
                             ),
                             Text(

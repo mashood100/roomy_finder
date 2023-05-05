@@ -499,6 +499,7 @@ class RegistrationScreen extends StatelessWidget {
                               Row(
                                 children: [
                                   const Spacer(),
+                                  // Roommate
                                   GestureDetector(
                                     onTap: () {
                                       controller.accountType(
@@ -525,6 +526,7 @@ class RegistrationScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const Spacer(),
+                                  // Landlord
                                   GestureDetector(
                                     onTap: () {
                                       controller.accountType(
@@ -551,6 +553,33 @@ class RegistrationScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const Spacer(),
+                                  // Maintainer
+                                  // GestureDetector(
+                                  //   onTap: () {
+                                  //     controller.accountType(
+                                  //         UserAccountType.maintainer);
+                                  //   },
+                                  //   child: Icon(
+                                  //     controller.isLandlord
+                                  //         ? Icons.check_circle_outline_outlined
+                                  //         : Icons.circle_outlined,
+                                  //     color: ROOMY_ORANGE,
+                                  //   ),
+                                  // ),
+                                  // GestureDetector(
+                                  //   onTap: () {
+                                  //     controller.accountType(
+                                  //         UserAccountType.landlord);
+                                  //   },
+                                  //   child: const Text(
+                                  //     "Maintainer",
+                                  //     style: TextStyle(
+                                  //       color: ROOMY_PURPLE,
+                                  //       fontWeight: FontWeight.bold,
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                  // const Spacer(),
                                 ],
                               ),
                               const Divider(),

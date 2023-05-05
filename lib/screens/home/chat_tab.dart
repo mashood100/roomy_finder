@@ -271,7 +271,13 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (msg.isMine)
+                    if (msg.isMine && !msg.isRecieved)
+                      const Icon(
+                        Icons.done,
+                        color: Colors.grey,
+                        size: 16,
+                      )
+                    else if (msg.isMine)
                       Icon(
                         Icons.done_all_outlined,
                         color: msg.isRead ? Colors.blue : Colors.grey,
@@ -346,7 +352,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   void onIndexSelected(int index) {
     final controller = Get.put(ChatTabController());
-    controller._fetchConversations();
+    controller.update();
     AppController.instance.haveNewMessage(false);
     AwesomeNotifications().cancelNotificationsByChannelKey("chat_channel_key");
     AwesomeNotifications().cancelNotificationsByGroupKey(

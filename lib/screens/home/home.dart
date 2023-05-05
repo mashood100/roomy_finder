@@ -97,9 +97,12 @@ class HomeController extends LoadingController {
   Future<void> _handleInitialMessage() async {
     final message = await FirebaseMessaging.instance.getInitialMessage();
     if (message != null) {
+      if (AppController.me.isGuest) return;
+      if (AppController.haveOpenInitialMessage) return;
       NotificationController.onFCMMessageOpenedAppHandler(message);
     }
     await NotificationController.requestNotificationPermission(Get.context);
+    AppController.haveOpenInitialMessage = true;
   }
 
   Future<void> _runStartFutures() async {
