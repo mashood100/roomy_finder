@@ -390,24 +390,36 @@ class ViewProfileScreen extends StatelessWidget {
                       background: Hero(
                         tag: "profile-picture-hero",
                         child: Obx(() {
+                          if (AppController
+                                  .instance.user.value.profilePicture ==
+                              null) {
+                            return Image.asset(
+                              AppController.instance.user.value.gender == "Male"
+                                  ? "assets/images/default_male.png"
+                                  : "assets/images/default_female.png",
+                            );
+                          }
+
                           return GestureDetector(
                             onTap: () {
                               Get.to(
-                                () => ViewImages(
-                                  title: "Profile picture",
-                                  images: [
-                                    CachedNetworkImageProvider(
-                                      AppController
-                                          .instance.user.value.profilePicture,
-                                    )
-                                  ],
-                                ),
+                                () {
+                                  return ViewImages(
+                                    title: "Profile picture",
+                                    images: [
+                                      CachedNetworkImageProvider(
+                                        AppController.instance.user.value
+                                            .profilePicture!,
+                                      )
+                                    ],
+                                  );
+                                },
                                 transition: Transition.zoom,
                               );
                             },
                             child: CachedNetworkImage(
                               imageUrl: AppController
-                                  .instance.user.value.profilePicture,
+                                  .instance.user.value.profilePicture!,
                               width: double.infinity,
                               fit: BoxFit.fitWidth,
                               errorWidget: (context, error, stackTrace) {

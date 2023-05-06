@@ -37,7 +37,7 @@ class PropertyAdWidget extends StatelessWidget {
               ),
               child: ad.images.isEmpty
                   ? Image.asset(
-                      "assets/images/default_ad_picture.jpg",
+                      "assets/images/default_room.png",
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
@@ -212,10 +212,10 @@ class PropertyAdMiniWidget extends StatelessWidget {
             children: [
               if (ad.images.isEmpty)
                 Image.asset(
-                  "assets/images/default_ad_picture.jpg",
+                  "assets/images/default_room.png",
                   width: double.infinity,
                   height: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 )
               else
                 CachedNetworkImage(
@@ -298,15 +298,13 @@ class RoommateAdWidget extends StatelessWidget {
               ),
               child: (ad.images.isEmpty)
                   ? Image.asset(
-                      "assets/images/default_ad_picture.jpg",
+                      "assets/images/default_roommate.jpg",
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
                     )
                   : CachedNetworkImage(
-                      imageUrl: ad.images.isNotEmpty
-                          ? ad.images[0]
-                          : ad.poster.profilePicture,
+                      imageUrl: ad.images[0],
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
@@ -435,7 +433,7 @@ class RoommateAdMiniWidget extends StatelessWidget {
             children: [
               if (ad.images.isEmpty)
                 Image.asset(
-                  "assets/images/default_ad_picture.jpg",
+                  "assets/images/default_roommate.jpg",
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,

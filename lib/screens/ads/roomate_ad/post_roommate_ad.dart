@@ -1013,35 +1013,34 @@ class PostRoommateAdScreen extends StatelessWidget {
                 ),
               ),
               const Divider(height: 30),
-              if (controller.information["action"] == "HAVE ROOM") ...[
-                InlineDropdown<String>(
-                  labelText: 'gender'.tr,
-                  value: controller.socialPreferences["gender"] as String?,
-                  items: const ["Male", "Female", "Mix"],
-                  onChanged: controller.isLoading.isTrue
-                      ? null
-                      : (val) {
-                          if (val != null) {
-                            controller.socialPreferences["gender"] = val;
-                          }
-                        },
-                ),
-                const SizedBox(height: 20),
-                // Nationalities
-                InlineDropdown<String>(
-                  labelText: 'nationality'.tr,
-                  value: controller.socialPreferences["nationality"] as String?,
-                  items: allNationalities,
-                  onChanged: controller.isLoading.isTrue
-                      ? null
-                      : (val) {
-                          if (val != null) {
-                            controller.socialPreferences["nationality"] = val;
-                          }
-                        },
-                ),
-                const Divider(height: 40),
-              ],
+
+              InlineDropdown<String>(
+                labelText: 'gender'.tr,
+                value: controller.socialPreferences["gender"] as String?,
+                items: const ["Male", "Female", "Mix"],
+                onChanged: controller.isLoading.isTrue
+                    ? null
+                    : (val) {
+                        if (val != null) {
+                          controller.socialPreferences["gender"] = val;
+                        }
+                      },
+              ),
+              const SizedBox(height: 20),
+              // Nationalities
+              InlineDropdown<String>(
+                labelText: 'nationality'.tr,
+                value: controller.socialPreferences["nationality"] as String?,
+                items: allNationalities,
+                onChanged: controller.isLoading.isTrue
+                    ? null
+                    : (val) {
+                        if (val != null) {
+                          controller.socialPreferences["nationality"] = val;
+                        }
+                      },
+              ),
+              const Divider(height: 40),
               const Center(
                 child: Text(
                   "Comfortable with :",

@@ -137,12 +137,11 @@ flutter:
         - asset: assets/fonts/Arvo/Arvo-BoldItalic.ttf
         - asset: assets/fonts/Arvo/Arvo-Regular.ttf
         - asset: assets/fonts/Arvo/Arvo-Italic.ttf
-    - family: Gilroy
+    - family: Avenir
       fonts:
-        - asset: assets/fonts/Gilroy/Gilroy-Bold.ttf
-        - asset: assets/fonts/Gilroy/Gilroy-Light.ttf
-        - asset: assets/fonts/Gilroy/Gilroy-Regular.ttf
-        - asset: assets/fonts/Gilroy/Gilroy-RegularItalic.ttf
+        - asset: assets/fonts/Avenir/AvenirLTStd-Black.otf
+        - asset: assets/fonts/Avenir/AvenirLTStd-Book.otf
+        - asset: assets/fonts/Avenir/AvenirLTStd-Roman.otf
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

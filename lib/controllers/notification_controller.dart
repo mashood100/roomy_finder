@@ -373,7 +373,11 @@ class NotificationController {
 
       final notifications = pref.getStringList(key) ?? [];
 
-      final newNot = AppNotication.fromNow(message: message, event: event);
+      final newNot = AppNotication.fromNow(
+        message: message,
+        event: event,
+        isRead: false,
+      );
 
       if (!notifications.contains(newNot.toJson())) {
         notifications.insert(0, newNot.toJson());

@@ -21,8 +21,6 @@ class _LoginController extends LoadingController {
   final _passwordController = TextEditingController();
   final country = Country.currentCountry.obs;
 
-  final rememberMe = false.obs;
-
   final showPassword = false.obs;
 
   Future<void> _login() async {
@@ -49,11 +47,9 @@ class _LoginController extends LoadingController {
 
           AppNotication.currentUser = user;
 
-          if (rememberMe.isTrue) {
-            await AppController.instance.saveUser();
-            await AppController.instance
-                .saveUserPassword(_passwordController.text);
-          }
+          await AppController.instance.saveUser();
+          await AppController.instance
+              .saveUserPassword(_passwordController.text);
 
           AppController.instance.setIsFirstStart(false);
 
@@ -228,33 +224,6 @@ class LoginScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                              ),
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    child: Checkbox(
-                                      checkColor: ROOMY_ORANGE,
-                                      value: controller.rememberMe.isTrue,
-                                      onChanged: controller.isLoading.isTrue
-                                          ? null
-                                          : (_) =>
-                                              controller.rememberMe.toggle(),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text("rememberMe".tr),
-                                  const Spacer(),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Get.toNamed('/reset_password'),
-                                    child: Text(
-                                      'forgotPassword'.tr,
-                                      style:
-                                          const TextStyle(color: ROOMY_ORANGE),
-                                    ),
-                                  )
-                                ],
                               ),
                               const Divider(),
                               Row(

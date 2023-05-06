@@ -158,7 +158,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                     if (AppController.me.isGuest)
                       const Align(
                         alignment: Alignment.topLeft,
-                        child: Text("I'am looking for"),
+                        child: Text("I am looking for"),
                       )
                     else
                       Row(
@@ -402,7 +402,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       child: Row(
                         children: controller._firstRowPropertyAds.map((ad) {
                           return SizedBox(
-                            width: 150,
+                            width: 160,
                             height: 200,
                             child: PropertyAdMiniWidget(
                               ad: ad,
@@ -579,7 +579,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(width: 5),
-          Image.asset("assets/images/logo.png", height: 40),
+          Image.asset("assets/images/logo_house.png", height: 40),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -590,18 +590,20 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                 Text(
                   "Roomy",
                   style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontFamily: "Avro"),
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: "Avro",
+                  ),
                 ),
                 Text(
                   "FINDER",
                   style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: ROOMY_ORANGE,
-                      fontSize: 18,
-                      fontFamily: "Avro"),
+                    fontWeight: FontWeight.w900,
+                    color: ROOMY_ORANGE,
+                    fontSize: 16,
+                    fontFamily: "Avro",
+                  ),
                 ),
               ],
             ),

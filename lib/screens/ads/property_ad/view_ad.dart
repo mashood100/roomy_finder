@@ -373,7 +373,7 @@ class ViewPropertyAd extends StatelessWidget {
                   items: [
                     if (ad.images.isEmpty && ad.videos.isEmpty)
                       Image.asset(
-                        "assets/images/default_ad_picture.jpg",
+                        "assets/images/default_room.png",
                         height: 250,
                         width: Get.width,
                         fit: BoxFit.cover,
@@ -594,7 +594,7 @@ class ViewPropertyAd extends StatelessWidget {
                     " ${ad.address["city"]}",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-
+                  const SizedBox(height: 10),
                   // Prefered rent type
                   Builder(builder: (context) {
                     final String rentDuration;
@@ -608,14 +608,29 @@ class ViewPropertyAd extends StatelessWidget {
                       default:
                         rentDuration = "Day";
                     }
-                    return Text(
-                      "${formatMoney(
-                        ad.prefferedRentDisplayPrice *
-                            AppController.convertionRate,
-                      )} / $rentDuration",
+
+                    final price = formatMoney(
+                      ad.prefferedRentDisplayPrice *
+                          AppController.convertionRate,
+                    ).replaceFirst(
+                      AppController.instance.country.value.currencyCode,
+                      " ",
+                    );
+
+                    return Text.rich(
+                      TextSpan(children: [
+                        TextSpan(text: price),
+                        TextSpan(
+                          text:
+                              AppController.instance.country.value.currencyCode,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        TextSpan(text: " / $rentDuration"),
+                      ]),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey,
+                        fontSize: 16,
+                        color: Colors.black,
                       ),
                     );
                   }),
@@ -650,7 +665,7 @@ class ViewPropertyAd extends StatelessWidget {
                   DefaultTextStyle.merge(
                     style: const TextStyle(
                       color: Colors.black54,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                     child: GridView.count(
                       crossAxisCount: 3,
@@ -715,7 +730,7 @@ class ViewPropertyAd extends StatelessWidget {
                   // Amenities
                   const Text(
                     "Amenities",
-                    style: TextStyle(fontWeight: FontWeight.w100),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 5),
                   DefaultTextStyle.merge(

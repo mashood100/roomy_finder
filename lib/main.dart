@@ -112,7 +112,8 @@ class MyApp extends StatelessWidget {
         helperMaxLines: 3,
         errorMaxLines: 3,
       ),
-      fontFamily: 'Roboto',
+      fontFamily: "Avenir",
+      fontFamilyFallback: const ["Avro", "Roboto"],
       appBarTheme: const AppBarTheme(
         backgroundColor: ROOMY_PURPLE,
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 22),
@@ -146,6 +147,7 @@ class MyApp extends StatelessWidget {
       tabBarTheme: const TabBarTheme(
         labelColor: Colors.black,
       ),
+      // cardColor: Colors.white,
     );
 
     final darkTheme = ThemeData(

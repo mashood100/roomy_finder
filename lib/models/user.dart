@@ -16,7 +16,7 @@ class User {
   String lastName;
   String country;
   String gender;
-  String profilePicture;
+  String? profilePicture;
   bool isPremium;
   DateTime createdAt;
   String fcmToken;
@@ -30,7 +30,7 @@ class User {
     required this.lastName,
     required this.country,
     required this.gender,
-    required this.profilePicture,
+    this.profilePicture,
     required this.isPremium,
     required this.createdAt,
     required this.fcmToken,
@@ -121,7 +121,7 @@ class User {
       lastName: map['lastName'] as String,
       country: map['country'] as String,
       gender: map['gender'] as String,
-      profilePicture: map['profilePicture'] as String,
+      profilePicture: map['profilePicture'] as String?,
       isPremium: map['isPremium'] as bool,
       createdAt: DateTime.parse(map['createdAt'] as String),
       fcmToken: map['fcmToken'] as String,
@@ -136,9 +136,7 @@ class User {
   @override
   String toString() {
     return 'User(id: $id, type: $type, email: $email, phone: $phone,'
-        ' firstName: $firstName, lastName: $lastName,'
-        ' country: $country, profilePicture: $profilePicture,'
-        ' isPremium: $isPremium, createdAt: $createdAt)';
+        ' firstName: $firstName, lastName: $lastName, country: $country)';
   }
 
   @override
@@ -166,7 +164,11 @@ class User {
 
         return CircleAvatar(
           radius: innerRadius,
-          foregroundImage: CachedNetworkImageProvider(profilePicture),
+          foregroundImage: (profilePicture == null
+              ? AssetImage(gender == "Male"
+                  ? "assets/images/default_male.png"
+                  : "assets/images/default_female.png")
+              : CachedNetworkImageProvider(profilePicture!)) as ImageProvider,
           onForegroundImageError: (e, trace) {},
           child: Text(
             logoText,

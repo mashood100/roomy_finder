@@ -159,7 +159,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           items: [
                             if (ad.images.isEmpty && ad.videos.isEmpty)
                               Image.asset(
-                                "assets/images/default_ad_picture.jpg",
+                                "assets/images/default_roommate.jpg",
                                 height: 250,
                                 width: Get.width,
                                 fit: BoxFit.cover,
@@ -382,12 +382,17 @@ class ViewRoommateAdScreen extends StatelessWidget {
                                   fontSize: 12,
                                 ),
                               ),
+
+                              const SizedBox(height: 10),
                               // Location
                               Text(
                                 "${ad.address["buildingName"] ?? "N/A"},"
                                 " ${ad.address["location"]},"
                                 " ${ad.address["city"]}",
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
@@ -420,15 +425,40 @@ class ViewRoommateAdScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  formatMoney(
+                                const SizedBox(height: 20),
+                                Builder(builder: (context) {
+                                  final price = formatMoney(
                                     ad.budget * AppController.convertionRate,
-                                  ),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                  ).replaceFirst(
+                                    AppController
+                                        .instance.country.value.currencyCode,
+                                    "",
+                                  );
+
+                                  return Text.rich(
+                                    TextSpan(children: [
+                                      TextSpan(text: price),
+                                      TextSpan(
+                                        text: AppController.instance.country
+                                            .value.currencyCode,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      const TextSpan(
+                                        text: " \nBudget",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ]),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  );
+                                }),
                               ],
                             ),
                         ],
@@ -440,8 +470,11 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   bottom: 0,
                   left: 5,
                   child: GestureDetector(
-                    onTap: () =>
-                        controller._viewImage(ad.poster.profilePicture),
+                    onTap: () {
+                      if (ad.poster.profilePicture == null) return;
+
+                      controller._viewImage(ad.poster.profilePicture!);
+                    },
                     child: ad.poster.ppWidget(borderColor: false, size: 40),
                   ),
                 ),
@@ -487,7 +520,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     ),
                     child: GridView.count(
                       crossAxisCount: 3,
-                      childAspectRatio: 2,
+                      childAspectRatio: 1.5,
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       crossAxisSpacing: 10,
