@@ -18,7 +18,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    AppController.instance.unreadNotificationCount(0);
+    AppController.instance.unreadNotificationCount.value = 0;
   }
 
   @override

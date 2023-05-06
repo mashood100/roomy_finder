@@ -1,11 +1,10 @@
 import 'dart:async';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -14,7 +13,6 @@ import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/functions/share_app.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/blog_post/all_posts.dart';
@@ -22,35 +20,30 @@ import 'package:roomy_finder/screens/home/account_tab.dart';
 import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/home/chat_tab.dart';
-import 'package:roomy_finder/screens/home/maintenance_tab.dart';
+import 'package:roomy_finder/screens/home/post_ad_tab.dart';
 import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
-  final currentTabIndex = 2.obs;
+  final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
-  final tabs = <HomeScreenSupportable>[];
+  final List<HomeScreenSupportable> tabs = [
+    const AccountTab(),
+    const HomeTab(),
+    const PostAdTab(),
+    const MessagesTab(),
+    const FavoriteTab(),
+  ];
 
   @override
   void onInit() {
-    if (!AppController.me.isGuest) _fetchNewMessages();
-    tabs.addAll(const [
-      AccountTab(),
-      MessagesTab(),
-      HomeTab(),
-    ]);
-    if (AppController.me.isLandlord) {
-      tabs.add(const MaintenanceTab());
-    }
-    tabs.addAll(const [
-      FavoriteTab(),
-    ]);
+    AppController.instance.setIsFirstLaunchToFalse(false);
+
     if (AppController.dynamicInitialLink != null) {
       dynamicLinkHandler(AppController.dynamicInitialLink!);
     }
@@ -81,7 +74,10 @@ class HomeController extends LoadingController {
 
           break;
         case "new-message":
-          if (currentTabIndex.value != 2) {
+          if (currentTabIndex.value == 3) {
+            AwesomeNotifications()
+                .cancelNotificationsByChannelKey("chat_channel_group_key");
+          } else {
             AppController.instance.haveNewMessage(true);
           }
 
@@ -101,9 +97,12 @@ class HomeController extends LoadingController {
   Future<void> _handleInitialMessage() async {
     final message = await FirebaseMessaging.instance.getInitialMessage();
     if (message != null) {
+      if (AppController.me.isGuest) return;
+      if (AppController.haveOpenInitialMessage) return;
       NotificationController.onFCMMessageOpenedAppHandler(message);
     }
     await NotificationController.requestNotificationPermission(Get.context);
+    AppController.haveOpenInitialMessage = true;
   }
 
   Future<void> _runStartFutures() async {
@@ -158,59 +157,6 @@ class HomeController extends LoadingController {
       Get.offAllNamed('/login');
     }
   }
-
-  Future<void> _fetchNewMessages() async {
-    try {
-      DateTime? lastDate;
-      final pref = await SharedPreferences.getInstance();
-      final value = pref.getString("last-message-fetch-date");
-
-      if (value != null) {
-        lastDate = DateTime.parse(value);
-      } else {
-        lastDate = DateTime.now();
-      }
-
-      final conversations = await ChatConversation.getAllSavedChats(
-        AppController.me.id,
-      );
-
-      final messages = await ChatConversation.fetchMessages(lastDate);
-
-      if (messages.isNotEmpty) {
-        AppController.instance.haveNewMessage(true);
-      }
-
-      for (var m in messages) {
-        final convKey =
-            ChatConversation.createConvsertionKey(m.recieverId, m.senderId);
-
-        final conv = conversations.firstWhereOrNull((e) => e.key == convKey);
-        if (conv != null) {
-          conv.lastMessage = m;
-          conv.saveChat();
-        } else {
-          final newConv = ChatConversation(
-            me: AppController.me.chatUser,
-            friend: ChatUser(id: m.senderId, createdAt: DateTime.now()),
-            createdAt: DateTime.now(),
-            lastMessage: m,
-          );
-
-          conversations.insert(0, newConv);
-          newConv.saveChat();
-        }
-        m.saveToSameKeyLocaleMessages(convKey);
-      }
-
-      pref.setString(
-        "last-message-fetch-date",
-        DateTime.now().toIso8601String(),
-      );
-    } catch (e) {
-      Get.log("$e");
-    }
-  }
 }
 
 class Home extends GetView<HomeController> {
@@ -218,7 +164,7 @@ class Home extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(HomeController());
+    final controller = Get.put(HomeController(), permanent: true);
     return WillPopScope(
       onWillPop: controller._onWillPop,
       child: Obx(() {
@@ -227,29 +173,35 @@ class Home extends GetView<HomeController> {
           drawer: SafeArea(
             child: HomeDrawer(controller: controller),
           ),
-          body: LazyLoadIndexedStack(
+          body: IndexedStack(
             index: controller.currentTabIndex.value,
             children: controller.tabs,
           ),
           bottomNavigationBar: AppController.me.isGuest
               ? null
-              : SizedBox(
-                  height: 40,
-                  child: BottomNavigationBar(
-                    currentIndex: controller.currentTabIndex.value,
-                    onTap: (index) {
-                      controller.tabs[index].onIndexSelected(index);
-                      if (controller.tabs[index] is MaintenanceTab) {
-                        showToast("Comming soon");
-                        return;
+              : BottomNavigationBar(
+                  currentIndex: controller.currentTabIndex.value,
+                  onTap: (index) {
+                    controller.tabs[index].onIndexSelected(index);
+                    if (controller.tabs[index] is PostAdTab) {
+                      if (AppController.me.isGuest) {
+                        Get.offAllNamed('/login');
+                      } else if (AppController.me.isLandlord) {
+                        Get.to(() => const PostPropertyAdScreen());
+                      } else if (AppController.me.isRoommate) {
+                        Get.to(() => const PostRoommateAdScreen());
                       }
+                      // showToast("Comming soon");
+                      return;
+                    }
 
-                      controller.currentTabIndex(index);
-                    },
-                    items: controller.tabs
-                        .map((e) => e.navigationBarItem)
-                        .toList(),
-                  ),
+                    controller.currentTabIndex(index);
+                  },
+                  items: controller.tabs.map((e) {
+                    return e.navigationBarItem(
+                        controller.currentTabIndex.value ==
+                            controller.tabs.indexOf(e));
+                  }).toList(),
                 ),
           floatingActionButton: controller
               .tabs[controller.currentTabIndex.value].floatingActionButton,
@@ -297,14 +249,7 @@ class HomeDrawer extends StatelessWidget {
               }),
             if (!AppController.me.isGuest)
               ListTile(
-                // leading: Image.asset(
-                //   "assets/icons/drawer/edit.png",
-                //   width: 40,
-                //   height: 40,
-                //   fit: BoxFit.cover,
-                // ),
                 leading: const CircleAvatar(
-                  // foregroundImage: AssetImage("assets/icons/drawer/edit.png"),
                   radius: 18,
                   backgroundColor: Colors.green,
                   child: Icon(Icons.edit, color: Colors.white),
@@ -314,6 +259,32 @@ class HomeDrawer extends StatelessWidget {
                 onTap: () {
                   Get.back();
                   Get.to(() => const UpdateUserProfile());
+                },
+              ),
+            if (AppController.me.isGuest)
+              ListTile(
+                leading: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: ROOMY_ORANGE,
+                  child: Icon(Icons.login, color: Colors.white),
+                ),
+                title: const Text("Login"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Get.offAllNamed("/login");
+                },
+              ),
+            if (AppController.me.isGuest)
+              ListTile(
+                leading: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: ROOMY_PURPLE,
+                  child: Icon(Icons.person_add, color: Colors.white),
+                ),
+                title: const Text("Register"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Get.offAllNamed("/login");
                 },
               ),
             const Align(
@@ -329,36 +300,21 @@ class HomeDrawer extends StatelessWidget {
               ),
             ),
             ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/home.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
               leading: const CircleAvatar(
                 radius: 18,
-                // foregroundImage: AssetImage("assets/icons/drawer/home.png"),
                 backgroundColor: ROOMY_PURPLE,
                 child: Icon(Icons.home, color: Colors.white),
               ),
               title: const Text("Home"),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                controller.currentTabIndex(2);
+                controller.currentTabIndex(1);
                 Get.back();
               },
             ),
             if (!AppController.me.isGuest)
               ListTile(
-                // leading: Image.asset(
-                //   "assets/icons/drawer/account.png",
-                //   width: 40,
-                //   height: 40,
-                //   fit: BoxFit.cover,
-                // ),
                 leading: const CircleAvatar(
-                  // foregroundImage:
-                  //     AssetImage("assets/icons/drawer/account.png"),
                   radius: 18,
                   backgroundColor: ROOMY_ORANGE,
                   child: Icon(Icons.person, color: Colors.white),
@@ -371,11 +327,6 @@ class HomeDrawer extends StatelessWidget {
                 },
               ),
             ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/plus.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
               // ),
               leading: const CircleAvatar(
                 radius: 18,

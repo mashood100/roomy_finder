@@ -2,17 +2,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
+import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
+import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
-import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class _AccountTabController extends LoadingController {}
@@ -30,7 +30,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
         child: Column(
           children: [
             const SizedBox(height: 10),
-            Obx(() {
+            Builder(builder: (context) {
               return SizedBox(
                 width: Get.width - 20,
                 child: Row(
@@ -38,24 +38,39 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   children: [
                     GestureDetector(
                       onTap: () {
+                        if (AppController.me.profilePicture == null) return;
                         showModalBottomSheet(
                           context: context,
                           builder: (context) => CachedNetworkImage(
-                            imageUrl: AppController.me.profilePicture,
+                            imageUrl: AppController.me.profilePicture!,
                           ),
                         );
                       },
-                      child: CircleAvatar(
-                        radius: 60,
-                        foregroundImage: CachedNetworkImageProvider(
-                          AppController.instance.user.value.profilePicture,
-                        ),
-                      ),
+                      child: Builder(builder: (context) {
+                        final ImageProvider provider;
+
+                        if (AppController.instance.user.value.profilePicture ==
+                            null) {
+                          provider = AssetImage(
+                            AppController.me.gender == "Male"
+                                ? "assets/images/default_male.png"
+                                : "assets/images/default_female.png",
+                          );
+                        } else {
+                          provider = CachedNetworkImageProvider(
+                            AppController.instance.user.value.profilePicture!,
+                          );
+                        }
+                        return CircleAvatar(
+                          radius: 60,
+                          foregroundImage: provider,
+                        );
+                      }),
                     ),
                     const SizedBox(width: 40),
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         SizedBox(
@@ -68,6 +83,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                           ),
                         ),
                         SizedBox(
@@ -83,16 +99,23 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                           ),
                         ),
                         OutlinedButton.icon(
                           onPressed: () {
                             Get.to(() => const ViewProfileScreen());
                           },
-                          icon: Icon(me.gender == "Male"
-                              ? Icons.person
-                              : Icons.person_4),
-                          label: const Text("All details"),
+                          icon: Icon(
+                            me.gender == "Male" ? Icons.person : Icons.person_4,
+                            color: Colors.grey,
+                          ),
+                          label: const Text(
+                            "All details",
+                            style: TextStyle(
+                              color: Colors.black,
+                            ),
+                          ),
                         ),
                       ],
                     )
@@ -105,10 +128,8 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const NotificationsScreen()),
                 leading: const CircleAvatar(
-                  child: Icon(
-                    Icons.notifications,
-                    color: ROOMY_ORANGE,
-                  ),
+                  backgroundColor: Colors.transparent,
+                  foregroundImage: AssetImage("assets/icons/notification.png"),
                 ),
                 title: const Text('Notifications'),
                 subtitle: Text(
@@ -123,62 +144,32 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
               ),
             ),
-            // if (me.isLandlord)
-            //   ListTile(
-            //     leading: const CircleAvatar(
-            //       child: Icon(CupertinoIcons.money_dollar_circle),
-            //     ),
-            //     title: const Text('Accout balance'),
-            //     subtitle: Text(formatMoney(0)),
-            //     trailing: IconButton(
-            //       onPressed: () {},
-            //       icon: const Icon(Icons.chevron_right),
-            //     ),
-            //   ),
-            if (AppController.me.isLandlord)
-              Card(
-                child: ListTile(
-                  onTap: () => Get.to(() => const MyPropertyAdsScreen()),
-                  leading: const CircleAvatar(
-                    child: Icon(
-                      Icons.widgets,
-                      color: ROOMY_ORANGE,
-                    ),
-                  ),
-                  title: const Text('My Ads'),
-                  trailing: IconButton(
-                    onPressed: () => Get.to(() => const MyPropertyAdsScreen()),
-                    icon: const Icon(Icons.chevron_right),
-                  ),
+            Card(
+              child: ListTile(
+                onTap: () {
+                  if (AppController.me.isLandlord) {
+                    Get.to(() => const MyPropertyAdsScreen());
+                  } else if (AppController.me.isRoommate) {
+                    Get.to(() => const MyRoommateAdsScreen());
+                  }
+                },
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.transparent,
+                  foregroundImage: AssetImage("assets/icons/ad.png"),
+                ),
+                title: const Text('My Ads'),
+                trailing: const IconButton(
+                  onPressed: null,
+                  icon: Icon(Icons.chevron_right),
                 ),
               ),
-            if (AppController.me.isRoommate)
-              Card(
-                child: ListTile(
-                  onTap: () => Get.to(() => const MyRoommateAdsScreen()),
-                  leading: const CircleAvatar(
-                    child: Icon(
-                      Icons.houseboat,
-                      color: ROOMY_ORANGE,
-                    ),
-                  ),
-                  title: const Text('My Ads'),
-                  trailing: IconButton(
-                    onPressed: () {
-                      Get.to(() => const MyRoommateAdsScreen());
-                    },
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ),
-              ),
+            ),
             Card(
               child: ListTile(
                 onTap: () => Get.to(() => const MyBookingsCreen()),
                 leading: const CircleAvatar(
-                  child: Icon(
-                    Icons.book,
-                    color: ROOMY_ORANGE,
-                  ),
+                  backgroundColor: Colors.transparent,
+                  foregroundImage: AssetImage("assets/icons/booking.png"),
                 ),
                 title: const Text('My Bookings'),
                 trailing: IconButton(
@@ -195,10 +186,9 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   Get.to(() => const AboutScreeen());
                 },
                 leading: const CircleAvatar(
-                    child: Icon(
-                  Icons.info_outlined,
-                  color: ROOMY_ORANGE,
-                )),
+                  backgroundColor: Colors.transparent,
+                  foregroundImage: AssetImage("assets/icons/info.png"),
+                ),
                 title: const Text('About'),
                 trailing: const IconButton(
                   onPressed: null,
@@ -209,25 +199,17 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             if (AppController.me.isLandlord)
               Card(
                 child: ListTile(
-                  dense: true,
-                  title: Text(
-                    "Account balance".tr,
-                    style: Get.theme.textTheme.bodySmall!,
+                  title: const Text("Account balance"),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
                   ),
-                  subtitle: Text(
-                    formatMoney(AppController.instance.accountBalance),
-                  ),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ROOMY_ORANGE,
-                    ),
-                    onPressed: () {
-                      Get.to(() => const WithdrawScreen());
-                    },
-                    child: const Text(
-                      'WITHDRAW',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  onTap: () {
+                    Get.to(() => const WithdrawScreen());
+                  },
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.transparent,
+                    foregroundImage: AssetImage("assets/icons/wallet.png"),
                   ),
                 ),
               ),
@@ -237,11 +219,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   onTap: () {
                     showToast("Coming soon...");
                   },
-                  // leading: const CircleAvatar(
-                  //     child: Icon(
-                  //   Icons.info_outlined,
-                  //   color: ROOMY_ORANGE,
-                  // )),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.transparent,
+                    foregroundImage: AssetImage("assets/icons/wallet.png"),
+                  ),
                   title: const Text('Roomy balance'),
                   trailing: const IconButton(
                     onPressed: null,
@@ -255,7 +236,8 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   onTap: () {
                     showToast("Coming soon...");
                   },
-                  // leading: const CircleAvatar(
+                  //leading: const CircleAvatar(
+                  // backgroundColor: Colors.white,
                   //     child: Icon(
                   //   Icons.info_outlined,
                   //   color: ROOMY_ORANGE,
@@ -267,7 +249,6 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   ),
                 ),
               ),
-
             Row(
               children: const [],
             )
@@ -288,13 +269,16 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   }
 
   @override
-  BottomNavigationBarItem get navigationBarItem {
+  BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/account.png", height: 20),
-      icon: Image.asset(
-        "assets/icons/home/account.png",
-        height: 20,
-        color: Colors.white,
+      icon: CustomBottomNavbarIcon(
+        icon: Image.asset(
+          "assets/icons/person.png",
+          height: 30,
+          width: 30,
+          color: ROOMY_PURPLE,
+        ),
+        isCurrent: isCurrent,
       ),
       label: 'Account'.tr,
     );

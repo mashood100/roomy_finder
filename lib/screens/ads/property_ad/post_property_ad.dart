@@ -1240,13 +1240,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                                       children: [
                                         const SizedBox(height: 10),
                                         Expanded(
-                                          child: Image.asset("${e["asset"]}",
-                                              color:
-                                                  controller.socialPreferences[
-                                                              e["value"]] !=
-                                                          true
-                                                      ? Colors.grey
-                                                      : null),
+                                          child: Image.asset(
+                                            "${e["asset"]}",
+                                            color: controller.socialPreferences[
+                                                        e["value"]] ==
+                                                    true
+                                                ? ROOMY_ORANGE
+                                                : null,
+                                          ),
                                         ),
                                         Text(
                                           "${e["label"]}",
@@ -1313,7 +1314,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                                 "${e["asset"]}",
                                                 color: controller.amenties
                                                         .contains(e["value"])
-                                                    ? null
+                                                    ? ROOMY_ORANGE
                                                     : Colors.grey,
                                               ),
                                             ),
@@ -1750,19 +1751,22 @@ class PostPropertyAdScreen extends StatelessWidget {
                               break;
 
                             case 3:
-                              controller._moveToNextPage();
-                              break;
-                            case 4:
                               if (controller.information['posterType'] ==
                                   "Agent/Broker") {
-                                if (controller._agentBrokerFormKey.currentState
-                                        ?.validate() ==
-                                    true) {
+                                var validate = controller
+                                    ._agentBrokerFormKey.currentState
+                                    ?.validate();
+
+                                if (validate == true) {
                                   controller._moveToNextPage();
                                 }
                               } else {
                                 controller._moveToNextPage();
                               }
+
+                              break;
+                            case 4:
+                              controller._moveToNextPage();
                               break;
                             case 5:
                               controller._moveToNextPage();

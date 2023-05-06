@@ -419,7 +419,7 @@ class FindRoommatesScreen extends StatelessWidget {
                             children: [
                               TextButton(
                                 onPressed: () {
-                                  Get.offAllNamed("/registration");
+                                  Get.offAllNamed("/login");
                                 },
                                 child: const Text(
                                   "REGISTER",
@@ -580,7 +580,7 @@ class _AdItem extends StatelessWidget {
                         ),
                         child: ad.images.isEmpty
                             ? Image.asset(
-                                "assets/images/default_ad_picture.jpg",
+                                "assets/images/default_roommate.jpg",
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               )

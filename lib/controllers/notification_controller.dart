@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/models/chat_message.dart';
@@ -333,33 +334,25 @@ class NotificationController {
 
       final message = ChatMessage.fromMap(payload["message"]);
 
-      final conv = ChatConversation(
-        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
-        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
-        createdAt: DateTime.now(),
-        lastMessage: message,
-      );
-
-      conv.saveChat();
-      await message.saveToSameKeyLocaleMessages(conv.key);
-
-      if (ChatConversation.currrentChatKey == conv.key) {
+      if (ChatConversation.currrentChatKey ==
+          "${message.recieverId}-${message.senderId}") {
         return;
       }
 
-      if (isForeGroundMessage) {
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "chat_channel_key",
-            groupKey: "chat_channel_group_key",
-            title: remoteMessage.notification?.title,
-            body: remoteMessage.notification?.body,
-            notificationLayout: NotificationLayout.Messaging,
-            payload: Map<String, String?>.from(remoteMessage.data),
-            summary: 'Chat notification',
-          ),
-        );
+      AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: Random().nextInt(1000),
+          channelKey: "chat_channel_key",
+          groupKey: "chat_channel_group_key",
+          title: payload["notificationTitle"]?.toString(),
+          body: message.body,
+          notificationLayout: NotificationLayout.Messaging,
+          payload: Map<String, String?>.from(remoteMessage.data),
+          summary: 'Chat notification',
+        ),
+      );
+      if (!isForeGroundMessage) {
+        ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
       }
     } catch (e, trace) {
       Get.log("$e");
@@ -380,7 +373,11 @@ class NotificationController {
 
       final notifications = pref.getStringList(key) ?? [];
 
-      final newNot = AppNotication.fromNow(message: message, event: event);
+      final newNot = AppNotication.fromNow(
+        message: message,
+        event: event,
+        isRead: false,
+      );
 
       if (!notifications.contains(newNot.toJson())) {
         notifications.insert(0, newNot.toJson());
@@ -430,16 +427,19 @@ class NotificationController {
 
       final message = ChatMessage.fromMap(payload["message"]);
 
-      final conv = ChatConversation(
-        me: ChatUser(id: message.recieverId, createdAt: DateTime.now()),
-        friend: ChatUser(id: message.senderId, createdAt: DateTime.now()),
-        createdAt: DateTime.now(),
-        lastMessage: message,
+      final other = ChatUser(id: message.senderId, createdAt: DateTime.now());
+      final conv = ChatConversation(other: other, lastMessage: message);
+      await conv.updateChatInfo();
+      AwesomeNotifications()
+          .cancelNotificationsByChannelKey("chat_channel_group_key");
+
+      Get.to(
+        () => FlyerChatScreen(
+          conversation: conv,
+          myId: AppController.me.id,
+          otherId: other.id,
+        ),
       );
-
-      conv.saveChat();
-
-      Get.to(() => FlyerChatScreen(conversation: conv));
       if (ChatConversation.currrentChatOnTapCallBack != null) {
         ChatConversation.currrentChatOnTapCallBack!();
       }

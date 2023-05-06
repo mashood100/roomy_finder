@@ -53,6 +53,10 @@ const allAmenities = [
     "asset": "assets/icons/tv.png",
   },
   {
+    "value": "AC",
+    "asset": "assets/icons/air_conditioner.png",
+  },
+  {
     "value": "Balcony",
     "asset": "assets/icons/balcony.png",
   },
@@ -159,7 +163,7 @@ const allSocialPreferences = [
   {
     "value": "visitors",
     "label": "Visitors",
-    "asset": "assets/icons/people_3.png",
+    "asset": "assets/icons/people.png",
   },
   {
     "value": "friendParty",

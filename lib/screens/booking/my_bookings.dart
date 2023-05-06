@@ -119,7 +119,7 @@ class MyBookingsCreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(5),
                           child: booking.ad.images.isEmpty
                               ? Image.asset(
-                                  "assets/images/default_ad_picture.jpg",
+                                  "assets/images/default_room.png",
                                   height: 120,
                                   width: 140,
                                   fit: BoxFit.cover,

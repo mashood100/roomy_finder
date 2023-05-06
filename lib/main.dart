@@ -17,6 +17,7 @@ import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/start/login.dart';
+import 'package:roomy_finder/screens/start/onboarding.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
@@ -121,7 +122,8 @@ class _MyAppState extends State<MyApp> {
         helperMaxLines: 3,
         errorMaxLines: 3,
       ),
-      fontFamily: 'Avro',
+      fontFamily: "Avenir",
+      fontFamilyFallback: const ["Avro", "Roboto"],
       appBarTheme: const AppBarTheme(
         backgroundColor: ROOMY_PURPLE,
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 22),
@@ -129,7 +131,9 @@ class _MyAppState extends State<MyApp> {
         actionsIconTheme: IconThemeData(color: Colors.white),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: ROOMY_PURPLE,
+        // backgroundColor: Colors.white,
+        unselectedIconTheme: IconThemeData(color: ROOMY_PURPLE),
+        selectedIconTheme: IconThemeData(color: ROOMY_PURPLE),
         showSelectedLabels: false,
         showUnselectedLabels: false,
         unselectedLabelStyle: TextStyle(fontSize: 5),
@@ -153,6 +157,7 @@ class _MyAppState extends State<MyApp> {
       tabBarTheme: const TabBarTheme(
         labelColor: Colors.black,
       ),
+      // cardColor: Colors.white,
     );
 
     final darkTheme = ThemeData(
@@ -169,7 +174,7 @@ class _MyAppState extends State<MyApp> {
       ),
       // cardTheme: const CardTheme(color: Color.fromARGB(255, 1, 39, 70)),
       // iconTheme: const IconThemeData(color: Color.fromARGB(255, 0, 109, 4)),
-      fontFamily: 'Avro',
+      fontFamily: 'Roboto',
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         hintStyle: const TextStyle(color: Colors.grey),
@@ -254,6 +259,10 @@ class _MyAppState extends State<MyApp> {
         MonthYearPickerLocalizations.delegate,
       ],
       getPages: [
+        GetPage(
+          name: "/onboarding",
+          page: () => const OnboardingScreen(),
+        ),
         GetPage(
           name: "/welcome",
           page: () => const WelcomeScreen(),

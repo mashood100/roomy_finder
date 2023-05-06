@@ -37,7 +37,7 @@ class PropertyAdWidget extends StatelessWidget {
               ),
               child: ad.images.isEmpty
                   ? Image.asset(
-                      "assets/images/default_ad_picture.jpg",
+                      "assets/images/default_room.png",
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
@@ -212,10 +212,10 @@ class PropertyAdMiniWidget extends StatelessWidget {
             children: [
               if (ad.images.isEmpty)
                 Image.asset(
-                  "assets/images/default_ad_picture.jpg",
+                  "assets/images/default_room.png",
                   width: double.infinity,
                   height: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 )
               else
                 CachedNetworkImage(
@@ -230,85 +230,33 @@ class PropertyAdMiniWidget extends StatelessWidget {
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text.rich(
-                              TextSpan(children: [
-                                TextSpan(
-                                  text: ad.type,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const TextSpan(text: " for rent"),
-                              ]),
-                            ),
-                            Text(
-                              "${ad.address["location"]},"
-                              " ${ad.address["city"]}",
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Container(
-                      //   padding: const EdgeInsets.all(8),
-                      //   decoration: const BoxDecoration(
-                      //     shape: BoxShape.circle,
-                      //     color: ROOMY_ORANGE,
-                      //   ),
-                      //   child: Text(
-                      //     "${ad.quantity - ad.quantityTaken}".padLeft(2, "0"),
-                      //     style: const TextStyle(color: Colors.white),
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                height: double.infinity,
-                width: double.infinity,
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 10,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 30),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.7),
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(20),
-                    ),
-                  ),
+                  width: double.infinity,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        formatMoney(ad.prefferedRentDisplayPrice),
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        ad.type,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      // Text(
-                      //   ad.preferedRentType,
-                      //   style: const TextStyle(
-                      //     color: Colors.white,
-                      //     fontSize: 10,
-                      //   ),
-                      // ),
+                      Text(
+                        "${ad.address["location"]},"
+                        " ${ad.address["city"]}",
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        formatMoney(
+                          ad.prefferedRentDisplayPrice *
+                              AppController.convertionRate,
+                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
@@ -350,15 +298,13 @@ class RoommateAdWidget extends StatelessWidget {
               ),
               child: (ad.images.isEmpty)
                   ? Image.asset(
-                      "assets/images/default_ad_picture.jpg",
+                      "assets/images/default_roommate.jpg",
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
                     )
                   : CachedNetworkImage(
-                      imageUrl: ad.images.isNotEmpty
-                          ? ad.images[0]
-                          : ad.poster.profilePicture,
+                      imageUrl: ad.images[0],
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
@@ -487,7 +433,7 @@ class RoommateAdMiniWidget extends StatelessWidget {
             children: [
               if (ad.images.isEmpty)
                 Image.asset(
-                  "assets/images/default_ad_picture.jpg",
+                  "assets/images/default_roommate.jpg",
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
@@ -505,46 +451,46 @@ class RoommateAdMiniWidget extends StatelessWidget {
               DefaultTextStyle.merge(
                 style: const TextStyle(
                   color: Colors.black,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: ad.poster.fullName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ]),
+                          Text(
+                            ad.poster.fullName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(
-                            width: Get.width * 0.25,
-                            child: Text(
-                              "${ad.address["city"]},"
-                              " ${ad.address["location"]}",
+                          Text(
+                            "${ad.address["location"]},"
+                            " ${ad.address["city"]}",
+                          ),
+                          const SizedBox(height: 5),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: "Budget ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: formatMoney(
+                                      ad.budget * AppController.convertionRate),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                      Expanded(
-                        child: Text(
-                          formatMoney(ad.budget * AppController.convertionRate),
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            color: ROOMY_ORANGE,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -554,6 +500,52 @@ class RoommateAdMiniWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// To be to use to display information like amenities, preferences,
+/// about me ...
+
+class AdOverViewItem extends StatelessWidget {
+  const AdOverViewItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subTitle,
+    this.subTitleColor,
+  });
+  final Widget icon;
+  final Widget title;
+  final Widget? subTitle;
+  final Color? subTitleColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        icon,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              title,
+              if (subTitle != null)
+                DefaultTextStyle.merge(
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: subTitleColor,
+                  ),
+                  child: subTitle!,
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

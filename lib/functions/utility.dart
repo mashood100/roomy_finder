@@ -11,9 +11,10 @@ import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-String relativeTimeText(DateTime dateTime) {
+String relativeTimeText(DateTime dateTime, {bool fromNow = true}) {
   if (dateTime.add(const Duration(minutes: 59)).isAfter(DateTime.now())) {
-    return Jiffy(dateTime.toUtc()).fromNow();
+    if (fromNow) return Jiffy(dateTime.toUtc()).fromNow();
+    return Jiffy(dateTime.toUtc()).Hm;
   }
 
   if (dateTime.add(const Duration(hours: 23)).isAfter(DateTime.now())) {

@@ -12,33 +12,22 @@ class AppNotication {
   final String message;
   final String event;
   final DateTime createdAt;
+  final bool isRead;
 
   AppNotication({
     required this.id,
     required this.message,
     required this.event,
     required this.createdAt,
+    required this.isRead,
   });
 
   AppNotication.fromNow({
     required this.message,
     required this.event,
+    required this.isRead,
   })  : createdAt = DateTime.now(),
         id = const Uuid().v4();
-
-  AppNotication copyWith({
-    String? id,
-    String? message,
-    String? event,
-    DateTime? createdAt,
-  }) {
-    return AppNotication(
-      id: id ?? this.id,
-      message: message ?? this.message,
-      event: event ?? this.event,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -46,6 +35,7 @@ class AppNotication {
       'message': message,
       'event': event,
       'createdAt': createdAt.millisecondsSinceEpoch,
+      'isRead': isRead,
     };
   }
 
@@ -54,6 +44,7 @@ class AppNotication {
       id: map['id'] as String,
       message: map['message'] as String,
       event: map['event'] as String,
+      isRead: map['isRead'] == true,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
     );
   }

@@ -8,6 +8,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class _AboutController extends GetxController {
   final _isCheckingUpdate = false.obs;
@@ -84,15 +85,17 @@ class AboutScreeen extends StatelessWidget {
                     TextSpan(
                       children: [
                         const TextSpan(
-                          text: "Roomy",
+                          text: "Roomy ",
                           style: TextStyle(
-                            color: Colors.purple,
+                            color: ROOMY_PURPLE,
+                            fontFamily: "Avro",
                           ),
                         ),
                         const TextSpan(
-                          text: "Finder ",
+                          text: "FINDER ",
                           style: TextStyle(
-                            color: Color.fromRGBO(255, 123, 77, 1),
+                            color: ROOMY_ORANGE,
+                            fontFamily: "Avro",
                           ),
                         ),
                         TextSpan(text: "${asp.data}"),

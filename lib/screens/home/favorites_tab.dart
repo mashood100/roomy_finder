@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -177,7 +178,7 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
                           ad: ad,
                           onTap: () {
                             if (AppController.me.isGuest) {
-                              Get.offAllNamed("/registration");
+                              Get.offAllNamed("/login");
                               return;
                             }
                             if (AppController.me.isPremium) {
@@ -248,13 +249,16 @@ class FavoriteTab extends StatelessWidget implements HomeScreenSupportable {
   }
 
   @override
-  BottomNavigationBarItem get navigationBarItem {
+  BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
-      activeIcon: Image.asset("assets/icons/home/favorite.png", height: 20),
-      icon: Image.asset(
-        "assets/icons/home/favorite.png",
-        height: 20,
-        color: Colors.white,
+      icon: CustomBottomNavbarIcon(
+        icon: Image.asset(
+          "assets/icons/favorite.png",
+          height: 30,
+          width: 30,
+          color: ROOMY_PURPLE,
+        ),
+        isCurrent: isCurrent,
       ),
       label: 'Favorites'.tr,
     );

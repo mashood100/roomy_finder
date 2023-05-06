@@ -129,6 +129,7 @@ class InlineDropdown<T> extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: DropdownButtonFormField<T>(
+              dropdownColor: Colors.white,
               borderRadius: BorderRadius.circular(10),
               iconSize: 30,
               iconEnabledColor: ROOMY_ORANGE,
