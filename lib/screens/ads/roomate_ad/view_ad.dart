@@ -467,7 +467,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   ],
                 ),
                 Positioned(
-                  bottom: 0,
+                  bottom: 25,
                   left: 5,
                   child: GestureDetector(
                     onTap: () {
@@ -475,7 +475,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
 
                       controller._viewImage(ad.poster.profilePicture!);
                     },
-                    child: ad.poster.ppWidget(borderColor: false, size: 40),
+                    child: ad.poster.ppWidget(borderColor: false, size: 45),
                   ),
                 ),
               ],
