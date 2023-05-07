@@ -1040,6 +1040,21 @@ class PostRoommateAdScreen extends StatelessWidget {
                         }
                       },
               ),
+              const SizedBox(height: 20),
+              // Lifestyle
+              InlineDropdown<String>(
+                labelText: 'Lifestyle'.tr,
+                hintText: 'Select lifestyle',
+                value: controller.socialPreferences["lifeStyle"] as String?,
+                items: const ["Early Brird", "Night Owl"],
+                onChanged: controller.isLoading.isTrue
+                    ? null
+                    : (val) {
+                        if (val != null) {
+                          controller.socialPreferences["lifeStyle"] = val;
+                        }
+                      },
+              ),
               const Divider(height: 40),
               const Center(
                 child: Text(
