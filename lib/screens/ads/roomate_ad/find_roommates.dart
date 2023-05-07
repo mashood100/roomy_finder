@@ -580,7 +580,7 @@ class _AdItem extends StatelessWidget {
                         ),
                         child: ad.images.isEmpty
                             ? Image.asset(
-                                "assets/images/default_roommate.jpg",
+                                "assets/images/default_room.png",
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               )

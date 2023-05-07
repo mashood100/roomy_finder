@@ -46,7 +46,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                           ),
                         );
                       },
-                      child: Builder(builder: (context) {
+                      child: Obx(() {
                         final ImageProvider provider;
 
                         if (AppController.instance.user.value.profilePicture ==
