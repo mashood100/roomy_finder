@@ -338,9 +338,7 @@ class _ViewProfileController extends LoadingController {
             showToast("Password updated successfully".tr);
 
             AppController.instance.userPassword = password;
-            if (await AppController.instance.getUserPassword() != null) {
-              AppController.instance.saveUserPassword(password);
-            }
+            AppController.instance.saveUserPassword(password);
 
             break;
           default:

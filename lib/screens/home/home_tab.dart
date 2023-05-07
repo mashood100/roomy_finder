@@ -214,10 +214,12 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                               ),
                             ],
                           ),
-                          AppController.me.ppWidget(
-                            size: 25,
-                            borderColor: false,
-                          )
+                          Obx(() {
+                            return AppController.instance.user.value.ppWidget(
+                              size: 25,
+                              borderColor: false,
+                            );
+                          })
                         ],
                       ),
                     const SizedBox(height: 10),

@@ -159,7 +159,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           items: [
                             if (ad.images.isEmpty && ad.videos.isEmpty)
                               Image.asset(
-                                "assets/images/default_roommate.jpg",
+                                "assets/images/default_room.png",
                                 height: 250,
                                 width: Get.width,
                                 fit: BoxFit.cover,
