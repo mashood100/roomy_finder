@@ -225,6 +225,20 @@ class LoginScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () =>
+                                      Get.toNamed('/reset_password'),
+                                  child: Text(
+                                    'forgotPassword'.tr,
+                                    style: const TextStyle(
+                                      color: ROOMY_ORANGE,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const Divider(),
                               Row(
                                 mainAxisAlignment:
