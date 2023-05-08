@@ -187,7 +187,7 @@ class Home extends GetView<HomeController> {
                       if (AppController.me.isGuest) {
                         Get.offAllNamed('/login');
                       } else if (AppController.me.isLandlord) {
-                        Get.to(() => const PostRoommateAdScreen());
+                        Get.to(() => const PostPropertyAdScreen());
                       } else if (AppController.me.isRoommate) {
                         Get.to(() => const PostRoommateAdScreen());
                       }
