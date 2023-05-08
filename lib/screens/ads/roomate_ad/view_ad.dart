@@ -511,7 +511,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     "About me",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 10),
 
                   DefaultTextStyle.merge(
                     style: const TextStyle(
@@ -520,7 +520,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     ),
                     child: GridView.count(
                       crossAxisCount: 3,
-                      childAspectRatio: 1.5,
+                      childAspectRatio: 2,
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       crossAxisSpacing: 10,
@@ -553,7 +553,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         {
                           "label": "Lifestyle",
                           "asset": "assets/icons/lifestyle.png",
-                          "value": ad.socialPreferences["lifestyle"] ?? "N/A",
+                          "value": ad.aboutYou["lifeStyle"] ?? "N/A",
                         },
                       ].map((e) {
                         return AdOverViewItem(
@@ -627,9 +627,9 @@ class ViewRoommateAdScreen extends StatelessWidget {
                   // Preference
                   const Text(
                     "Preffered roommate",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 10),
 
                   DefaultTextStyle.merge(
                     style: const TextStyle(
@@ -651,7 +651,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         {
                           "label": "Lifestyle",
                           "asset": "assets/icons/lifestyle.png",
-                          "value": ad.socialPreferences["lifestyle"] ?? "N/A",
+                          "value": ad.socialPreferences["lifeStyle"] ?? "N/A",
                         },
                       ].map((e) {
                         return SizedBox(
@@ -680,7 +680,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         : "Housing Preferences",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 10),
 
                   DefaultTextStyle.merge(
                     style: const TextStyle(
@@ -771,6 +771,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(
+                          rowCrossAxisAlignment: CrossAxisAlignment.center,
                           title: Text("${e["value"]}"),
                           icon: Image.asset(
                             e["asset"].toString(),

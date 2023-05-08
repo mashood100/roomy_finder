@@ -514,16 +514,18 @@ class AdOverViewItem extends StatelessWidget {
     required this.title,
     this.subTitle,
     this.subTitleColor,
+    this.rowCrossAxisAlignment,
   });
   final Widget icon;
   final Widget title;
   final Widget? subTitle;
   final Color? subTitleColor;
+  final CrossAxisAlignment? rowCrossAxisAlignment;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: rowCrossAxisAlignment ?? CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         icon,

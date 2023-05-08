@@ -712,6 +712,7 @@ class ViewPropertyAd extends StatelessWidget {
                         },
                       ].map((e) {
                         return AdOverViewItem(
+                          rowCrossAxisAlignment: CrossAxisAlignment.center,
                           title: Text("${e["label"]}"),
                           subTitle: Text("${e["value"]}"),
                           icon: Image.asset(
@@ -748,6 +749,7 @@ class ViewPropertyAd extends StatelessWidget {
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(
+                          rowCrossAxisAlignment: CrossAxisAlignment.center,
                           title: Text("${e["value"]}"),
                           icon: Image.asset(
                             e["asset"].toString(),
