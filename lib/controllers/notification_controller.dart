@@ -338,19 +338,20 @@ class NotificationController {
           "${message.recieverId}-${message.senderId}") {
         return;
       }
-
-      AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: Random().nextInt(1000),
-          channelKey: "chat_channel_key",
-          groupKey: "chat_channel_group_key",
-          title: payload["notificationTitle"]?.toString(),
-          body: message.body,
-          notificationLayout: NotificationLayout.Messaging,
-          payload: Map<String, String?>.from(remoteMessage.data),
-          summary: 'Chat notification',
-        ),
-      );
+      if (!ChatConversation.homeTabIsChat) {
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: Random().nextInt(1000),
+            channelKey: "chat_channel_key",
+            groupKey: "chat_channel_group_key",
+            title: payload["notificationTitle"]?.toString(),
+            body: message.body,
+            notificationLayout: NotificationLayout.Messaging,
+            payload: Map<String, String?>.from(remoteMessage.data),
+            summary: 'Chat notification',
+          ),
+        );
+      }
       if (!isForeGroundMessage) {
         ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
       }
@@ -428,8 +429,28 @@ class NotificationController {
       final message = ChatMessage.fromMap(payload["message"]);
 
       final other = ChatUser(id: message.senderId, createdAt: DateTime.now());
-      final conv = ChatConversation(other: other, lastMessage: message);
-      await conv.updateChatInfo();
+
+      final convKey = ChatConversation.createConvsertionKey(
+        message.recieverId,
+        message.senderId,
+      );
+
+      final ChatConversation conv;
+      final oldConv = ChatConversation.findConversation(convKey);
+
+      if (oldConv != null) {
+        conv = oldConv;
+        conv.lastMessage = message;
+      } else {
+        conv = ChatConversation(other: other, lastMessage: message);
+        // await conv.updateChatInfo();
+
+        conv.haveUnreadMessage = true;
+
+        ChatConversation.addConversation(conv);
+        ChatConversation.sortConversations();
+      }
+
       AwesomeNotifications()
           .cancelNotificationsByChannelKey("chat_channel_group_key");
 

@@ -248,8 +248,8 @@ class _VewPropertyController extends LoadingController {
         update();
 
         await showConfirmDialog(
-          "Your booking request has been approved. "
-          "Please pay the rent fee to proceed with the booking",
+          'Your request has been send to landlord. Please go to "My Bookings" '
+          'and follow on with the status of the request.',
           isAlert: true,
         );
       } else if (res.statusCode == 400) {
@@ -257,7 +257,7 @@ class _VewPropertyController extends LoadingController {
 
         if (res.data['code'] == "quantity-not-enough") {
           await showConfirmDialog(
-            "Quantity too large. Possible is ${res.data['possible']}",
+            "Sorry! There is no more available unit in this ${ad.type}",
             isAlert: true,
           );
         } else {

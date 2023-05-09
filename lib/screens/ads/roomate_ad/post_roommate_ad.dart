@@ -399,6 +399,7 @@ class PostRoommateAdScreen extends StatelessWidget {
     return WillPopScope(
       onWillPop: () async {
         if (controller._pageIndex.value != 0) {
+          FocusScope.of(context).requestFocus(FocusNode());
           controller._moveToPreviousPage();
           return false;
         }
@@ -479,7 +480,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             const Spacer(),
           ],
         );
-        var imagesWidget = SingleChildScrollView(
+        final imagesWidget = SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -768,7 +769,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ],
           ),
         );
-        var aboutRoommateWidget = SingleChildScrollView(
+        final aboutRoommateWidget = SingleChildScrollView(
           child: Form(
             key: controller._aboutPropertyFormKey,
             child: Column(
@@ -926,7 +927,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ),
           ),
         );
-        var amenitiesWidget = SingleChildScrollView(
+        final amenitiesWidget = SingleChildScrollView(
           child: Column(
             children: [
               const SizedBox(height: 10),
@@ -995,7 +996,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ],
           ),
         );
-        var propertyPreferencesWidget = SingleChildScrollView(
+        final propertyPreferencesWidget = SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1119,7 +1120,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ],
           ),
         );
-        var aboutYouWidget = SingleChildScrollView(
+        final aboutYouWidget = SingleChildScrollView(
           child: Form(
             key: controller._aboutYouFormKey,
             child: Column(
@@ -1305,7 +1306,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ),
           ),
         );
-        var interestWidget = SingleChildScrollView(
+        final interestWidget = SingleChildScrollView(
           child: Column(
             children: [
               const SizedBox(height: 10),
@@ -1372,7 +1373,7 @@ class PostRoommateAdScreen extends StatelessWidget {
             ],
           ),
         );
-        var descriptionWidget = SingleChildScrollView(
+        final descriptionWidget = SingleChildScrollView(
           child: Column(
             children: [
               Center(
@@ -1552,6 +1553,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                   onPressed: controller.isLoading.isTrue
                       ? null
                       : () {
+                          FocusScope.of(context).requestFocus(FocusNode());
                           if (controller.information["action"] == "HAVE ROOM") {
                             switch (controller._pageIndex.value) {
                               case 0:

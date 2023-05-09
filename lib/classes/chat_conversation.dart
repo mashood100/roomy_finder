@@ -1,4 +1,7 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+
+import 'package:get/get.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -11,10 +14,13 @@ class ChatConversation {
   ChatConversation({required this.other, this.lastMessage});
 
   ChatUser get me => AppController.me.chatUser;
+  static bool homeTabIsChat = false;
   static String? currrentChatKey;
   static void Function()? currrentChatOnTapCallBack;
 
   String get key => "${AppController.me.id}-${other.id}";
+
+  bool haveUnreadMessage = false;
 
   Future<void> updateChatInfo() async {
     me.profilePicture = AppController.me.profilePicture;
@@ -59,11 +65,46 @@ class ChatConversation {
   factory ChatConversation.fromJson(String source) =>
       ChatConversation.fromMap(json.decode(source) as Map<String, dynamic>);
 
+  void updateLastMessage(ChatMessage message) => lastMessage = message;
+
+  static List<ChatConversation> conversations = [];
+
+  static void addConversation(ChatConversation conversation) {
+    if (!conversations.contains(conversation)) {
+      conversations.insert(0, conversation);
+    }
+  }
+
+  static void addAllConversations(List<ChatConversation> conversations) {
+    for (var conv in conversations) {
+      if (!ChatConversation.conversations.contains(conv)) {
+        ChatConversation.conversations.insert(0, conv);
+      }
+    }
+  }
+
+  static void removeConversation(ChatConversation conversation) {
+    conversations.remove(conversation);
+  }
+
+  static ChatConversation? findConversation(String key) {
+    return conversations.firstWhereOrNull((c) => c.key == key);
+  }
+
+  static void sortConversations() {
+    conversations.sort((a, b) {
+      if (a.lastMessage == null) return 1;
+      if (b.lastMessage == null) return 1;
+
+      return b.lastMessage!.createdAt.compareTo(a.lastMessage!.createdAt);
+    });
+  }
+
   @override
   bool operator ==(covariant ChatConversation other) {
     if (identical(this, other)) return true;
 
-    return other.key == key;
+    return this.other == other.other && other.lastMessage == lastMessage;
   }
 
   @override

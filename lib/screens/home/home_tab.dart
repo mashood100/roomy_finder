@@ -424,7 +424,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       child: Row(
                         children: controller._secondRowPropertyAds.map((ad) {
                           return SizedBox(
-                            width: 150,
+                            width: 160,
                             height: 200,
                             child: PropertyAdMiniWidget(
                               ad: ad,

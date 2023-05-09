@@ -22,7 +22,6 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:roomy_finder/models/chat_message.dart';
-import 'package:roomy_finder/screens/home/chat_tab.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import "package:path/path.dart" as path;
@@ -123,13 +122,15 @@ class FlyerChatScreenController extends LoadingController {
           );
 
           if (convKey == conversation.key) {
+            _addNewMessage(message);
             update();
           }
           if (convKey == ChatConversation.currrentChatKey) {
             _markMessagesAsRead();
+            message.markAsRead();
             _audioPlayer
                 .setAsset("assets/audio/in_chat_new_message_sound.mp3")
-                .then((value) => _audioPlayer.play());
+                .then((_) => _audioPlayer.play());
           }
         } catch (e, trace) {
           Get.log('$e');
@@ -143,7 +144,6 @@ class FlyerChatScreenController extends LoadingController {
           if (data["event"] == "message-recieved") {
             for (int i = 0; i < messages.length; i++) {
               if (messages[i].senderId == conversation.me.id) {
-                // if (!messages[i].isRecieved) break;
                 messages[i].markAsRecieved();
               }
             }
@@ -170,10 +170,21 @@ class FlyerChatScreenController extends LoadingController {
     super.onClose();
   }
 
-  void _addNewMessage() {
-    final chatController = Get.put(ChatTabController());
+  void _addNewMessage(ChatMessage message) {
+    if (!messages.contains(message)) messages.insert(0, message);
+  }
 
-    chatController.addConversation(conversation);
+  // User
+  ChatUser get _user {
+    final me = AppController.me;
+    return ChatUser(
+      id: me.id,
+      firstName: me.firstName,
+      lastName: me.lastName,
+      profilePicture: me.profilePicture,
+      createdAt: me.createdAt,
+      fcmToken: me.fcmToken,
+    );
   }
 
   Future<void> _markMessagesAsRead() async {
@@ -189,6 +200,7 @@ class FlyerChatScreenController extends LoadingController {
             messages[i].markAsRead();
           }
         }
+        update();
       }
     }
   }
@@ -299,10 +311,8 @@ class FlyerChatScreenController extends LoadingController {
 
         if (res.statusCode == 200) {
           final message = ChatMessage.fromMap(res.data);
-          messages.insert(0, message);
-          update();
+          _addNewMessage(message);
           conversation.lastMessage = message;
-          if (messages.length == 1) _addNewMessage();
         } else if (res.statusCode == 404) {
           showToast("Failed to send message, Reciever account not found");
         } else {
@@ -412,10 +422,8 @@ class FlyerChatScreenController extends LoadingController {
 
       if (res.statusCode == 200) {
         final message = ChatMessage.fromMap(res.data);
-        messages.insert(0, message);
-        update();
+        _addNewMessage(message);
         conversation.lastMessage = message;
-        if (messages.length == 1) _addNewMessage();
       } else if (res.statusCode == 404) {
         showToast("Failed to send message, Reciever account not found");
       } else {
@@ -514,9 +522,8 @@ class FlyerChatScreenController extends LoadingController {
 
       if (res.statusCode == 200) {
         final message = ChatMessage.fromMap(res.data);
-        messages.insert(0, message);
+        _addNewMessage(message);
         conversation.lastMessage = message;
-        if (messages.length == 1) _addNewMessage();
 
         _newMessageController.clear();
         _canMakeVoice(true);
@@ -534,19 +541,6 @@ class FlyerChatScreenController extends LoadingController {
       _isSendingMessage(false);
       update();
     }
-  }
-
-  // User
-  ChatUser get _user {
-    final me = AppController.me;
-    return ChatUser(
-      id: me.id,
-      firstName: me.firstName,
-      lastName: me.lastName,
-      profilePicture: me.profilePicture,
-      createdAt: me.createdAt,
-      fcmToken: me.fcmToken,
-    );
   }
 
   Future<void> _handleMessageLongpress(
@@ -635,11 +629,39 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
       permanent: true,
     );
 
+    controller.conversation
+        .updateChatInfo()
+        .then((value) => controller.update());
+
     ChatConversation.currrentChatKey = widget.conversation.key;
     ChatConversation.currrentChatOnTapCallBack = () {
       controller.update();
     };
     controller._markMessagesAsRead();
+    controller.conversation.lastMessage?.markAsRead();
+
+    controller.update();
+
+    if (controller.conversation.lastMessage?.isMine == false) {
+      controller.conversation.lastMessage?.markAsRead();
+    }
+  }
+
+  @override
+  void dispose() {
+    final controller = Get.put(
+      FlyerChatScreenController(widget.conversation),
+      tag: "${widget.myId}#${widget.otherId}",
+      permanent: true,
+    );
+
+    if (controller.messages.isNotEmpty) {
+      ChatConversation.addConversation(widget.conversation);
+    }
+
+    ChatConversation.sortConversations();
+    controller._audioPlayer.dispose();
+    super.dispose();
   }
 
   @override
@@ -668,6 +690,7 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
                             widget.conversation.other.profilePicture!,
                           )
                         : null,
+                child: Text(widget.conversation.other.fullName[0]),
               ),
               const SizedBox(width: 10),
               GetBuilder<FlyerChatScreenController>(
@@ -800,72 +823,83 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
                           ],
                         ),
                       ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          onPressed: controller.isLoading.isTrue
-                              ? null
-                              : () {
-                                  FocusScope.of(context).unfocus();
-                                  controller._handleAttachmentPressed();
-                                },
-                          icon: const Icon(Icons.attach_file),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: TextField(
-                              controller: controller._newMessageController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.all(8),
-                                hintText: "New messsage",
-                                hintStyle: TextStyle(
-                                  color: Get.isDarkMode ? Colors.white54 : null,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            onPressed: controller.isLoading.isTrue
+                                ? null
+                                : () {
+                                    FocusScope.of(context).unfocus();
+                                    controller._handleAttachmentPressed();
+                                  },
+                            icon: const Icon(Icons.attach_file),
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: TextField(
+                                controller: controller._newMessageController,
+                                decoration: InputDecoration(
+                                  border: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(20),
+                                    ),
+                                    borderSide: BorderSide(color: Colors.grey),
+                                  ),
+                                  contentPadding: const EdgeInsets.all(8),
+                                  hintText: "New messsage",
+                                  hintStyle: TextStyle(
+                                    color:
+                                        Get.isDarkMode ? Colors.white54 : null,
+                                  ),
                                 ),
+                                minLines: 1,
+                                maxLines: 10,
+                                onChanged: (value) {
+                                  controller
+                                      .update(["send-button-get-builder"]);
+                                },
                               ),
-                              minLines: 1,
-                              maxLines: 10,
-                              onChanged: (value) {
-                                controller.update(["send-button-get-builder"]);
-                              },
                             ),
                           ),
-                        ),
-                        GetBuilder<FlyerChatScreenController>(
-                          tag: "${widget.myId}#${widget.otherId}",
-                          id: "send-button-get-builder",
-                          builder: (controller) {
-                            if (controller._isSendingMessage.isTrue) {
-                              return const Padding(
-                                padding: EdgeInsets.all(15),
-                                child: CupertinoActivityIndicator(
-                                  color: Colors.blue,
-                                ),
+                          GetBuilder<FlyerChatScreenController>(
+                            tag: "${widget.myId}#${widget.otherId}",
+                            id: "send-button-get-builder",
+                            builder: (controller) {
+                              if (controller._isSendingMessage.isTrue) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(15),
+                                  child: CupertinoActivityIndicator(
+                                    color: Colors.blue,
+                                  ),
+                                );
+                              }
+                              if (controller
+                                  ._newMessageController.text.isEmpty) {
+                                return const SizedBox(width: 10);
+                              }
+                              return IconButton(
+                                onPressed: controller.isLoading.isTrue
+                                    ? null
+                                    : () {
+                                        controller._handleSendPressed(
+                                          types.PartialText(
+                                            text: controller
+                                                ._newMessageController.text,
+                                            repliedMessage: controller
+                                                ._currentRepliedMessage,
+                                          ),
+                                        );
+                                      },
+                                icon: const Icon(Icons.send),
                               );
-                            }
-                            if (controller._newMessageController.text.isEmpty) {
-                              return const SizedBox();
-                            }
-                            return IconButton(
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : () {
-                                      controller._handleSendPressed(
-                                        types.PartialText(
-                                          text: controller
-                                              ._newMessageController.text,
-                                          repliedMessage:
-                                              controller._currentRepliedMessage,
-                                        ),
-                                      );
-                                    },
-                              icon: const Icon(Icons.send),
-                            );
-                          },
-                        )
-                      ],
+                            },
+                          )
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -900,6 +934,7 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
                                 widget.conversation.other.profilePicture!,
                               )
                             : null,
+                    child: Text(widget.conversation.other.fullName[0]),
                   );
                 }
                 return CircleAvatar(
@@ -909,6 +944,7 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
                           widget.conversation.me.profilePicture!,
                         )
                       : null,
+                  child: Text(widget.conversation.me.fullName[0]),
                 );
               },
               bubbleBuilder: (
