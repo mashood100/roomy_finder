@@ -16,7 +16,6 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/chat_message.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
@@ -25,7 +24,6 @@ import 'package:roomy_finder/utilities/data.dart';
 import '../../functions/utility.dart';
 
 class ChatTabController extends LoadingController {
-  final conversations = <ChatConversation>[].obs;
   late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
 
   @override
@@ -48,35 +46,29 @@ class ChatTabController extends LoadingController {
 
           final message = ChatMessage.fromMap(payload["message"]);
 
-          final other =
-              ChatUser(id: message.senderId, createdAt: DateTime.now());
+          final other = ChatUser(
+            id: message.senderId,
+            createdAt: DateTime.now(),
+          );
 
           final convKey = ChatConversation.createConvsertionKey(
             message.recieverId,
             message.senderId,
           );
           final ChatConversation conv;
-          final oldConv =
-              conversations.firstWhereOrNull((c) => c.key == convKey);
+          final oldConv = ChatConversation.findConversation(convKey);
 
           if (oldConv != null) {
             conv = oldConv;
+            conv.lastMessage = message;
           } else {
             conv = ChatConversation(other: other, lastMessage: message);
-            await conv.updateChatInfo();
+            // await conv.updateChatInfo();
+
+            ChatConversation.addConversation(conv);
+            ChatConversation.sortConversations();
           }
-
-          final chatUiController = Get.put(
-            FlyerChatScreenController(conv),
-            tag: "${AppController.me.id}#${other.id}",
-            permanent: true,
-          );
-
-          chatUiController.messages.insert(0, message);
-
-          conv.lastMessage = message;
-
-          addConversation(conv);
+          conv.haveUnreadMessage = true;
 
           update();
 
@@ -99,7 +91,7 @@ class ChatTabController extends LoadingController {
           payload["senderId"],
         );
 
-        final oldConv = conversations.firstWhereOrNull((c) => c.key == convKey);
+        final oldConv = ChatConversation.findConversation(convKey);
 
         if (oldConv != null) {
           if (data["event"] == "message-recieved") {
@@ -133,16 +125,21 @@ class ChatTabController extends LoadingController {
         final data = (res.data as List).map((e) {
           try {
             final conv = ChatConversation.fromMap(e);
+            if (conv.lastMessage?.isRead == false) {
+              conv.haveUnreadMessage = true;
+            }
+
             return conv;
           } catch (e) {
             return null;
           }
         });
 
-        conversations.clear();
-        conversations.addAll(data.whereType<ChatConversation>());
-        sortConversations();
-        for (var c in conversations) {
+        ChatConversation.conversations.clear();
+        ChatConversation.addAllConversations(
+            data.whereType<ChatConversation>().toList());
+        ChatConversation.sortConversations();
+        for (var c in ChatConversation.conversations) {
           ChatMessage.requestMarkAsRecieved(c.other.id, c.me.id);
         }
       } else {
@@ -157,30 +154,7 @@ class ChatTabController extends LoadingController {
     }
   }
 
-  void sortConversations() {
-    conversations.sort((a, b) {
-      if (a.lastMessage == null) return 1;
-      if (b.lastMessage == null) return 1;
-
-      return b.lastMessage!.createdAt.compareTo(a.lastMessage!.createdAt);
-    });
-  }
-
-  void addConversation(ChatConversation conversation) {
-    if (!conversations.contains(conversation)) {
-      conversations.add(conversation);
-    }
-    sortConversations();
-  }
-
-  Future<void> deleteConversation(ChatConversation conversation) async {
-    var res = await ChatMessage.deleteConversation(conversation);
-    if (res) {
-      conversations.remove(conversation);
-      update();
-      showToast("Conversation deleted");
-    }
-  }
+  List<ChatConversation> get conversations => ChatConversation.conversations;
 }
 
 class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
@@ -220,13 +194,14 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
             contentPadding: const EdgeInsets.only(left: 10, right: 10),
             onTap: () async {
               await Get.to(() {
+                conv.haveUnreadMessage = false;
                 return FlyerChatScreen(
                   conversation: conv,
                   myId: AppController.me.id,
                   otherId: conv.other.id,
                 );
               });
-              controller.sortConversations();
+              ChatConversation.sortConversations();
               controller.update();
               AwesomeNotifications()
                   .cancelNotificationsByChannelKey("chat_channel_group_key");
@@ -236,6 +211,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
               foregroundImage: conv.other.profilePicture != null
                   ? CachedNetworkImageProvider(conv.other.profilePicture!)
                   : null,
+              child: Text(conv.other.fullName[0]),
             ),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -281,6 +257,12 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
                       Icon(
                         Icons.done_all_outlined,
                         color: msg.isRead ? Colors.blue : Colors.grey,
+                        size: 16,
+                      )
+                    else if (conv.haveUnreadMessage)
+                      const Icon(
+                        Icons.circle,
+                        color: Colors.blue,
                         size: 16,
                       )
                   ],

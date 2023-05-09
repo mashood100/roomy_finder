@@ -4,7 +4,9 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -29,6 +31,7 @@ import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
+  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
   final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
@@ -42,6 +45,18 @@ class HomeController extends LoadingController {
 
   @override
   void onInit() {
+    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) {
+      if (event == FGBGType.foreground) {
+        if (ChatConversation.homeTabIsChat = true) {
+          AwesomeNotifications()
+              .cancelNotificationsByChannelKey("chat_channel_key");
+          AwesomeNotifications().cancelNotificationsByGroupKey(
+            "chat_channel_group_key",
+          );
+        }
+      }
+    });
+
     AppController.instance.setIsFirstLaunchToFalse(false);
 
     if (AppController.dynamicInitialLink != null) {
@@ -90,6 +105,7 @@ class HomeController extends LoadingController {
   @override
   void onClose() {
     if (_popTimer != null) _popTimer!.cancel();
+    fGBGNotifierSubScription.cancel();
     super.onClose();
   }
 
@@ -182,6 +198,12 @@ class Home extends GetView<HomeController> {
               : BottomNavigationBar(
                   currentIndex: controller.currentTabIndex.value,
                   onTap: (index) {
+                    if (controller.tabs[index] is MessagesTab) {
+                      ChatConversation.homeTabIsChat = true;
+                    } else {
+                      ChatConversation.homeTabIsChat = false;
+                    }
+
                     controller.tabs[index].onIndexSelected(index);
                     if (controller.tabs[index] is PostAdTab) {
                       if (AppController.me.isGuest) {

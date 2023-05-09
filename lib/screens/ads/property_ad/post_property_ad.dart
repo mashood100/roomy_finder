@@ -408,6 +408,7 @@ class PostPropertyAdScreen extends StatelessWidget {
     return WillPopScope(
       onWillPop: () async {
         if (controller._pageIndex.value != 0) {
+          FocusScope.of(context).requestFocus(FocusNode());
           controller._moveToPreviousPage();
           return false;
         }
@@ -1730,6 +1731,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                   onPressed: controller.isLoading.isTrue
                       ? null
                       : () {
+                          FocusScope.of(context).requestFocus(FocusNode());
                           switch (controller._pageIndex.value) {
                             case 0:
                               if (controller._addressFormKey.currentState

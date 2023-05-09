@@ -622,7 +622,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const Divider(height: 20),
+                  const Divider(height: 30),
 
                   // Preference
                   const Text(
@@ -671,7 +671,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const Divider(height: 20),
+                  const Divider(height: 30),
 
                   //Housing Preference
                   Text(
@@ -745,8 +745,6 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       }).toList(),
                     ),
                   ),
-
-                  const SizedBox(height: 10),
 
                   const Divider(height: 20),
 

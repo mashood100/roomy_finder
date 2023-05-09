@@ -68,7 +68,7 @@ class PropertyAdWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "${ad.type} to rent",
+                        ad.type,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,

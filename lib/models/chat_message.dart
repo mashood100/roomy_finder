@@ -314,14 +314,14 @@ class ChatMessage {
     return id.hashCode;
   }
 
-  Future<void> markAsRead() async {
+  void markAsRead() {
     isRecieved = true;
     dateRecieved ??= DateTime.now();
     isRead = true;
     dateRead ??= DateTime.now();
   }
 
-  Future<void> markAsRecieved() async {
+  void markAsRecieved() {
     isRecieved = true;
     dateRecieved ??= DateTime.now();
   }

@@ -34,13 +34,17 @@ const astrologicalSigns = [
 
 const allLanguages = [
   "Arabic",
+  "Chinese",
   "English",
   "French",
   "Hindi",
-  "Indian",
+  "Italian",
   "Persian",
   "Russian",
+  "Spanish",
+  "Tangalog",
   "Ukrainian",
+  "Urdu",
 ];
 
 const allAmenities = [
