@@ -143,40 +143,46 @@ class _RoomyBalanceScreenState extends State<RoomyBalanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Roomy Balance"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Roomy Balance")),
       body: Stack(
         children: [
           SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  Card(
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 40),
-                      child: Text(
-                        roomyBalance != null
-                            ? formatMoney(roomyBalance!)
-                            : "???",
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                  const SizedBox(height: 20),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 40),
+                    child: Text(
+                      roomyBalance != null ? formatMoney(roomyBalance!) : "???",
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(height: 20),
+                  const Text(
+                    "Pay now",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
                   InlineTextField(
-                    labelWidth: Get.width * 0.3,
-                    labelText: "Pay now",
-                    hintText: " Amount to pay",
+                    labelWidth: 0,
+                    hintText: "Amount to  pay",
                     suffixText:
                         AppController.instance.country.value.currencyCode,
                     enabled: !_isLoading,

@@ -65,13 +65,20 @@ class _FindRoommatesController extends LoadingController {
         data: requestBody,
       );
 
-      final data = (res.data as List).map((e) => RoommateAd.fromMap(e));
+      final data = (res.data as List).map((e) {
+        try {
+          var propertyAd = RoommateAd.fromMap(e);
+          return propertyAd;
+        } catch (e) {
+          return null;
+        }
+      });
 
       if (isReFresh) {
         ads.clear();
         _skip = 0;
       }
-      ads.addAll(data);
+      ads.addAll(data.whereType<RoommateAd>());
     } catch (e, trace) {
       Get.log("$e");
       if (e is DioError) {}

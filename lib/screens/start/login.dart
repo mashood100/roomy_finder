@@ -22,6 +22,7 @@ class _LoginController extends LoadingController {
   final country = Country.currentCountry.obs;
 
   final showPassword = false.obs;
+  final savePassword = false.obs;
 
   Future<void> _login() async {
     if (!formkey.currentState!.validate()) return;
@@ -225,18 +226,36 @@ class LoginScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Center(
-                                child: TextButton(
-                                  onPressed: () =>
-                                      Get.toNamed('/reset_password'),
-                                  child: Text(
-                                    'forgotPassword'.tr,
-                                    style: const TextStyle(
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    child: Checkbox(
+                                      value: controller.savePassword.value,
+                                      onChanged: controller.savePassword,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text(
+                                    'Remember me',
+                                    style: TextStyle(
                                       color: ROOMY_ORANGE,
                                       fontSize: 14,
                                     ),
                                   ),
-                                ),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Get.toNamed('/reset_password'),
+                                    child: Text(
+                                      'forgotPassword'.tr,
+                                      style: const TextStyle(
+                                        color: ROOMY_ORANGE,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const Divider(),
                               Row(

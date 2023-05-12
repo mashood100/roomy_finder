@@ -175,39 +175,48 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Withdraw"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Account Balance")),
       body: Stack(
         children: [
           SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  Card(
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 40),
-                      child: Text(
-                        accountBalance != null
-                            ? formatMoney(accountBalance!)
-                            : "???",
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                  const SizedBox(height: 20),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 40),
+                    child: Text(
+                      accountBalance != null
+                          ? formatMoney(accountBalance!)
+                          : "???",
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(height: 20),
+                  const Text(
+                    "Withdraw now",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
                   InlineTextField(
-                    labelWidth: Get.width * 0.3,
-                    labelText: "Withdraw now",
+                    labelWidth: 0,
+                    // labelText: "Withdraw now",
                     hintText: " Amount to withdraw",
                     suffixText:
                         AppController.instance.country.value.currencyCode,
@@ -224,6 +233,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*'))
                     ],
                   ),
+
                   const Divider(height: 40),
                   // Withdraw method
                   Row(
