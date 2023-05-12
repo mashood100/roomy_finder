@@ -25,6 +25,7 @@ class _LoginController extends LoadingController {
 
   Future<void> _login() async {
     if (!formkey.currentState!.validate()) return;
+
     try {
       isLoading(true);
       final dio = ApiService.getDio;
@@ -124,6 +125,13 @@ class LoginScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    const Spacer(flex: 2),
+                    if (MediaQuery.of(context).viewInsets.bottom < 20)
+                      Expanded(
+                        flex: 3,
+                        child: Image.asset("assets/images/logo.png"),
+                      ),
+                    const Spacer(flex: 2),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       decoration: const BoxDecoration(

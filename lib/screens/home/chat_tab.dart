@@ -70,6 +70,8 @@ class ChatTabController extends LoadingController {
           }
           conv.haveUnreadMessage = true;
 
+          ChatConversation.sortConversations();
+
           update();
 
           ChatMessage.requestMarkAsRecieved(
@@ -125,6 +127,7 @@ class ChatTabController extends LoadingController {
         final data = (res.data as List).map((e) {
           try {
             final conv = ChatConversation.fromMap(e);
+
             if (conv.lastMessage?.isRead == false) {
               conv.haveUnreadMessage = true;
             }
@@ -193,8 +196,8 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
           return ListTile(
             contentPadding: const EdgeInsets.only(left: 10, right: 10),
             onTap: () async {
+              conv.haveUnreadMessage = false;
               await Get.to(() {
-                conv.haveUnreadMessage = false;
                 return FlyerChatScreen(
                   conversation: conv,
                   myId: AppController.me.id,

@@ -675,6 +675,10 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
       onWillPop: () async {
         ChatConversation.currrentChatKey = null;
         ChatConversation.currrentChatOnTapCallBack = null;
+        if (controller.messages.isNotEmpty) {
+          ChatConversation.findConversation(widget.conversation.key)
+              ?.lastMessage = controller.messages.first;
+        }
         return true;
       },
       child: Scaffold(

@@ -12,19 +12,19 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class WithdrawScreen extends StatefulWidget {
-  const WithdrawScreen({super.key});
+class RoomyBalanceScreen extends StatefulWidget {
+  const RoomyBalanceScreen({super.key});
 
   @override
-  State<WithdrawScreen> createState() => _WithdrawScreenState();
+  State<RoomyBalanceScreen> createState() => _RoomyBalanceScreenState();
 }
 
-class _WithdrawScreenState extends State<WithdrawScreen> {
+class _RoomyBalanceScreenState extends State<RoomyBalanceScreen> {
   num _amountToWithDraw = 0;
   var _isLoading = false;
   String? stripeConnectId;
-  String? withdrawMethod;
-  num? accountBalance;
+  String? paymentmethodMethod;
+  num? roomyBalance;
 
   final _paypalEmailController = TextEditingController(
     text: AppController.me.email,
@@ -38,8 +38,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       final data = event.data;
       // AppController.instance.haveNewMessage(false);
       switch (data["event"]) {
-        case "withdraw-completed":
-        case "withdraw-failed":
+        case "roomy-balance-payment-successfully":
           fetchAccountDetails();
 
           break;
@@ -61,10 +60,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       final res = await ApiService.getDio.get("/profile/account-details");
 
       if (res.statusCode == 200) {
-        accountBalance = res.data['accountBalance'];
+        roomyBalance = res.data['roomyBalance'];
         final data = res.data;
         stripeConnectId = data["stripeConnectId"];
-        accountBalance = data["accountBalance"];
+        roomyBalance = data["roomyBalance"];
       }
     } catch (e) {
       showToast("Failed to load balance");
@@ -74,7 +73,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     }
   }
 
-  Future<void> _withdrawMoney(String service) async {
+  Future<void> _payRoomyBalance(String service) async {
     final amount = _amountToWithDraw * AppController.convertionRate;
     if (amount < 100) {
       showToast(
@@ -96,7 +95,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       final Map data;
 
       if (service == "STRIPE") {
-        endPoint = "/transactions/payout/stripe/withdraw";
+        endPoint = "/transactions/roomy-balance/stripe/"
+            "create-pay-roomy-balance-checkout-session";
         data = {
           "amount": amount,
           "currency": AppController.instance.country.value.currencyCode,
@@ -115,10 +115,14 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       final res = await ApiService.getDio.post(endPoint, data: data);
 
       if (res.statusCode == 200) {
-        showToast(
-          "Transaction initiated. You will recieve"
-          " notification after processing.",
-        );
+        showToast("Transaction initiated. Redirecting....");
+
+        final uri = Uri.parse(res.data["paymentUrl"]);
+        Get.back();
+
+        if (await canLaunchUrl(uri)) {
+          launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       } else if (res.statusCode == 400) {
         showToast(res.data["message"], duration: 10);
       } else if (res.statusCode == 403) {
@@ -129,43 +133,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         return;
       }
     } catch (e, trace) {
-      showGetSnackbar("Something went wrong", severity: Severity.error);
-      Get.log('$trace');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _connectStripeAccount() async {
-    try {
-      setState(() => _isLoading = true);
-
-      final res = await ApiService.getDio.post(
-        "/transactions/payout/stripe/connected-account",
-      );
-
-      if (res.statusCode == 200) {
-        showToast("Account creation initiated. Redirecting....");
-        _isLoading = (false);
-
-        final uri = Uri.parse(res.data["paymentUrl"]);
-        Get.back();
-
-        if (await canLaunchUrl(uri)) {
-          launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      } else if (res.statusCode == 503) {
-        showToast(
-          res.data["message"] ?? "Gateway error. Please try again",
-        );
-        _isLoading = (false);
-      } else {
-        showConfirmDialog("Failed to connect stripe account", isAlert: true);
-        Get.log("${res.data}}");
-        return;
-      }
-    } catch (e, trace) {
-      showGetSnackbar("Something went wrong", severity: Severity.error);
+      showToast("Something went wrong", severity: Severity.error);
       Get.log('$trace');
     } finally {
       setState(() => _isLoading = false);
@@ -176,7 +144,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Withdraw"),
+        title: const Text("Roomy Balance"),
         centerTitle: true,
       ),
       body: Stack(
@@ -193,8 +161,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 40),
                       child: Text(
-                        accountBalance != null
-                            ? formatMoney(accountBalance!)
+                        roomyBalance != null
+                            ? formatMoney(roomyBalance!)
                             : "???",
                         style: const TextStyle(
                           fontSize: 25,
@@ -207,8 +175,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   const SizedBox(height: 20),
                   InlineTextField(
                     labelWidth: Get.width * 0.3,
-                    labelText: "Withdraw now",
-                    hintText: " Amount to withdraw",
+                    labelText: "Pay now",
+                    hintText: " Amount to pay",
                     suffixText:
                         AppController.instance.country.value.currencyCode,
                     enabled: !_isLoading,
@@ -230,16 +198,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     children: [
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => setState(() => withdrawMethod = "STRIPE"),
+                        onTap: () =>
+                            setState(() => paymentmethodMethod = "STRIPE"),
                         child: Icon(
-                          withdrawMethod == "STRIPE"
+                          paymentmethodMethod == "STRIPE"
                               ? Icons.check_circle_outline_outlined
                               : Icons.circle_outlined,
                           color: ROOMY_ORANGE,
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => setState(() => withdrawMethod = "STRIPE"),
+                        onTap: () =>
+                            setState(() => paymentmethodMethod = "STRIPE"),
                         child: const Text(
                           "Stripe",
                           style: TextStyle(
@@ -250,16 +220,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => setState(() => withdrawMethod = "PAYPAL"),
+                        onTap: () =>
+                            setState(() => paymentmethodMethod = "PAYPAL"),
                         child: Icon(
-                          withdrawMethod == "PAYPAL"
+                          paymentmethodMethod == "PAYPAL"
                               ? Icons.check_circle_outline_outlined
                               : Icons.circle_outlined,
                           color: ROOMY_ORANGE,
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => setState(() => withdrawMethod = "PAYPAL"),
+                        onTap: () =>
+                            setState(() => paymentmethodMethod = "PAYPAL"),
                         child: const Text(
                           "Paypal",
                           style: TextStyle(
@@ -273,50 +245,26 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  if (withdrawMethod == "STRIPE")
-                    if (stripeConnectId == null)
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            _connectStripeAccount();
-                          },
-                          icon: const Icon(Icons.credit_card),
-                          label: const Text("Connect Stripe Account"),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  _withdrawMoney("STRIPE");
-                                },
-                          icon: const Icon(Icons.credit_card),
-                          label: const Text("Withdraw with Stripe"),
-                        ),
-                      ),
-                  if (withdrawMethod == "PAYPAL") ...[
-                    InlineTextField(
-                      labelWidth: Get.width * 0.3,
-                      labelText: "Paypal email",
-                      controller: _paypalEmailController,
-                      enabled: !_isLoading,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 10),
+                  if (paymentmethodMethod == "STRIPE")
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _isLoading
                             ? null
-                            : () {
-                                _withdrawMoney("PAYPAL");
-                              },
+                            : () => _payRoomyBalance("STRIPE"),
+                        icon: const Icon(Icons.credit_card),
+                        label: const Text("Pay with Stripe"),
+                      ),
+                    ),
+                  if (paymentmethodMethod == "PAYPAL") ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : () => _payRoomyBalance("PAYPAL"),
                         icon: const Icon(Icons.paypal, color: Colors.blue),
-                        label: const Text("Withdraw with PayPal"),
+                        label: const Text("Pay with PayPal"),
                       ),
                     ),
                   ],

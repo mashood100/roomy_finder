@@ -288,12 +288,12 @@ class ChatMessage {
       isDeletedForSender: map['isDeletedForSender'] as bool,
       isDeletedForReciever: map['isDeletedForReciever'] as bool,
       dateRecieved: map['dateRecieved'] != null
-          ? DateTime.parse(map['dateRecieved'] as String)
+          ? DateTime.parse(map['dateRecieved'] as String).toLocal()
           : null,
       dateRead: map['dateRead'] != null
-          ? DateTime.parse(map['dateRead'] as String)
+          ? DateTime.parse(map['dateRead'] as String).toLocal()
           : null,
-      createdAt: DateTime.parse(map['createdAt'] as String),
+      createdAt: DateTime.parse(map['createdAt'] as String).toLocal(),
     );
   }
 

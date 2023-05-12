@@ -36,7 +36,6 @@ class _ViewProfileController extends LoadingController {
   void onInit() {
     super.onInit();
     _fetchBalance();
-    AppController.instance.getAccountInfo().then((_) => update());
   }
 
   Future<void> _pickProfilePicture({bool gallery = true}) async {
