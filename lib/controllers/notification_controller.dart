@@ -228,6 +228,8 @@ class NotificationController {
       case "pay-property-rent-fee-completed-client":
       case "pay-property-rent-fee-completed-landlord":
       case "pay-property-rent-fee-paid-cash":
+      case "withdraw-completed":
+      case "withdraw-failed":
         final message = msg.data["message"] ?? "new notification";
 
         if (msg.data["event"] != null) {

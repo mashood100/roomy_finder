@@ -305,6 +305,8 @@ const dubaiCities = [
   "Jebel Ali Village",
   "Jumeirah Islands",
   "Jumeirah Lake Towers",
+  "Jumeirah Beach Residence 1",
+  "Jumeirah Beach Residence 2",
   "Mirdif",
   "Motor city",
   "Mudon",

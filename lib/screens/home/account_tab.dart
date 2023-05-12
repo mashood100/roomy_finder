@@ -10,6 +10,7 @@ import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
+import 'package:roomy_finder/screens/user/roomy_balance.dart';
 import 'package:roomy_finder/screens/user/withdraw.dart';
 import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
@@ -217,7 +218,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               Card(
                 child: ListTile(
                   onTap: () {
-                    showToast("Coming soon...");
+                    Get.to(() => const RoomyBalanceScreen());
                   },
                   leading: const CircleAvatar(
                     backgroundColor: Colors.transparent,

@@ -475,19 +475,20 @@ class HomeDrawer extends StatelessWidget {
                 shareApp();
               },
             ),
-            ListTile(
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.red,
-                child: Icon(Icons.logout, color: Colors.white),
+            if (!AppController.me.isGuest)
+              ListTile(
+                leading: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.red,
+                  child: Icon(Icons.logout, color: Colors.white),
+                ),
+                title: const Text("Logout"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Get.back();
+                  controller._logout(Get.context!);
+                },
               ),
-              title: const Text("Logout"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                controller._logout(Get.context!);
-              },
-            ),
             const Divider(height: 10),
             const SizedBox(height: 10),
             Row(

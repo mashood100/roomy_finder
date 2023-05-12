@@ -29,13 +29,20 @@ class _MyPropertyAdsController extends LoadingController {
         queryParameters: query,
       );
 
-      final data = (res.data as List).map((e) => PropertyAd.fromMap(e));
+      final data = (res.data as List).map((e) {
+        try {
+          var propertyAd = PropertyAd.fromMap(e);
+          return propertyAd;
+        } catch (e) {
+          return null;
+        }
+      });
 
       if (isReFresh) {
         ads.clear();
         _skip = 0;
       }
-      ads.addAll(data);
+      ads.addAll(data.whereType<PropertyAd>());
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
