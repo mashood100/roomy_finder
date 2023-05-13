@@ -228,9 +228,7 @@ class NotificationController {
       case "pay-property-rent-fee-completed-client":
       case "pay-property-rent-fee-completed-landlord":
       case "pay-property-rent-fee-paid-cash":
-      case "withdraw-completed":
-      case "withdraw-failed":
-        final message = msg.data["message"] ?? "new notification";
+        final message = msg.data["message"] ?? "New notification";
 
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
@@ -243,6 +241,29 @@ class NotificationController {
               channelKey: "notification_channel",
               groupKey: "notification_channel_group",
               title: "Booking",
+              body: message,
+              notificationLayout: NotificationLayout.BigText,
+            ),
+          );
+        }
+
+        break;
+      case "withdraw-completed":
+      case "withdraw-failed":
+      case "stripe-connect-account-created":
+        final message = msg.data["message"] ?? "New notification";
+
+        if (msg.data["event"] != null) {
+          _saveNotification(msg.data["event"], message);
+        }
+
+        if (isForeground) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Payout",
               body: message,
               notificationLayout: NotificationLayout.BigText,
             ),
