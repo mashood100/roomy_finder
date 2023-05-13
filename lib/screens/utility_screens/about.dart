@@ -144,26 +144,26 @@ class AboutScreeen extends StatelessWidget {
                   ),
                 ),
               ),
-              Card(
+              const Card(
                 child: ListTile(
-                  leading: const Icon(Icons.question_answer),
-                  title: const Text('FAQ'),
+                  leading: Icon(Icons.question_answer),
+                  title: Text('FAQ'),
                   trailing: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.chevron_right),
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
                   ),
                 ),
               ),
               Card(
                 child: ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    Get.to(() => const ContactUsScreen());
+                  },
                   leading: const Icon(Icons.support_agent),
                   title: const Text('Contact us'),
-                  trailing: IconButton(
-                    onPressed: () {
-                      Get.to(() => const ContactUsScreen());
-                    },
-                    icon: const Icon(Icons.chevron_right),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
                   ),
                 ),
               ),
