@@ -44,7 +44,6 @@ void main() async {
   FirebaseAnalytics.instance.logAppOpen();
 
   // Firebase Cloud Messaging
-  FirebaseMessaging.instance.getToken();
   FirebaseMessaging.onMessage.listen((msg) {
     NotificationController.firebaseMessagingHandler(msg, true);
   });

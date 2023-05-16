@@ -790,8 +790,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     color: Colors.grey,
                                   ),
                                   labelText: item['label']!,
-                                  suffixText: AppController
-                                      .instance.country.value.currencyCode,
+                                  suffixText: "AED",
                                   initialValue: controller
                                       .information[item['value']] as String,
                                   enabled: controller.isLoading.isFalse,
@@ -883,8 +882,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                           .toString(),
                                   labelStyle: const TextStyle(fontSize: 15),
                                   enabled: controller.isLoading.isFalse,
-                                  suffixText: AppController
-                                      .instance.country.value.currencyCode,
+                                  suffixText: "AED",
                                   onChanged: (value) => controller
                                       .information["depositPrice"] = value,
                                   validator: (value) {

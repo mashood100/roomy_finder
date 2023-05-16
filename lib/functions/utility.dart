@@ -66,9 +66,10 @@ Future<bool> changeAppCountry(BuildContext context) async {
 }
 
 String formatMoney(num price, {String? name}) {
+  name ??= AppController.instance.country.value.currencyCode;
   final NumberFormat formatter = NumberFormat.currency(
-    locale: "fr_FR",
-    name: name ?? AppController.instance.country.value.currencyCode,
+    locale: "ar",
+    name: name,
     decimalDigits: price.toInt() == price.toDouble() ? 0 : 2,
   );
 
