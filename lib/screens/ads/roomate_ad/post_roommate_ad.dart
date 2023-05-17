@@ -840,9 +840,8 @@ class PostRoommateAdScreen extends StatelessWidget {
 
                 InlineTextField(
                   labelText: 'budget'.tr,
-                  suffixText: AppController.instance.country.value.currencyCode,
-                  hintText:
-                      'Example 5000 ${AppController.instance.country.value.currencyCode}',
+                  suffixText: "AED",
+                  hintText: 'Example 5000 AED',
                   initialValue: controller.information["budget"] as String?,
                   enabled: controller.isLoading.isFalse,
                   onChanged: (value) =>

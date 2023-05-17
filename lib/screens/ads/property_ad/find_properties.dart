@@ -151,7 +151,7 @@ class _FindPropertiesController extends LoadingController {
                         onChanged: (val) {
                           if (val != null) {
                             setState(() {
-                              filter["location"] = null;
+                              filter.remove("location");
                               filter["city"] = val;
                             });
                           }

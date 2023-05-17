@@ -144,11 +144,19 @@ class AboutScreeen extends StatelessWidget {
                   ),
                 ),
               ),
-              const Card(
+              Card(
                 child: ListTile(
-                  leading: Icon(Icons.question_answer),
-                  title: Text('FAQ'),
-                  trailing: IconButton(
+                  onTap: () {
+                    Get.to(() {
+                      return const ViewPdfScreen(
+                        title: "FAQ",
+                        asset: "assets/pdf/faq.pdf",
+                      );
+                    });
+                  },
+                  leading: const Icon(Icons.question_answer),
+                  title: const Text('FAQ'),
+                  trailing: const IconButton(
                     onPressed: null,
                     icon: Icon(Icons.chevron_right),
                   ),

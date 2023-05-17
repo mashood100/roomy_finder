@@ -5,13 +5,11 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/messages/view_notifications.dart';
-import 'package:roomy_finder/screens/user/roomy_balance.dart';
-import 'package:roomy_finder/screens/user/withdraw.dart';
+import 'package:roomy_finder/screens/user/balance.dart';
 import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -200,53 +198,17 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             if (AppController.me.isLandlord)
               Card(
                 child: ListTile(
-                  title: const Text("Account balance"),
+                  title: const Text("Account Balance"),
                   trailing: const IconButton(
                     onPressed: null,
                     icon: Icon(Icons.chevron_right),
                   ),
                   onTap: () {
-                    Get.to(() => const WithdrawScreen());
+                    Get.to(() => const UserBalanceScreen());
                   },
                   leading: const CircleAvatar(
                     backgroundColor: Colors.transparent,
                     foregroundImage: AssetImage("assets/icons/wallet.png"),
-                  ),
-                ),
-              ),
-            if (AppController.me.isLandlord)
-              Card(
-                child: ListTile(
-                  onTap: () {
-                    Get.to(() => const RoomyBalanceScreen());
-                  },
-                  leading: const CircleAvatar(
-                    backgroundColor: Colors.transparent,
-                    foregroundImage: AssetImage("assets/icons/wallet.png"),
-                  ),
-                  title: const Text('Roomy balance'),
-                  trailing: const IconButton(
-                    onPressed: null,
-                    icon: Icon(Icons.chevron_right),
-                  ),
-                ),
-              ),
-            if (AppController.me.isRoommate)
-              Card(
-                child: ListTile(
-                  onTap: () {
-                    showToast("Coming soon...");
-                  },
-                  //leading: const CircleAvatar(
-                  // backgroundColor: Colors.white,
-                  //     child: Icon(
-                  //   Icons.info_outlined,
-                  //   color: ROOMY_ORANGE,
-                  // )),
-                  title: const Text('Roomy wallet'),
-                  trailing: const IconButton(
-                    onPressed: null,
-                    icon: Icon(Icons.chevron_right),
                   ),
                 ),
               ),
