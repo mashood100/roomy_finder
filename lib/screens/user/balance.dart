@@ -63,8 +63,8 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
   }
 
   Future<void> fetchAccountDetails() async {
+    setState(() => _isLoading = true);
     try {
-      setState(() => _isLoading = true);
       final res = await ApiService.getDio.get("/profile/account-details");
 
       if (res.statusCode == 200) {
@@ -84,14 +84,14 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
 
   Future<void> _withdrawMoney(String service) async {
     final amount = _amountToWithDraw * AppController.convertionRate;
-    if (amount < 100) {
-      showToast(
-        "Amount too small. Minimum is"
-        " ${100 * AppController.convertionRate} "
-        "${AppController.instance.country.value.currencyCode}",
-      );
-      return;
-    }
+    // if (amount < 100) {
+    //   showToast(
+    //     "Amount too small. Minimum is"
+    //     " ${100 * AppController.convertionRate} "
+    //     "${AppController.instance.country.value.currencyCode}",
+    //   );
+    //   return;
+    // }
     final shouldContinue = await showConfirmDialog("Please confirm");
     if (shouldContinue != true) return;
     try {
