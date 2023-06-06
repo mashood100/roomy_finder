@@ -2,8 +2,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
 
 import 'package:roomy_finder/models/user.dart';
 
@@ -30,8 +28,6 @@ class PropertyAd {
   Map<String, Object> socialPreferences;
   bool? needsPhotograph;
 
-  CameraPosition? cameraPosition;
-  PlaceAutoCompletePredicate? autoCompletePredicate;
   String? shareLink;
 
   bool get isMine => poster.isMe;
@@ -103,8 +99,6 @@ class PropertyAd {
     required this.createdAt,
     required this.address,
     required this.socialPreferences,
-    this.cameraPosition,
-    this.autoCompletePredicate,
     this.needsPhotograph,
     this.shareLink,
   });
@@ -131,8 +125,6 @@ class PropertyAd {
       'createdAt': createdAt.toIso8601String(),
       'address': address,
       'socialPreferences': socialPreferences,
-      'cameraPosition': cameraPosition?.toMap(),
-      'autoCompletePredicate': autoCompletePredicate?.toMap(),
       'needsPhotograph': needsPhotograph,
       'shareLink': shareLink,
     };
@@ -164,12 +156,6 @@ class PropertyAd {
           : Map<String, String>.from((map['agentInfo'] as Map)),
       socialPreferences:
           Map<String, Object>.from((map['socialPreferences'] as Map)),
-      cameraPosition: map["cameraPosition"] == null
-          ? null
-          : CameraPosition.fromMap(map["cameraPosition"]),
-      autoCompletePredicate: map["autoCompletePredicate"] == null
-          ? null
-          : PlaceAutoCompletePredicate.fromMap(map["autoCompletePredicate"]),
       needsPhotograph: map["needsPhotograph"] == true,
       shareLink: map['shareLink'] as String?,
     );
@@ -230,7 +216,6 @@ class PropertyAd {
         amenities.hashCode ^
         createdAt.hashCode ^
         address.hashCode ^
-        socialPreferences.hashCode ^
-        cameraPosition.hashCode;
+        socialPreferences.hashCode;
   }
 }

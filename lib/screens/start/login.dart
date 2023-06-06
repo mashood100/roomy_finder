@@ -1,12 +1,14 @@
+// import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
+import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -41,6 +43,16 @@ class _LoginController extends LoadingController {
 
       switch (res.statusCode) {
         case 200:
+          try {
+            // await FirebaseAuth.instance.signInWithEmailAndPassword(
+            //   email: _emailController.text,
+            //   password: _passwordController.text,
+            // );
+            // await FirebaseAuth.instance.signInAnonymously();
+          } catch (e) {
+            Get.log("e");
+          }
+
           final user = User.fromMap(res.data);
 
           AppController.instance.user = user.obs;
@@ -55,7 +67,14 @@ class _LoginController extends LoadingController {
 
           AppController.instance.setIsFirstStart(false);
 
-          Get.offAllNamed("/home");
+          if (user.isMaintenant) {
+            Get.offAllNamed("/maintenance");
+            FirebaseMessaging.instance
+                .subscribeToTopic("maintenance-broadcast");
+          } else {
+            Get.offAllNamed("/home");
+          }
+
           break;
         case 403:
           if (res.data["code"] == "diabled") {

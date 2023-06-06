@@ -49,7 +49,12 @@ class AppController extends GetxController {
 
       userPassword = await getUserPassword();
 
-      initialRoute = "/home";
+      if (savedUser.isMaintenant) {
+        initialRoute = "/maintenance";
+        FirebaseMessaging.instance.subscribeToTopic("maintenance-broadcast");
+      } else {
+        initialRoute = "/home";
+      }
     } else {
       final isFirstLaunch = await getIsFirstLaunch();
       initialRoute = isFirstLaunch ? "/onboarding" : "/welcome";

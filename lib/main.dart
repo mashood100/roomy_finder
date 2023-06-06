@@ -13,6 +13,7 @@ import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/localization/messages.dart';
+import 'package:roomy_finder/maintenance/screens/home_maintenance.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/home/home.dart';
@@ -283,6 +284,10 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: "/update-app",
           page: () => const UpdateAppScreen(),
+        ),
+        GetPage(
+          name: "/maintenance",
+          page: () => const MaintenanceHome(),
         ),
       ],
     );

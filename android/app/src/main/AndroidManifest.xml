@@ -2,9 +2,6 @@
     package="com.gsccapitalgroup.roomy_finder">
     <uses-permission android:name="android.permission.INTERNET"/>
      <!-- Permissions options for the `location` group -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Permissions options for the `microphone` or `speech` group -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -67,9 +64,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google cloud api -->
-        <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8"/>
+        
     </application>
     <!-- Provide required visibility configuration for API level 30 and above -->
     <queries>

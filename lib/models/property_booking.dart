@@ -83,7 +83,7 @@ class PropertyBooking {
     return fee;
   }
 
-  /// TAV (5% of commission fee [commissionFee])
+  /// VAT (5% of commission fee [commissionFee])
   num get vatFee => commissionFee * 0.05;
 
   /// The sum of the rent fee and the commission fee

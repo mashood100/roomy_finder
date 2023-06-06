@@ -97,6 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 icon: const Icon(
                                   Icons.delete,
                                   color: Colors.white,
+                                  size: 20,
                                 ),
                               ),
                             )
