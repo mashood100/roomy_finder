@@ -101,7 +101,8 @@ class _SeeMaintenanceOffersScreenState
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
-                                Text("Date : ${Jiffy(createdAt).yMMMEdjm}"),
+                                Text(
+                                    "Date : ${Jiffy.parseFromDateTime(createdAt).yMMMEdjm}"),
                                 Text("Maintenant : ${user.fullName}"),
                                 const Divider(),
                                 Row(

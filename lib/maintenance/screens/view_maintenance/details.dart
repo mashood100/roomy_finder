@@ -62,7 +62,10 @@ class ViewMaintenanceDetailsScreen extends StatelessWidget {
                   "value": address['floorNumber'] ?? "Not Provided",
                 },
                 {"divider": true},
-                {"label": "Date", "value": Jiffy(m.date).yMMMEdjm},
+                {
+                  "label": "Date",
+                  "value": Jiffy.parseFromDateTime(m.date).yMMMEdjm
+                },
                 {"label": "Status", "value": m.status},
                 {
                   "label": "Payment status",

@@ -76,7 +76,7 @@ class BlogPostWidget extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: Text(
-                      Jiffy(post.createdAt!).yMEd,
+                      Jiffy.parseFromDateTime(post.createdAt!).yMEd,
                       textAlign: TextAlign.right,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

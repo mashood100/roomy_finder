@@ -81,7 +81,7 @@ class _FindRoommatesController extends LoadingController {
       ads.addAll(data.whereType<RoommateAd>());
     } catch (e, trace) {
       Get.log("$e");
-      if (e is DioError) {}
+      if (e is DioException) {}
       Get.log("$trace");
       hasFetchError(true);
     } finally {

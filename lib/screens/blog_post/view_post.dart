@@ -66,7 +66,9 @@ class ViewBlogPostScreen extends StatelessWidget {
                           if (post.author != null) TextSpan(text: post.author!),
                           if (post.author != null) const TextSpan(text: "  "),
                           if (post.createdAt != null)
-                            TextSpan(text: Jiffy(post.createdAt!).yMEd),
+                            TextSpan(
+                                text: Jiffy.parseFromDateTime(post.createdAt!)
+                                    .yMEd),
                         ]),
                         textAlign: TextAlign.left,
                         style:

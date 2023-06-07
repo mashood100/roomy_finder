@@ -16,7 +16,10 @@ Future<bool> checkForAppUpdate() async {
     final res = await Dio().get(
       "$API_URL/utils/app-update",
       queryParameters: {"currentVersion": currentVersion, "platform": platform},
-      options: Options(sendTimeout: 1000 * 5, receiveTimeout: 1000 * 5),
+      options: Options(
+        sendTimeout: const Duration(seconds: 1000 * 5),
+        receiveTimeout: const Duration(seconds: 1000 * 5),
+      ),
     );
 
     if (res.statusCode != 200) return false;

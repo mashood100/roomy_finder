@@ -58,11 +58,15 @@ class _SelectDateAndTimeScreenState extends State<SelectDateAndTimeScreen> {
               children: [
                 const SizedBox(height: 20),
                 Text(
-                  Jiffy(widget.request.date).format("MMM.d").toUpperCase(),
+                  Jiffy.parseFromDateTime(widget.request.date)
+                      .format(pattern: "MMM.d")
+                      .toUpperCase(),
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(
-                  Jiffy(widget.request.date).EEEE.toUpperCase(),
+                  Jiffy.parseFromDateTime(widget.request.date)
+                      .EEEE
+                      .toUpperCase(),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 20),
@@ -112,11 +116,15 @@ class _SelectDateAndTimeScreenState extends State<SelectDateAndTimeScreen> {
               children: [
                 const SizedBox(height: 20),
                 Text(
-                  Jiffy(widget.request.date).format("MMM.dd").toUpperCase(),
+                  Jiffy.parseFromDateTime(widget.request.date)
+                      .format(pattern: "MMM.dd")
+                      .toUpperCase(),
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(
-                  Jiffy(widget.request.date).EEEE.toUpperCase(),
+                  Jiffy.parseFromDateTime(widget.request.date)
+                      .EEEE
+                      .toUpperCase(),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const Spacer(),

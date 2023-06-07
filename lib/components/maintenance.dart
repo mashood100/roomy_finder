@@ -67,7 +67,7 @@ class MaintenanceListItem extends StatelessWidget {
                     style: const TextStyle(color: Color(0xFFFF7B4D)),
                   ),
                   Text(
-                    "Date : ${Jiffy(maintenance.date).format("EEE, MMM dd yyyy hh:mm aaa")}",
+                    "Date : ${Jiffy.parseFromDateTime(maintenance.date).format(pattern: "EEE, MMM dd yyyy hh:mm aaa")}",
                     style: const TextStyle(fontSize: 12),
                   ),
                   Row(

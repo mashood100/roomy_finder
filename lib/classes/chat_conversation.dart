@@ -17,6 +17,7 @@ class ChatConversation {
   static bool homeTabIsChat = false;
   static String? currrentChatKey;
   static void Function()? currrentChatOnTapCallBack;
+  static final List<int> foregroudChatNotificationsIds = [];
 
   String get key => "${AppController.me.id}-${other.id}";
 

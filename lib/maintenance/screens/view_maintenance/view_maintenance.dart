@@ -91,21 +91,23 @@ class _ViewMaintenanceState extends State<ViewMaintenance> {
                   ),
                   Center(
                     child: Text(
-                      Jiffy(widget.maintenance.date)
-                          .format("MMM.d")
+                      Jiffy.parseFromDateTime(widget.maintenance.date)
+                          .format(pattern: "MMM.d")
                           .toUpperCase(),
                       style: const TextStyle(fontSize: 24),
                     ),
                   ),
                   Center(
                     child: Text(
-                      Jiffy(widget.maintenance.date).EEEE.toUpperCase(),
+                      Jiffy.parseFromDateTime(widget.maintenance.date)
+                          .EEEE
+                          .toUpperCase(),
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
                   Center(
                     child: Text(
-                      Jiffy(widget.maintenance.date).jm,
+                      Jiffy.parseFromDateTime(widget.maintenance.date).jm,
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),

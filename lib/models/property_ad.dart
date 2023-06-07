@@ -131,6 +131,7 @@ class PropertyAd {
   }
 
   factory PropertyAd.fromMap(Map<String, dynamic> map) {
+    if (map["posterType"] == "Landlord") map.remove("agentInfo");
     return PropertyAd(
       id: map['id'] as String,
       poster: User.fromMap(map['poster'] as Map<String, dynamic>),

@@ -230,9 +230,6 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   ),
                 ),
               ),
-            Row(
-              children: const [],
-            )
           ],
         ),
       ),

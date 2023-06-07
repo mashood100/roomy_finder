@@ -73,7 +73,7 @@ class AppController extends GetxController {
       appLocale = AppLocale.enUS.obs;
     }
 
-    await Jiffy.locale(appLocale.value.jiffyLocaleName);
+    await Jiffy.setLocale(appLocale.value.jiffyLocaleName);
     await Get.updateLocale(Locale(appLocale.value.languageLocale));
 
     // Theme mode
@@ -205,7 +205,7 @@ class AppController extends GetxController {
     try {
       final pref = await SharedPreferences.getInstance();
       pref.setString("appLocale", appLocale.toJson());
-      await Jiffy.locale(appLocale.jiffyLocaleName);
+      await Jiffy.setLocale(appLocale.jiffyLocaleName);
       this.appLocale(appLocale);
       await Get.updateLocale(Locale(appLocale.languageLocale));
     } catch (e, trace) {

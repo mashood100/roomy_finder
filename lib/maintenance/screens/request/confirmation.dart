@@ -60,19 +60,23 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 ),
                 Center(
                   child: Text(
-                    Jiffy(widget.request.date).format("MMM.d").toUpperCase(),
+                    Jiffy.parseFromDateTime(widget.request.date)
+                        .format(pattern: "MMM.d")
+                        .toUpperCase(),
                     style: const TextStyle(fontSize: 24),
                   ),
                 ),
                 Center(
                   child: Text(
-                    Jiffy(widget.request.date).EEEE.toUpperCase(),
+                    Jiffy.parseFromDateTime(widget.request.date)
+                        .EEEE
+                        .toUpperCase(),
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
                 Center(
                   child: Text(
-                    Jiffy(widget.request.date).jm,
+                    Jiffy.parseFromDateTime(widget.request.date).jm,
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),

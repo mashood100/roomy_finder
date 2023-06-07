@@ -583,12 +583,12 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
           const SizedBox(width: 5),
           Image.asset("assets/images/logo_house.png", height: 40),
           const SizedBox(width: 10),
-          Expanded(
+          const Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Text(
                   "Roomy",
                   style: TextStyle(
@@ -617,6 +617,7 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
         Builder(builder: (context) {
           return IconButton(
             onPressed: () async {
+              controller._fetchHommeAds();
               var changed = await changeAppCountry(context);
               if (changed) {
                 controller._fetchHommeAds();

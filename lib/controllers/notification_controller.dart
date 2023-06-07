@@ -384,31 +384,43 @@ class NotificationController {
     bool isForeGroundMessage,
   ) async {
     try {
-      final payload = json.decode(remoteMessage.data["payload"]);
+      final payload = remoteMessage.data;
 
-      final message = ChatMessage.fromMap(payload["message"]);
+      final message = ChatMessage.fromJson(payload["message"]);
 
+      if (!isForeGroundMessage && payload["showOnBackground"] == "FALSE") {
+        return;
+      }
+
+      // if (isForeGroundMessage) {
       if (ChatConversation.currrentChatKey ==
           "${message.recieverId}-${message.senderId}") {
         return;
       }
+
       if (!ChatConversation.homeTabIsChat) {
+        final id = Random().nextInt(1000);
         AwesomeNotifications().createNotification(
           content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "chat_channel_key",
-            groupKey: "chat_channel_group_key",
+            id: id,
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
             title: payload["notificationTitle"]?.toString(),
             body: message.body,
             notificationLayout: NotificationLayout.Messaging,
             payload: Map<String, String?>.from(remoteMessage.data),
-            summary: 'Chat notification',
+            largeIcon: payload["profilePicture"],
           ),
         );
+
+        ChatConversation.foregroudChatNotificationsIds.add(id);
+
+        ChatMessage.requestMarkAsRecieved(
+          message.senderId,
+          message.recieverId,
+        );
       }
-      if (!isForeGroundMessage) {
-        ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
-      }
+      // }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -488,9 +500,7 @@ class NotificationController {
   static Future<void> _handleChatMessageTappedEvents(
       Map<String, dynamic> data) async {
     try {
-      final payload = json.decode(data["payload"]);
-
-      final message = ChatMessage.fromMap(payload["message"]);
+      final message = ChatMessage.fromJson(data["message"]);
 
       final other = ChatUser(id: message.senderId, createdAt: DateTime.now());
 
@@ -505,6 +515,7 @@ class NotificationController {
       if (oldConv != null) {
         conv = oldConv;
         conv.lastMessage = message;
+        conv.haveUnreadMessage = false;
       } else {
         conv = ChatConversation(other: other, lastMessage: message);
         // await conv.updateChatInfo();

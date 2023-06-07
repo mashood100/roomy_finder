@@ -224,15 +224,19 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                               ),
                               Label(
                                 label: "Booking date",
-                                value: Jiffy(booking.createdAt).yMMMEd,
+                                value:
+                                    Jiffy.parseFromDateTime(booking.createdAt)
+                                        .yMMMEd,
                               ),
                               Label(
                                 label: "Check In",
-                                value: Jiffy(booking.checkIn).yMMMEd,
+                                value: Jiffy.parseFromDateTime(booking.checkIn)
+                                    .yMMMEd,
                               ),
                               Label(
                                 label: "Check Out",
-                                value: Jiffy(booking.checkOut).yMMMEd,
+                                value: Jiffy.parseFromDateTime(booking.checkOut)
+                                    .yMMMEd,
                               ),
                               Label(
                                 label: "Status",

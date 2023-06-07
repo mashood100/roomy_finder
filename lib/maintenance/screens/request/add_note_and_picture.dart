@@ -94,9 +94,9 @@ class _AddNoteAndPictureScreenState extends State<AddNoteAndPictureScreen> {
           ),
           child: Column(
             children: [
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text("NOTE"),
                   // Text("${_noteController.text.length}/500"),
                 ],

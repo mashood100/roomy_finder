@@ -78,7 +78,8 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text("Maintenant"),
-                              Text(Jiffy(maintenantDate).yMMMEdjm),
+                              Text(Jiffy.parseFromDateTime(maintenantDate)
+                                  .yMMMEdjm),
                             ],
                           ),
                         ),
@@ -113,7 +114,9 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
                                     const Icon(Icons.check, color: Colors.green)
                                   else
                                     const Icon(Icons.cancel, color: Colors.red),
-                                Text(Jiffy(landlordDate).yMMMEdjm),
+                                if (landlordDate != null)
+                                  Text(Jiffy.parseFromDateTime(landlordDate)
+                                      .yMMMEdjm),
                               ],
                             ),
                           ),

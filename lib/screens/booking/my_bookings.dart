@@ -170,7 +170,9 @@ class MyBookingsCreen extends StatelessWidget {
                               ),
                               Label(
                                 label: "Date  : ",
-                                value: Jiffy(booking.createdAt).yMMMEdjm,
+                                value:
+                                    Jiffy.parseFromDateTime(booking.createdAt)
+                                        .yMMMEdjm,
                                 fontSize: 12,
                               ),
                             ],

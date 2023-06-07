@@ -102,7 +102,7 @@ class ApiService {
 
       if (res.statusCode == 200) return res.data['token'] as String;
       return null;
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       Get.log('Dio Get Token Error : $e');
       return null;
     }

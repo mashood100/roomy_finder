@@ -7,7 +7,6 @@ import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:month_year_picker/month_year_picker.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
@@ -244,9 +243,6 @@ class MyApp extends StatelessWidget {
       initialRoute: AppController.initialRoute,
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-      ],
-      localizationsDelegates: const [
-        MonthYearPickerLocalizations.delegate,
       ],
       getPages: [
         GetPage(

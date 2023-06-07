@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:badges/badges.dart';
@@ -42,9 +41,7 @@ class ChatTabController extends LoadingController {
 
       if (data["event"] == "new-message") {
         try {
-          final payload = jsonDecode(data["payload"]);
-
-          final message = ChatMessage.fromMap(payload["message"]);
+          final message = ChatMessage.fromJson(data["message"]);
 
           final other = ChatUser(
             id: message.senderId,
@@ -68,8 +65,9 @@ class ChatTabController extends LoadingController {
             ChatConversation.addConversation(conv);
             ChatConversation.sortConversations();
           }
-          conv.haveUnreadMessage = true;
-
+          if (conv.key != ChatConversation.currrentChatKey) {
+            conv.haveUnreadMessage = true;
+          }
           ChatConversation.sortConversations();
 
           update();
@@ -86,7 +84,7 @@ class ChatTabController extends LoadingController {
         }
       } else if (data["event"] == "message-recieved" ||
           data["event"] == "message-read") {
-        final payload = jsonDecode(data["payload"]);
+        final payload = data["payload"];
 
         final convKey = ChatConversation.createConvsertionKey(
           payload["recieverId"],
@@ -339,9 +337,10 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
     final controller = Get.put(ChatTabController());
     controller.update();
     AppController.instance.haveNewMessage(false);
+
     AwesomeNotifications().cancelNotificationsByChannelKey("chat_channel_key");
-    AwesomeNotifications().cancelNotificationsByGroupKey(
-      "chat_channel_group_key",
-    );
+    for (var id in ChatConversation.foregroudChatNotificationsIds) {
+      AwesomeNotifications().cancel(id);
+    }
   }
 }

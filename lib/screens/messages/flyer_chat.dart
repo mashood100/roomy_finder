@@ -1,10 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
+import "package:path/path.dart" as path;
 import 'package:bubble/bubble.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,21 +17,19 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:roomy_finder/models/chat_message.dart';
-import 'package:uuid/uuid.dart';
-import 'package:path_provider/path_provider.dart';
-import "package:path/path.dart" as path;
-import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:roomy_finder/models/chat_user.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
 
 class FlyerChatScreenController extends LoadingController {
   final ChatConversation conversation;
@@ -97,11 +98,11 @@ class FlyerChatScreenController extends LoadingController {
 
     fGBGNotifierSubScription = FGBGEvents.stream.listen((event) {
       if (event == FGBGType.foreground) {
-        if (messages.isNotEmpty) {
-          _fetchMessages(
-            lastDate: messages.isNotEmpty ? messages.first.createdAt : null,
-          );
-        }
+        _fetchMessages(
+          lastDate: messages.isNotEmpty ? messages.first.createdAt : null,
+        ).then((_) {
+          AwesomeNotifications().cancelAll();
+        });
       }
     });
 
@@ -112,9 +113,7 @@ class FlyerChatScreenController extends LoadingController {
 
       if (data["event"] == "new-message") {
         try {
-          final payload = json.decode(data["payload"]);
-
-          final message = ChatMessage.fromMap(payload["message"]);
+          final message = ChatMessage.fromJson(data["message"]);
 
           final convKey = ChatConversation.createConvsertionKey(
             message.recieverId,
@@ -125,6 +124,7 @@ class FlyerChatScreenController extends LoadingController {
             _addNewMessage(message);
             update();
           }
+
           if (convKey == ChatConversation.currrentChatKey) {
             _markMessagesAsRead();
             message.markAsRead();
@@ -138,7 +138,7 @@ class FlyerChatScreenController extends LoadingController {
         }
       } else if (data["event"] == "message-recieved" ||
           data["event"] == "message-read") {
-        final payload = jsonDecode(data["payload"]);
+        final payload = data["payload"];
 
         if (payload["senderId"] == conversation.me.id) {
           if (data["event"] == "message-recieved") {
@@ -306,6 +306,7 @@ class FlyerChatScreenController extends LoadingController {
             "fileName": file.name,
             "fileSize": file.size,
             "replyId": _currentRepliedMessage?.id,
+            "profilePicture": AppController.me.profilePicture,
           },
         );
 
@@ -417,6 +418,7 @@ class FlyerChatScreenController extends LoadingController {
           "fileName": result.name,
           "fileSize": bytes.length,
           "replyId": _currentRepliedMessage?.id,
+          "profilePicture": AppController.me.profilePicture,
         },
       );
 
@@ -517,6 +519,7 @@ class FlyerChatScreenController extends LoadingController {
           "recieverId": conversation.other.id,
           "recieverFcmToken": conversation.other.fcmToken,
           "replyId": _currentRepliedMessage?.id,
+          "profilePicture": AppController.me.profilePicture,
         },
       );
 
@@ -639,12 +642,15 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
     };
     controller._markMessagesAsRead();
     controller.conversation.lastMessage?.markAsRead();
+    controller.conversation.haveUnreadMessage = false;
 
     controller.update();
 
     if (controller.conversation.lastMessage?.isMine == false) {
       controller.conversation.lastMessage?.markAsRead();
     }
+
+    // WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -661,8 +667,23 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
 
     ChatConversation.sortConversations();
     controller._audioPlayer.dispose();
+    // WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
+
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.resumed) {
+  //     final controller = Get.put(
+  //       FlyerChatScreenController(widget.conversation),
+  //       tag: "${widget.myId}#${widget.otherId}",
+  //       permanent: true,
+  //     );
+
+  //     controller._fetchMessages();
+  //   }
+  //   super.didChangeAppLifecycleState(state);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -731,9 +752,9 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
           tag: "${widget.myId}#${widget.otherId}",
           builder: (controller) {
             if (controller.isLoading.isTrue) {
-              return Center(
+              return const Center(
                   child: Column(
-                children: const [
+                children: [
                   Spacer(),
                   Text("Loading messages..."),
                   SizedBox(height: 20),
