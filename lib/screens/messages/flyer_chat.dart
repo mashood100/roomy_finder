@@ -195,7 +195,7 @@ class FlyerChatScreenController extends LoadingController {
       );
       if (res) {
         for (int i = 0; i < messages.length; i++) {
-          if (messages[i].senderId == conversation.me.id) {
+          if (messages[i].senderId != conversation.me.id) {
             if (messages[i].isRead) break;
             messages[i].markAsRead();
           }
@@ -641,14 +641,9 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
       controller.update();
     };
     controller._markMessagesAsRead();
-    controller.conversation.lastMessage?.markAsRead();
     controller.conversation.haveUnreadMessage = false;
 
     controller.update();
-
-    if (controller.conversation.lastMessage?.isMine == false) {
-      controller.conversation.lastMessage?.markAsRead();
-    }
 
     // WidgetsBinding.instance.addObserver(this);
   }

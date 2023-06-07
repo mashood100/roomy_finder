@@ -68,9 +68,13 @@ class _LoginController extends LoadingController {
           AppController.instance.setIsFirstStart(false);
 
           if (user.isMaintenant) {
-            Get.offAllNamed("/maintenance");
-            FirebaseMessaging.instance
-                .subscribeToTopic("maintenance-broadcast");
+            showToast(
+              "You have a maintenance account. "
+              "Maintenance section is temporally unavailable",
+            );
+            // Get.offAllNamed("/maintenance");
+            // FirebaseMessaging.instance
+            //     .subscribeToTopic("maintenance-broadcast");
           } else {
             Get.offAllNamed("/home");
           }

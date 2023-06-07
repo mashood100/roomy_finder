@@ -212,7 +212,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
               foregroundImage: conv.other.profilePicture != null
                   ? CachedNetworkImageProvider(conv.other.profilePicture!)
                   : null,
-              child: Text(conv.other.fullName[0]),
+              child: Text(conv.other.fullName[0].toUpperCase()),
             ),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -617,7 +617,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
         Builder(builder: (context) {
           return IconButton(
             onPressed: () async {
-              controller._fetchHommeAds();
               var changed = await changeAppCountry(context);
               if (changed) {
                 controller._fetchHommeAds();
