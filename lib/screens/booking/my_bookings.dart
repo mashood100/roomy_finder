@@ -28,12 +28,20 @@ class _MyBookingsController extends LoadingController {
       final res = await ApiService.getDio
           .get("/bookings/my-bookings", queryParameters: query);
       if (res.statusCode == 200) {
-        final data = (res.data as List).map((e) => PropertyBooking.fromMap(e));
+        final data = (res.data as List).map((e) {
+          try {
+            var propertyBooking = PropertyBooking.fromMap(e);
+            return propertyBooking;
+          } catch (e) {
+            Get.log("$e");
+            return null;
+          }
+        });
 
         if (isReFresh) {
           propertyBookings.clear();
         }
-        propertyBookings.addAll(data);
+        propertyBookings.addAll(data.whereType<PropertyBooking>());
       } else {
         showToast("Failed to load data");
       }
@@ -162,7 +170,9 @@ class MyBookingsCreen extends StatelessWidget {
                               ),
                               Label(
                                 label: "Date  : ",
-                                value: Jiffy(booking.createdAt).yMMMEdjm,
+                                value:
+                                    Jiffy.parseFromDateTime(booking.createdAt)
+                                        .yMMMEdjm,
                                 fontSize: 12,
                               ),
                             ],

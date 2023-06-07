@@ -25,7 +25,6 @@ import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
-// import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
@@ -50,6 +49,8 @@ class _RegistrationController extends LoadingController {
   bool _emailIsVerified = false;
 
   bool get isLandlord => accountType.value == UserAccountType.landlord;
+  bool get isRoommate => accountType.value == UserAccountType.roommate;
+  bool get isMaintenant => accountType.value == UserAccountType.maintainer;
 
   // Information
   final accountType = UserAccountType.landlord.obs;
@@ -65,7 +66,6 @@ class _RegistrationController extends LoadingController {
   };
 
   String country = "United Arab Emirates";
-  String _verificationId = "";
 
   Timer? secondsLeftTimer;
 
@@ -162,58 +162,25 @@ class _RegistrationController extends LoadingController {
     try {
       _isVerifyingPhone(true);
       resetSmsTimer();
-      secondsLeft(59);
+      secondsLeft(59 * 10);
       _piniputController.clear();
 
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: phoneNumber.phoneNumber,
-        verificationCompleted: (phoneAuthCredential) {},
-        codeSent: (verificationId, forceResendingToken) {
-          _isVerifyingPhone(false);
-          _verificationId = verificationId;
-          if (isLandlord) {
-            _moveToPage(3);
-          } else {
-            _moveToPage(2);
-          }
-          startSmsTimer();
-          _isVerifyingPhone(false);
-        },
-        codeAutoRetrievalTimeout: (verificationId) {},
-        timeout: const Duration(minutes: 1),
-        verificationFailed: (e) {
-          Get.log(" Verification failed with code : ${e.code}");
-          _isVerifyingPhone(false);
-          switch (e.code) {
-            case "invalid-phone-number":
-              showGetSnackbar(
-                "phoneVerificationInvalidPhoneNumber".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-            case "missing-client-identifier":
-              showGetSnackbar(
-                "phoneVerificationMissingClient".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-
-            default:
-              showGetSnackbar(
-                "phoneVerificationCheckInternet".tr,
-                title: 'registration'.tr,
-                severity: Severity.error,
-              );
-              break;
-          }
-        },
+      final res = await ApiService.getDio.post(
+        "/auth/send-otp-code",
+        data: {"phone": phoneNumber.phoneNumber},
       );
+
+      if (res.statusCode == 200) {
+        _moveToPage(2);
+        startSmsTimer();
+      } else {
+        showToast("Failed to get OTP code. Please try again.");
+      }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
       showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
+    } finally {
       _isVerifyingPhone(false);
     }
   }
@@ -247,16 +214,16 @@ class _RegistrationController extends LoadingController {
     );
   }
 
-  Future<void> saveCredentials(String smsCode) async {
+  Future<void> saveCredentials(String otpCode) async {
     try {
       isLoading(true);
 
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: smsCode,
-      );
+      // await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      //   email: information['email']!,
+      //   password: information['password']!,
+      // );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      // await FirebaseAuth.instance.signInAnonymously();
 
       String? imageUrl;
 
@@ -279,13 +246,18 @@ class _RegistrationController extends LoadingController {
         "phone": phoneNumber.phoneNumber,
         "fcmToken": await FirebaseMessaging.instance.getToken(),
         "profilePicture": imageUrl,
+        "otpCode": otpCode,
       };
 
       data.remove("confirmPassword");
 
       final res = await ApiService.getDio.post("/auth/credentials", data: data);
 
-      if (res.statusCode == 409) {
+      if (res.statusCode == 403) {
+        showToast(res.data["message"] ?? "Incorrect OTP code");
+        isLoading(false);
+        return;
+      } else if (res.statusCode == 409) {
         showGetSnackbar(
           "thisUserAlreadyExistPleaseLogin".tr,
           title: "registration".tr,
@@ -297,18 +269,14 @@ class _RegistrationController extends LoadingController {
         );
         isLoading(false);
         return;
-      }
-
-      if (res.statusCode == 500) {
+      } else if (res.statusCode == 500) {
         showGetSnackbar(
           "someThingWentWrong".tr,
           severity: Severity.error,
         );
         isLoading(false);
         return;
-      }
-
-      if (res.statusCode == 201) {
+      } else if (res.statusCode == 201) {
         final User user = User.fromMap(res.data);
 
         AppController.instance.user = user.obs;
@@ -318,18 +286,27 @@ class _RegistrationController extends LoadingController {
 
         AppNotication.currentUser = user;
 
-        Get.offAllNamed('/home');
+        if (user.isMaintenant) {
+          Get.offAllNamed("/maintenance");
+          FirebaseMessaging.instance.subscribeToTopic("maintenance-broadcast");
+        } else {
+          Get.offAllNamed("/home");
+        }
       } else {
         throw ApiServiceException(statusCode: res.statusCode);
       }
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
-        case "invalid-verification-code":
-          showGetSnackbar(
-            "incorrectVerificationCode".tr,
-            title: 'registration'.tr,
-            severity: Severity.error,
-          );
+        case "email-already-in-use":
+          showToast("This email is already used");
+          break;
+
+        case "invalid-email":
+          showToast("This email is invalid");
+          break;
+
+        case "weak-password":
+          showToast("Password too weak. Please use strong password");
           break;
 
         default:
@@ -506,7 +483,7 @@ class RegistrationScreen extends StatelessWidget {
                                           UserAccountType.roommate);
                                     },
                                     child: Icon(
-                                      !controller.isLandlord
+                                      controller.isRoommate
                                           ? Icons.check_circle_outline_outlined
                                           : Icons.circle_outlined,
                                       color: ROOMY_ORANGE,
@@ -560,7 +537,7 @@ class RegistrationScreen extends StatelessWidget {
                                   //         UserAccountType.maintainer);
                                   //   },
                                   //   child: Icon(
-                                  //     controller.isLandlord
+                                  //     controller.isMaintenant
                                   //         ? Icons.check_circle_outline_outlined
                                   //         : Icons.circle_outlined,
                                   //     color: ROOMY_ORANGE,
@@ -569,7 +546,7 @@ class RegistrationScreen extends StatelessWidget {
                                   // GestureDetector(
                                   //   onTap: () {
                                   //     controller.accountType(
-                                  //         UserAccountType.landlord);
+                                  //         UserAccountType.maintainer);
                                   //   },
                                   //   child: const Text(
                                   //     "Maintainer",
@@ -967,7 +944,14 @@ class RegistrationScreen extends StatelessWidget {
                               children: [
                                 const Icon(Icons.watch_later_outlined),
                                 const SizedBox(width: 10),
-                                Text("${controller.secondsLeft.value}s"),
+                                Obx(() {
+                                  final minutes =
+                                      controller.secondsLeft.value ~/ 60;
+                                  final seconds = controller.secondsLeft.value -
+                                      minutes * 60;
+
+                                  return Text("$minutes Mins $seconds Sec");
+                                }),
                               ],
                             ),
                             const SizedBox(height: 10),

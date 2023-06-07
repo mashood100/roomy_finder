@@ -7,20 +7,23 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
 import 'package:roomy_finder/models/chat_message.dart';
+import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:roomy_finder/models/chat_user.dart';
 
 class NotificationController {
   static ReceivedAction? initialAction;
@@ -248,6 +251,34 @@ class NotificationController {
         }
 
         break;
+      case "maintenance-offer-new":
+      case "maintenance-offer-accepted":
+      case "maintenance-offer-declined":
+      case "maintenance-offer-submit":
+      case "maintenance-offer-submit-approved":
+      case "maintenance-offer-submit-rejected":
+      case "maintenance-paid-successfully":
+        final message = msg.data["message"] ?? "New notification";
+        final title = msg.data["title"] ?? "Maintenance";
+
+        if (msg.data["event"] != null) {
+          _saveNotification(msg.data["event"], message);
+        }
+
+        if (isForeground) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: title,
+              body: message,
+              notificationLayout: NotificationLayout.BigText,
+            ),
+          );
+        }
+
+        break;
       case "withdraw-completed":
       case "withdraw-failed":
       case "stripe-connect-account-created":
@@ -353,31 +384,43 @@ class NotificationController {
     bool isForeGroundMessage,
   ) async {
     try {
-      final payload = json.decode(remoteMessage.data["payload"]);
+      final payload = remoteMessage.data;
 
-      final message = ChatMessage.fromMap(payload["message"]);
+      final message = ChatMessage.fromJson(payload["message"]);
 
+      if (!isForeGroundMessage && payload["showOnBackground"] == "FALSE") {
+        return;
+      }
+
+      // if (isForeGroundMessage) {
       if (ChatConversation.currrentChatKey ==
           "${message.recieverId}-${message.senderId}") {
         return;
       }
+
       if (!ChatConversation.homeTabIsChat) {
+        final id = Random().nextInt(1000);
         AwesomeNotifications().createNotification(
           content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "chat_channel_key",
-            groupKey: "chat_channel_group_key",
+            id: id,
+            channelKey: "notification_channel",
+            groupKey: "notification_channel_group",
             title: payload["notificationTitle"]?.toString(),
             body: message.body,
             notificationLayout: NotificationLayout.Messaging,
             payload: Map<String, String?>.from(remoteMessage.data),
-            summary: 'Chat notification',
+            largeIcon: payload["profilePicture"],
           ),
         );
+
+        ChatConversation.foregroudChatNotificationsIds.add(id);
+
+        ChatMessage.requestMarkAsRecieved(
+          message.senderId,
+          message.recieverId,
+        );
       }
-      if (!isForeGroundMessage) {
-        ChatMessage.requestMarkAsRecieved(message.senderId, message.recieverId);
-      }
+      // }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -423,6 +466,16 @@ class NotificationController {
       case "new-message":
         _handleChatMessageTappedEvents(message.data);
         break;
+      case "maintenance-request-new":
+      case "maintenance-offer-new":
+      case "maintenance-offer-accepted":
+      case "maintenance-offer-declined":
+      case "maintenance-offer-submit":
+      case "maintenance-offer-submit-approved":
+      case "maintenance-offer-submit-rejected":
+      case "maintenance-paid-successfully":
+        _handleMaintenanceTappedEvents(message.data);
+        break;
       default:
     }
   }
@@ -447,9 +500,7 @@ class NotificationController {
   static Future<void> _handleChatMessageTappedEvents(
       Map<String, dynamic> data) async {
     try {
-      final payload = json.decode(data["payload"]);
-
-      final message = ChatMessage.fromMap(payload["message"]);
+      final message = ChatMessage.fromJson(data["message"]);
 
       final other = ChatUser(id: message.senderId, createdAt: DateTime.now());
 
@@ -464,6 +515,7 @@ class NotificationController {
       if (oldConv != null) {
         conv = oldConv;
         conv.lastMessage = message;
+        conv.haveUnreadMessage = false;
       } else {
         conv = ChatConversation(other: other, lastMessage: message);
         // await conv.updateChatInfo();
@@ -545,6 +597,23 @@ class NotificationController {
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
+    }
+  }
+
+  static Future<void> _handleMaintenanceTappedEvents(
+      Map<String, dynamic> data) async {
+    try {
+      final res = await ApiService.getDio.get(
+        "/maintenances/single-maintenance?id=${data["maintenanceId"]}",
+      );
+
+      if (res.statusCode == 200) {
+        final maintenance = Maintenance.fromMap(res.data);
+
+        Get.to(() => ViewMaintenanceDetailsScreen(maintenance: maintenance));
+      }
+    } catch (e) {
+      Get.log("$e");
     }
   }
 }

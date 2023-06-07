@@ -104,8 +104,11 @@ class _PostRoommateAdController extends LoadingController {
       information["action"] = oldData!.action;
       information["budget"] = oldData!.budget.toString();
       information["description"] = oldData!.description;
-      _movingDateController.text =
-          _movingDateController.text = Jiffy(oldData!.movingDate).yMEd;
+
+      if (oldData!.movingDate != null) {
+        _movingDateController.text = _movingDateController.text =
+            Jiffy.parseFromDateTime(oldData!.movingDate!).yMEd;
+      }
       if (oldData!.movingDate != null) {
         information["movingDate"] = oldData!.movingDate?.toIso8601String();
       }
@@ -381,7 +384,7 @@ class _PostRoommateAdController extends LoadingController {
     if (date != null) {
       information["movingDate"] = date.toIso8601String();
 
-      _movingDateController.text = Jiffy(date).yMEd;
+      _movingDateController.text = Jiffy.parseFromDateTime(date).yMEd;
     }
   }
 }

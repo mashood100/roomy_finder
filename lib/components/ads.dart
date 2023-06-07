@@ -394,7 +394,7 @@ class RoommateAdWidget extends StatelessWidget {
                       ),
                       Text(
                         ad.movingDate != null
-                            ? Jiffy(ad.movingDate!).yMEd
+                            ? Jiffy.parseFromDateTime(ad.movingDate!).yMEd
                             : "N/A",
                         style: const TextStyle(
                           fontSize: 14,

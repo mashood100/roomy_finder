@@ -7,12 +7,12 @@ import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:month_year_picker/month_year_picker.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/localization/messages.dart';
+import 'package:roomy_finder/maintenance/screens/home_maintenance.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/home/home.dart';
@@ -244,9 +244,6 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      localizationsDelegates: const [
-        MonthYearPickerLocalizations.delegate,
-      ],
       getPages: [
         GetPage(
           name: "/onboarding",
@@ -283,6 +280,10 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: "/update-app",
           page: () => const UpdateAppScreen(),
+        ),
+        GetPage(
+          name: "/maintenance",
+          page: () => const MaintenanceHome(),
         ),
       ],
     );

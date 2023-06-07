@@ -10,14 +10,17 @@ import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/prompt_user_password.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:roomy_finder/screens/user/delete_account.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
@@ -353,6 +356,17 @@ class _ViewProfileController extends LoadingController {
 
     newPassword = "";
   }
+
+  Future<void> _handleDeleteAccountTapped() async {
+    final shouldContinue = await showConfirmDialog(
+      DELETE_ACCOUNT_MESSAGE,
+      title: 'Delete Account',
+    );
+
+    if (shouldContinue == true) {
+      Get.to(() => const DeleteAccountScreen());
+    }
+  }
 }
 
 class ViewProfileScreen extends StatelessWidget {
@@ -511,7 +525,7 @@ class ViewProfileScreen extends StatelessWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Label(label: "Full name", value: me.firstName),
+                                Label(label: "Full name", value: me.fullName),
                                 Label(label: "Email", value: me.email),
                                 Label(label: "Phone", value: me.phone),
                                 Label(label: "Gender", value: me.gender),
@@ -534,12 +548,29 @@ class ViewProfileScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                        )
+                        ),
+                        Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              child: Icon(
+                                Icons.person_sharp,
+                                color: Colors.red,
+                              ),
+                            ),
+                            title: const Text(
+                              "Delete Account",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            subtitle: const Text(
+                              "Total removal of personal information, ads, withdrawal of funds",
+                            ),
+                            onTap: controller._handleDeleteAccountTapped,
+                            trailing: const Icon(Icons.chevron_right),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  if (controller.isLoading.isTrue)
-                    const LinearProgressIndicator()
                 ],
               ),
               if (controller.isLoading.isTrue) const LinearProgressIndicator(),

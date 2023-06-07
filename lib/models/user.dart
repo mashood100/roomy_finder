@@ -41,6 +41,7 @@ class User {
   bool get isMe => AppController.instance.user.value.id == id;
   bool get isLandlord => type == "landlord";
   bool get isRoommate => type == "roommate";
+  bool get isMaintenant => type == "maintainer";
   bool get isGuest => this == GUEST_USER;
 
   Future<String> get formattedPhoneNumber async {

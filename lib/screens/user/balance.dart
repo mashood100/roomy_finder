@@ -283,9 +283,11 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  "Rent amount paid by tenants",
-                  style: TextStyle(
+                Text(
+                  AppController.me.isMaintenant
+                      ? "Maintenance payments by landlords"
+                      : "Rent amount paid by tenants",
+                  style: const TextStyle(
                     color: ROOMY_PURPLE,
                     fontSize: 16,
                   ),

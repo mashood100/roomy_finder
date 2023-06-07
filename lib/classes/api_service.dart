@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
 
 const _validStatus = [200, 201, 204, 400, 403, 409, 404, 406, 500, 502, 503];
 
@@ -91,68 +91,43 @@ class ApiService {
     return null;
   }
 
-  static Future<Iterable<PlaceAutoCompletePredicate>> searchPlaceAutoComplete({
-    required String input,
-    String language = "en",
-    String types = "localities",
-  }) async {
-    if (input.isEmpty) return [];
-    // final encodedCity = Uri.encodeComponent(city);
-    final encodedInput = Uri.encodeComponent(input);
+  Future<String?> getToken() async {
+    final dio = Dio();
 
-    var query = {
-      "key": GOOGLE_CLOUD_API_KEY,
-      "input": encodedInput,
-      "language": language,
-    };
+    try {
+      final res = await dio.post("$API_URL/auth/token", data: {
+        "email": AppController.instance.user.value.email,
+        "password": AppController.instance.user.value.password,
+      });
 
-    final res = await Dio().get(
-      "https://maps.googleapis.com/maps/api/place/autocomplete/json",
-      queryParameters: query,
-    );
-
-    if (res.statusCode == 200) {
-      final data = res.data;
-      if ((data["predictions"] as List).isNotEmpty) {}
-      if (data["status"] == "OK") {
-        final predicates = (data["predictions"] as List).map(
-          (e) => PlaceAutoCompletePredicate(
-            mainText: e["structured_formatting"]["main_text"],
-            secondaryText: e["structured_formatting"]["secondary_text"],
-            description: e["description"],
-            placeId: e["place_id"],
-            types: List<String>.from(e["types"]),
-          ),
-        );
-
-        return predicates;
-      } else {
-        return [];
-      }
+      if (res.statusCode == 200) return res.data['token'] as String;
+      return null;
+    } on DioException catch (e) {
+      Get.log('Dio Get Token Error : $e');
+      return null;
     }
-    return [];
   }
-}
 
-Future<String?> getToken() async {
-  final dio = Dio();
-
-  try {
-    final res = await dio.post("$API_URL/auth/token", data: {
-      "email": AppController.instance.user.value.email,
-      "password": AppController.instance.user.value.password,
-    });
-
-    if (res.statusCode == 200) return res.data['token'] as String;
-    return null;
-  } on DioError catch (e) {
-    Get.log('Dio Get Token Error : $e');
-    return null;
+  bool _validateStatus(status) {
+    if (status == null) return false;
+    if (_validStatus.contains(status)) return true;
+    return false;
   }
-}
 
-bool _validateStatus(status) {
-  if (status == null) return false;
-  if (_validStatus.contains(status)) return true;
-  return false;
+  static Future<Maintenance?> fetchMaitenance(String id) async {
+    try {
+      final res = await ApiService.getDio.get(
+        "/maintenances/single-maintenance?id=$id",
+      );
+
+      if (res.statusCode == 200) {
+        return Maintenance.fromMap(res.data);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      Get.log("$e");
+      return null;
+    }
+  }
 }

@@ -179,6 +179,24 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
               ),
             ),
+            // if (AppController.me.isLandlord)
+            //   Card(
+            //     child: ListTile(
+            //       onTap: () => Get.toNamed("/maintenance"),
+            //       leading: const CircleAvatar(
+            //         backgroundColor: Colors.transparent,
+            //         foregroundImage:
+            //             AssetImage("assets/maintenance/maintenace.png"),
+            //       ),
+            //       title: const Text('Maintenance'),
+            //       trailing: IconButton(
+            //         onPressed: () {
+            //           Get.toNamed("/maintenance");
+            //         },
+            //         icon: const Icon(Icons.chevron_right),
+            //       ),
+            //     ),
+            //   ),
             Card(
               child: ListTile(
                 onTap: () {
@@ -212,9 +230,6 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                   ),
                 ),
               ),
-            Row(
-              children: const [],
-            )
           ],
         ),
       ),

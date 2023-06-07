@@ -6,11 +6,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/place_autocomplete.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -56,8 +54,6 @@ class _PostPropertyAdController extends LoadingController {
   final amenties = <String>[].obs;
 
   PhoneNumber agentPhoneNumber = PhoneNumber();
-  CameraPosition? cameraPosition;
-  PlaceAutoCompletePredicate? autoCompletePredicate;
 
   final information = <String, Object?>{
     "type": "Bed",
@@ -132,8 +128,6 @@ class _PostPropertyAdController extends LoadingController {
       if (oldData!.agentInfo != null) {
         agentBrokerInformation(oldData!.agentInfo!);
       }
-      cameraPosition = oldData?.cameraPosition;
-      autoCompletePredicate = oldData?.autoCompletePredicate;
 
       socialPreferences(oldData!.socialPreferences);
     }
@@ -227,8 +221,6 @@ class _PostPropertyAdController extends LoadingController {
         "amenities": amenties,
         "agentInfo": agentBrokerInformation,
         "socialPreferences": socialPreferences,
-        "cameraPosition": cameraPosition?.toMap(),
-        "autoCompletePredicate": autoCompletePredicate?.toMap(),
         "needsPhotograph": needsPhotograph.value,
       };
 
@@ -317,8 +309,6 @@ class _PostPropertyAdController extends LoadingController {
         "amenities": amenties,
         "agentInfo": agentBrokerInformation,
         "socialPreferences": socialPreferences,
-        "cameraPosition": cameraPosition?.toMap(),
-        "autoCompletePredicate": autoCompletePredicate?.toMap(),
       };
 
       if (data["deposit"] != true) data.remove("depositPrice");

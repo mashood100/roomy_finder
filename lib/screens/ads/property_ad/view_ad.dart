@@ -782,11 +782,11 @@ class ViewPropertyAd extends StatelessWidget {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Text("Monthly"),
                               Text("Weekly"),
                               Text("Daily"),
@@ -897,7 +897,9 @@ class ViewPropertyAd extends StatelessWidget {
                                   color: Colors.grey,
                                 ),
                                 label: Text(
-                                  Jiffy(controller.checkIn.value).yMd,
+                                  Jiffy.parseFromDateTime(
+                                          controller.checkIn.value)
+                                      .yMd,
                                   style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
@@ -927,7 +929,9 @@ class ViewPropertyAd extends StatelessWidget {
                                   color: Colors.grey,
                                 ),
                                 label: Text(
-                                  Jiffy(controller.checkOut.value).yMd,
+                                  Jiffy.parseFromDateTime(
+                                          controller.checkOut.value)
+                                      .yMd,
                                   style: const TextStyle(color: Colors.grey),
                                 ),
                               ),

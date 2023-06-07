@@ -18,3 +18,6 @@ const shadowedBoxDecoration = BoxDecoration(
     ),
   ],
 );
+
+const DELETE_ACCOUNT_MESSAGE =
+    """By deleting your account, all your personal information and your ads will be deleted without possibility of been recovered. It's recommended that you withdraw all the money in your account before perfomming this action because we(Roomy Finder) will not refund any money to deleted accounts.""";
