@@ -117,25 +117,11 @@ class NotificationController {
           channelShowBadge: true,
           ledColor: Colors.purple,
         ),
-        NotificationChannel(
-          channelGroupKey: 'chat_channel_group_key',
-          channelKey: 'chat_channel_key',
-          channelName: 'Chat nottifications channel',
-          channelDescription:
-              'Room Finder chat notifications notification channel',
-          defaultColor: Colors.purple,
-          channelShowBadge: true,
-          ledColor: Colors.purple,
-        ),
       ],
       channelGroups: [
         NotificationChannelGroup(
           channelGroupKey: 'notification_channel_group',
           channelGroupName: 'Notification Group',
-        ),
-        NotificationChannelGroup(
-          channelGroupKey: 'chat_channel_group_key',
-          channelGroupName: 'Chat group notification',
         ),
       ],
       debug: true,
@@ -410,6 +396,7 @@ class NotificationController {
             notificationLayout: NotificationLayout.Messaging,
             payload: Map<String, String?>.from(remoteMessage.data),
             largeIcon: payload["profilePicture"],
+            summary: "Chat message",
           ),
         );
 
@@ -526,8 +513,7 @@ class NotificationController {
         ChatConversation.sortConversations();
       }
 
-      AwesomeNotifications()
-          .cancelNotificationsByChannelKey("chat_channel_group_key");
+      AwesomeNotifications().cancelAll();
 
       Get.to(
         () => FlyerChatScreen(

@@ -84,11 +84,9 @@ class ChatTabController extends LoadingController {
         }
       } else if (data["event"] == "message-recieved" ||
           data["event"] == "message-read") {
-        final payload = data["payload"];
-
         final convKey = ChatConversation.createConvsertionKey(
-          payload["recieverId"],
-          payload["senderId"],
+          data["recieverId"],
+          data["senderId"],
         );
 
         final oldConv = ChatConversation.findConversation(convKey);
@@ -204,8 +202,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
               });
               ChatConversation.sortConversations();
               controller.update();
-              AwesomeNotifications()
-                  .cancelNotificationsByChannelKey("chat_channel_group_key");
+              AwesomeNotifications().cancelAll();
             },
             leading: CircleAvatar(
               radius: 20,
@@ -338,7 +335,7 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
     controller.update();
     AppController.instance.haveNewMessage(false);
 
-    AwesomeNotifications().cancelNotificationsByChannelKey("chat_channel_key");
+    AwesomeNotifications().cancelAll();
     for (var id in ChatConversation.foregroudChatNotificationsIds) {
       AwesomeNotifications().cancel(id);
     }

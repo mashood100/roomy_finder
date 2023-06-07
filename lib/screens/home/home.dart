@@ -48,11 +48,7 @@ class HomeController extends LoadingController {
     fGBGNotifierSubScription = FGBGEvents.stream.listen((event) {
       if (event == FGBGType.foreground) {
         if (ChatConversation.homeTabIsChat = true) {
-          AwesomeNotifications()
-              .cancelNotificationsByChannelKey("chat_channel_key");
-          AwesomeNotifications().cancelNotificationsByGroupKey(
-            "chat_channel_group_key",
-          );
+          AwesomeNotifications().cancelAll();
         }
       }
     });
@@ -90,8 +86,7 @@ class HomeController extends LoadingController {
           break;
         case "new-message":
           if (currentTabIndex.value == 3) {
-            AwesomeNotifications()
-                .cancelNotificationsByChannelKey("chat_channel_group_key");
+            AwesomeNotifications().cancelAll();
           } else {
             AppController.instance.haveNewMessage(true);
           }

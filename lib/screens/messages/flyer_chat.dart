@@ -58,7 +58,9 @@ class FlyerChatScreenController extends LoadingController {
 
       final query = {"otherId": conversation.other.id};
 
-      if (lastDate != null) query["lastDate"] = lastDate.toIso8601String();
+      if (lastDate != null) {
+        query["lastDate"] = lastDate.toUtc().toIso8601String();
+      }
 
       final res = await ApiService.getDio.get(
         "/messages",
@@ -80,7 +82,8 @@ class FlyerChatScreenController extends LoadingController {
       } else {
         hasFetchError(true);
       }
-    } catch (_) {
+    } catch (e) {
+      Get.log("$e");
     } finally {
       isLoading(false);
       update();
@@ -138,9 +141,7 @@ class FlyerChatScreenController extends LoadingController {
         }
       } else if (data["event"] == "message-recieved" ||
           data["event"] == "message-read") {
-        final payload = data["payload"];
-
-        if (payload["senderId"] == conversation.me.id) {
+        if (data["senderId"] == conversation.me.id) {
           if (data["event"] == "message-recieved") {
             for (int i = 0; i < messages.length; i++) {
               if (messages[i].senderId == conversation.me.id) {
@@ -944,29 +945,7 @@ class _FlyerChatScreenState extends State<FlyerChatScreen> {
               //   ),
               // ),
               onMessageLongPress: controller._handleMessageLongpress,
-              avatarBuilder: (userId) {
-                if (userId == widget.conversation.me.id) {
-                  return CircleAvatar(
-                    radius: 20,
-                    foregroundImage:
-                        widget.conversation.other.profilePicture != null
-                            ? CachedNetworkImageProvider(
-                                widget.conversation.other.profilePicture!,
-                              )
-                            : null,
-                    child: Text(widget.conversation.other.fullName[0]),
-                  );
-                }
-                return CircleAvatar(
-                  radius: 20,
-                  foregroundImage: widget.conversation.me.profilePicture != null
-                      ? CachedNetworkImageProvider(
-                          widget.conversation.me.profilePicture!,
-                        )
-                      : null,
-                  child: Text(widget.conversation.me.fullName[0]),
-                );
-              },
+
               bubbleBuilder: (
                 child, {
                 required message,
