@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -386,19 +387,33 @@ class NotificationController {
 
       if (!ChatConversation.homeTabIsChat) {
         final id = Random().nextInt(1000);
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: id,
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: payload["notificationTitle"]?.toString(),
-            body: message.body,
-            notificationLayout: NotificationLayout.Messaging,
-            payload: Map<String, String?>.from(remoteMessage.data),
-            largeIcon: payload["profilePicture"],
-            summary: "Chat message",
-          ),
-        );
+        if (Platform.isAndroid) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: id,
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: payload["notificationTitle"]?.toString(),
+              body: message.body,
+              notificationLayout: NotificationLayout.Messaging,
+              payload: Map<String, String?>.from(remoteMessage.data),
+              largeIcon: payload["profilePicture"],
+              summary: "Chat message",
+            ),
+          );
+        } else {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: payload["notificationTitle"] ?? "New Message",
+              body: message.body,
+              notificationLayout: NotificationLayout.BigText,
+              payload: Map<String, String?>.from(remoteMessage.data),
+            ),
+          );
+        }
 
         ChatConversation.foregroudChatNotificationsIds.add(id);
 
