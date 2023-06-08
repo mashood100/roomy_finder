@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -194,7 +193,7 @@ class NotificationController {
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
         }
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -224,7 +223,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -252,7 +251,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -275,7 +274,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -299,7 +298,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -317,7 +316,7 @@ class NotificationController {
 
         if (payload == null) return;
 
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -348,7 +347,7 @@ class NotificationController {
         final payload = json.decode(msg.data["payload"]);
 
         if (payload == null) return;
-        if (isForeground && Platform.isAndroid) {
+        if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -378,10 +377,6 @@ class NotificationController {
 
       final message = ChatMessage.fromJson(payload["message"]);
 
-      if (!isForeGroundMessage && payload["showOnBackground"] == "FALSE") {
-        return;
-      }
-
       // if (isForeGroundMessage) {
       if (ChatConversation.currrentChatKey ==
           "${message.recieverId}-${message.senderId}") {
@@ -390,7 +385,7 @@ class NotificationController {
 
       if (!ChatConversation.homeTabIsChat) {
         final id = Random().nextInt(1000);
-        if (Platform.isAndroid && !isForeGroundMessage) {
+        if (isForeGroundMessage) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: id,
