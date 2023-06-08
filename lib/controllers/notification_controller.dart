@@ -194,7 +194,7 @@ class NotificationController {
         if (msg.data["event"] != null) {
           _saveNotification(msg.data["event"], message);
         }
-        if (isForeground) {
+        if (isForeground && Platform.isAndroid) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -224,7 +224,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
+        if (isForeground && Platform.isAndroid) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -252,7 +252,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
+        if (isForeground && Platform.isAndroid) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -275,7 +275,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
+        if (isForeground && Platform.isAndroid) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -299,7 +299,7 @@ class NotificationController {
           _saveNotification(msg.data["event"], message);
         }
 
-        if (isForeground) {
+        if (isForeground && Platform.isAndroid) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: Random().nextInt(1000),
@@ -317,48 +317,51 @@ class NotificationController {
 
         if (payload == null) return;
 
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: "Booking survey",
-            body: payload["message"],
-            notificationLayout: NotificationLayout.BigText,
-            payload: Map<String, String?>.from(msg.data),
-            locked: true,
-          ),
-          actionButtons: [
-            NotificationActionButton(
-              key: "yes",
-              label: "Yes",
-              actionType: ActionType.SilentBackgroundAction,
+        if (isForeground && Platform.isAndroid) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Booking survey",
+              body: payload["message"],
+              notificationLayout: NotificationLayout.BigText,
+              payload: Map<String, String?>.from(msg.data),
+              locked: true,
             ),
-            NotificationActionButton(
-              key: "no",
-              label: "No",
-              actionType: ActionType.SilentBackgroundAction,
-            ),
-          ],
-        );
+            actionButtons: [
+              NotificationActionButton(
+                key: "yes",
+                label: "Yes",
+                actionType: ActionType.SilentBackgroundAction,
+              ),
+              NotificationActionButton(
+                key: "no",
+                label: "No",
+                actionType: ActionType.SilentBackgroundAction,
+              ),
+            ],
+          );
+        }
         break;
       case "pay-cash-survey-tenant":
         final payload = json.decode(msg.data["payload"]);
 
         if (payload == null) return;
-
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: Random().nextInt(1000),
-            channelKey: "notification_channel",
-            groupKey: "notification_channel_group",
-            title: "Booking survey",
-            body: payload["message"],
-            notificationLayout: NotificationLayout.BigText,
-            payload: Map<String, String?>.from(msg.data),
-            locked: true,
-          ),
-        );
+        if (isForeground && Platform.isAndroid) {
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: Random().nextInt(1000),
+              channelKey: "notification_channel",
+              groupKey: "notification_channel_group",
+              title: "Booking survey",
+              body: payload["message"],
+              notificationLayout: NotificationLayout.BigText,
+              payload: Map<String, String?>.from(msg.data),
+              locked: true,
+            ),
+          );
+        }
         break;
 
       default:
@@ -387,7 +390,7 @@ class NotificationController {
 
       if (!ChatConversation.homeTabIsChat) {
         final id = Random().nextInt(1000);
-        if (Platform.isAndroid) {
+        if (Platform.isAndroid && !isForeGroundMessage) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: id,
@@ -399,18 +402,6 @@ class NotificationController {
               payload: Map<String, String?>.from(remoteMessage.data),
               largeIcon: payload["profilePicture"],
               summary: "Chat message",
-            ),
-          );
-        } else {
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: Random().nextInt(1000),
-              channelKey: "notification_channel",
-              groupKey: "notification_channel_group",
-              title: payload["notificationTitle"] ?? "New Message",
-              body: message.body,
-              notificationLayout: NotificationLayout.BigText,
-              payload: Map<String, String?>.from(remoteMessage.data),
             ),
           );
         }
