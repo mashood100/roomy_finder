@@ -370,22 +370,24 @@ class NotificationController {
 
   static Future<void> _messageNotificationHandler(
     RemoteMessage remoteMessage,
-    bool isForeGroundMessage,
+    bool isForeground,
   ) async {
     try {
       final payload = remoteMessage.data;
 
       final message = ChatMessage.fromJson(payload["message"]);
 
-      // if (isForeGroundMessage) {
-      if (ChatConversation.currrentChatKey ==
-          "${message.recieverId}-${message.senderId}") {
-        return;
-      }
+      if (isForeground) {
+        final key = "${message.recieverId}-${message.senderId}";
 
-      if (!ChatConversation.homeTabIsChat) {
-        final id = Random().nextInt(1000);
-        if (isForeGroundMessage) {
+        bool shouldShow = ChatConversation.currrentChatKey != key;
+        if (ChatConversation.currrentChatKey == null &&
+            ChatConversation.homeTabIsChat) {
+          shouldShow = false;
+        }
+
+        if (shouldShow) {
+          final id = Random().nextInt(1000);
           AwesomeNotifications().createNotification(
             content: NotificationContent(
               id: id,
@@ -399,16 +401,15 @@ class NotificationController {
               summary: "Chat message",
             ),
           );
+
+          ChatConversation.foregroudChatNotificationsIds.add(id);
         }
-
-        ChatConversation.foregroudChatNotificationsIds.add(id);
-
+      } else {
         ChatMessage.requestMarkAsRecieved(
           message.senderId,
           message.recieverId,
         );
       }
-      // }
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
