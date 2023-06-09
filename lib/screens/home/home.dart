@@ -86,7 +86,7 @@ class HomeController extends LoadingController {
           break;
         case "new-message":
           if (currentTabIndex.value == 3) {
-            AwesomeNotifications().cancelAll();
+            // AwesomeNotifications().cancelAll();
           } else {
             AppController.instance.haveNewMessage(true);
           }
