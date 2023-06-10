@@ -15,7 +15,7 @@ class _AboutController extends GetxController {
 
   Future<String> get _appVersion async {
     final packageInfo = await PackageInfo.fromPlatform();
-    return "${"version".tr} ${packageInfo.version}";
+    return "${"version".tr} ${packageInfo.version}+${packageInfo.buildNumber}";
   }
 
   // Future<void> _handleLinkPress(String link, {LaunchMode? mode}) async {
