@@ -56,16 +56,12 @@ class _RegistrationController extends LoadingController {
   final accountType = UserAccountType.landlord.obs;
   final _images = <CroppedFile>[].obs;
   final information = <String, String>{
-    "gender": "Male",
     "email": "",
     "firstName": "",
     "lastName": "",
     "password": "",
     "confirmPassword": "",
-    "country": allCountriesNames[0],
   };
-
-  String country = "United Arab Emirates";
 
   Timer? secondsLeftTimer;
 
@@ -593,7 +589,7 @@ class RegistrationScreen extends StatelessWidget {
                               InlineDropdown<String>(
                                 labelText: 'gender'.tr,
                                 value: controller.information["gender"],
-                                items: const ["Male", "Female"],
+                                items: const ["Male", "Female", "N/A"],
                                 onChanged: controller.isLoading.isTrue
                                     ? null
                                     : (val) {
@@ -734,7 +730,7 @@ class RegistrationScreen extends StatelessWidget {
                               InlineDropdown<String>(
                                 labelText: 'country'.tr,
                                 value: controller.information["country"],
-                                items: allCountriesNames,
+                                items: ["N/A", ...allCountriesNames],
                                 onChanged: controller.isLoading.isTrue
                                     ? null
                                     : (val) {
@@ -901,6 +897,7 @@ class RegistrationScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                              const SizedBox(height: 40),
                               // const Divider(height: 30),
                               // Center(
                               //   child: TextButton(

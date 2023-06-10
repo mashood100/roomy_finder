@@ -30,7 +30,7 @@ class _UpdateProfileController extends LoadingController {
     "email": "",
     "firstName": "",
     "lastName": "",
-    "country": allCountriesNames[0],
+    // "country": allCountriesNames[0],
   };
 
   bool get _canVerifyEmail {
@@ -163,7 +163,7 @@ class UpdateUserProfile extends StatelessWidget {
                       InlineDropdown<String>(
                         labelText: 'Gender'.tr,
                         value: controller.information["gender"] as String,
-                        items: const ["Male", "Female"],
+                        items: const ["Male", "Female", 'N/A'],
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {
@@ -271,7 +271,7 @@ class UpdateUserProfile extends StatelessWidget {
                       InlineDropdown<String>(
                         labelText: 'country'.tr,
                         value: controller.information["country"],
-                        items: allCountriesNames,
+                        items: ["N/A", ...allCountriesNames],
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {

@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 Future<bool> checkForAppUpdate() async {
   try {
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version;
+    final currentVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
     final platform = Platform.isAndroid ? "ANDROID" : "IOS";
 
     final res = await Dio().get(
