@@ -14,6 +14,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/booking/pay_property_booking.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class _ViewPropertyBookingScreenController extends LoadingController {
@@ -521,11 +522,16 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                               .map(
                                 (e) => GestureDetector(
                                   onTap: () {
-                                    showModalBottomSheet(
-                                      context: Get.context!,
-                                      builder: (context) {
-                                        return CachedNetworkImage(imageUrl: e);
-                                      },
+                                    Get.to(
+                                      () => ViewImages(
+                                        images: booking.ad.images
+                                            .map((e) =>
+                                                CachedNetworkImageProvider(e))
+                                            .toList(),
+                                        initialIndex:
+                                            booking.ad.images.indexOf(e),
+                                      ),
+                                      transition: Transition.zoom,
                                     );
                                   },
                                   child: Container(
