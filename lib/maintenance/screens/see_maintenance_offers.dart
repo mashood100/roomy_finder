@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
@@ -8,7 +11,7 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,9 +30,22 @@ class _SeeMaintenanceOffersScreenState
 
   bool _isLoading = false;
 
+  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+
   @override
   void initState() {
     super.initState();
+
+    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        final newM = await ApiService.fetchMaitenance(widget.request.id);
+
+        if (newM != null) {
+          widget.request.updateFrom(newM);
+          setState(() {});
+        }
+      }
+    });
 
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
@@ -62,6 +78,12 @@ class _SeeMaintenanceOffersScreenState
         default:
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    fGBGNotifierSubScription.cancel();
   }
 
   Maintenance get m => widget.request;
@@ -379,7 +401,7 @@ Future<void> payMentanceFee(Maintenance m, Map<String, dynamic> offer) async {
     );
 
     if (res.statusCode == 503) {
-      showToast("Service temporally unavailable");
+      showToast("$paymentMethod Service temporally unavailable");
       return;
     } else if (res.statusCode == 403) {
       showToast(res.data["message"] ?? "Something when wrong");
@@ -393,6 +415,8 @@ Future<void> payMentanceFee(Maintenance m, Map<String, dynamic> offer) async {
 
       if (await canLaunchUrl(uri)) {
         launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        showToast("Failed to open payment link. Please install a browser");
       }
 
       Get.back();

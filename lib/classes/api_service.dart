@@ -2,7 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
+import 'package:roomy_finder/models/property_ad.dart';
+import 'package:roomy_finder/models/property_booking.dart';
+import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:roomy_finder/models/user.dart';
 
 const _validStatus = [200, 201, 204, 400, 403, 409, 404, 406, 500, 502, 503];
 
@@ -127,6 +131,62 @@ class ApiService {
       }
     } catch (e) {
       Get.log("$e");
+      return null;
+    }
+  }
+
+  static Future<PropertyAd?> fetchPropertyAd(String adId) async {
+    try {
+      final res = await getDio.get("$API_URL/ads/property-ad/$adId");
+
+      if (res.statusCode == 200) return PropertyAd.fromMap(res.data);
+      return null;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      return null;
+    }
+  }
+
+  static Future<RoommateAd?> fetchRoommateAd(String adId) async {
+    try {
+      final res = await getDio.get("$API_URL/ads/roommate-ad/$adId");
+
+      if (res.statusCode == 200) return RoommateAd.fromMap(res.data);
+      return null;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      return null;
+    }
+  }
+
+  static Future<PropertyBooking?> fetchBooking(String bookingId) async {
+    try {
+      final res = await getDio.get("/bookings/property-ad/$bookingId");
+
+      if (res.statusCode == 200) {
+        return PropertyBooking.fromMap(res.data);
+      }
+      return null;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      return null;
+    }
+  }
+
+  static Future<User?> fetchUser(String userId) async {
+    try {
+      final res = await getDio.get("/profile/profile-info?userId=$userId");
+
+      if (res.statusCode == 200) {
+        return User.fromMap(res.data);
+      }
+      return null;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
       return null;
     }
   }

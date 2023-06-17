@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
 
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/maintenance/helpers/get_sub_category_icon.dart';
 import 'package:roomy_finder/models/user.dart';
 
@@ -17,11 +17,11 @@ class Maintenance {
   String status;
   DateTime date;
   Map<String, dynamic> address;
-  final String paymentMethod;
+  String paymentMethod;
   bool isPaid;
-  final String? description;
-  final List<String> images;
-  final List<String> videos;
+  String? description;
+  List<String> images;
+  List<String> videos;
   DateTime? dateOffered;
   DateTime? dateCompleted;
 
@@ -135,6 +135,26 @@ class Maintenance {
 
   factory Maintenance.fromJson(String source) =>
       Maintenance.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  void updateFrom(Maintenance other) {
+    // id= other.id;
+    landlord = other.landlord;
+    tasks = other.tasks;
+    category = other.category;
+    status = other.status;
+    date = other.date;
+    address = other.address;
+    paymentMethod = other.paymentMethod;
+    isPaid = other.isPaid;
+    description = other.description;
+    images = other.images;
+    videos = other.videos;
+    dateOffered = other.dateOffered;
+    dateCompleted = other.dateCompleted;
+    offers = other.offers;
+    submits = other.submits;
+    maintenantId = other.maintenantId;
+  }
 }
 
 class PostMaintenanceRequest {

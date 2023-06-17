@@ -453,7 +453,15 @@ class FindPropertiesAdsScreen extends StatelessWidget {
                               showToast("Please register to see ad details");
                               return;
                             }
-                            await Get.to(() => ViewPropertyAd(ad: ad));
+                            final result =
+                                await Get.to(() => ViewPropertyAd(ad: ad));
+                            if (result is Map<String, dynamic>) {
+                              final deletedId = result["deletedId"];
+                              if (deletedId != null) {
+                                controller.ads
+                                    .removeWhere((e) => e.id == deletedId);
+                              }
+                            }
                             controller.update();
                           },
                         ),

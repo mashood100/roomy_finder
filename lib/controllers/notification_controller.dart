@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -7,7 +8,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
@@ -16,8 +18,9 @@ import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
-import 'package:roomy_finder/models/chat_message.dart';
+import 'package:roomy_finder/models/maintenance.dart';
+import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
+import 'package:roomy_finder/models/chat_message_v1.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/user.dart';
@@ -191,8 +194,9 @@ class NotificationController {
         final bookingId = "${msg.data["bookingId"]}";
 
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["event"], message);
+          saveNotification(msg.data["event"], message);
         }
+
         if (isForeground) {
           AwesomeNotifications().createNotification(
             content: NotificationContent(
@@ -217,10 +221,11 @@ class NotificationController {
       case "pay-property-rent-fee-completed-client":
       case "pay-property-rent-fee-completed-landlord":
       case "pay-property-rent-fee-paid-cash":
+      case "auto-booking-approval-payment-successfully":
         final message = msg.data["message"] ?? "New notification";
 
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["event"], message);
+          saveNotification(msg.data["event"], message);
         }
 
         if (isForeground) {
@@ -248,7 +253,7 @@ class NotificationController {
         final title = msg.data["title"] ?? "Maintenance";
 
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["event"], message);
+          saveNotification(msg.data["event"], message);
         }
 
         if (isForeground) {
@@ -271,7 +276,7 @@ class NotificationController {
         final message = msg.data["message"] ?? "New notification";
 
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["event"], message);
+          saveNotification(msg.data["event"], message);
         }
 
         if (isForeground) {
@@ -295,7 +300,7 @@ class NotificationController {
         final message = msg.data["message"] ?? "new notification";
 
         if (msg.data["event"] != null) {
-          _saveNotification(msg.data["event"], message);
+          saveNotification(msg.data["event"], message);
         }
 
         if (isForeground) {
@@ -416,7 +421,7 @@ class NotificationController {
     }
   }
 
-  static Future<void> _saveNotification(String event, String message) async {
+  static Future<void> saveNotification(String event, String message) async {
     try {
       final pref = await SharedPreferences.getInstance();
 
@@ -425,9 +430,11 @@ class NotificationController {
       if (jsonUser == null) return;
       final user = User.fromJson(jsonUser);
 
-      final key = "${user.id}notifications";
+      final appDir = await getApplicationSupportDirectory();
 
-      final notifications = pref.getStringList(key) ?? [];
+      var filePath = path.join(appDir.path, "${user.id}-notifications.json");
+
+      final notifications = await getSaveNotifications(user.id);
 
       final newNot = AppNotication.fromNow(
         message: message,
@@ -435,12 +442,77 @@ class NotificationController {
         isRead: false,
       );
 
-      if (!notifications.contains(newNot.toJson())) {
-        notifications.insert(0, newNot.toJson());
+      if (!notifications.contains(newNot)) {
+        notifications.insert(0, newNot);
 
-        pref.setStringList(key, notifications);
+        final file = File(filePath);
+        file.writeAsStringSync(json.encode(notifications));
       }
-    } catch (_) {}
+
+      AppController.staticIncrementBadge("notifications");
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+    }
+  }
+
+  static Future<bool> deleteNotification(
+    String userId,
+    AppNotication notication,
+  ) async {
+    try {
+      final appDir = await getApplicationSupportDirectory();
+
+      var filePath = path.join(appDir.path, "$userId-notifications.json");
+
+      final notifications = await getSaveNotifications(userId);
+
+      notifications.remove(notication);
+
+      final file = File(filePath);
+      file.writeAsStringSync(json.encode(notifications));
+
+      return true;
+    } catch (e, trace) {
+      log(e);
+      log(trace);
+      return false;
+    }
+  }
+
+  static Future<List<AppNotication>> getSaveNotifications(String userId) async {
+    try {
+      final appDir = await getApplicationSupportDirectory();
+
+      var filePath = path.join(appDir.path, "$userId-notifications.json");
+
+      final file = File(filePath);
+
+      if (!file.existsSync()) return [];
+
+      final content = file.readAsStringSync();
+
+      final data = json.decode(content);
+
+      final notifications = (data as List)
+          .map((e) {
+            try {
+              return AppNotication.fromJson(e);
+            } catch (e, trace) {
+              log(e);
+              log(trace);
+              return null;
+            }
+          })
+          .whereType<AppNotication>()
+          .toList();
+
+      return notifications;
+    } catch (e, trace) {
+      log(e);
+      log(trace);
+      return [];
+    }
   }
 
   static Future<void> onFCMMessageOpenedAppHandler(

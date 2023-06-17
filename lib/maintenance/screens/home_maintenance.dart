@@ -1,7 +1,8 @@
 import 'dart:async';
 
+import 'package:badges/badges.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -176,16 +177,20 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
                 Card(
                   child: ListTile(
                     onTap: () => Get.to(() => const NotificationsScreen()),
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      foregroundImage:
-                          AssetImage("assets/icons/notification.png"),
-                    ),
+                    leading: Obx(() {
+                      var badge =
+                          AppController.instance.badges["notifications"];
+                      return Badge(
+                        badgeContent: Text(badge.toString()),
+                        showBadge: badge! > 0,
+                        child: const CircleAvatar(
+                          backgroundColor: Colors.transparent,
+                          foregroundImage:
+                              AssetImage("assets/icons/notification.png"),
+                        ),
+                      );
+                    }),
                     title: const Text('Notifications'),
-                    subtitle: Text(
-                      "${AppController.instance.unreadNotificationCount}"
-                      " unread notifications",
-                    ),
                     trailing: IconButton(
                       onPressed: () {
                         Get.to(() => const NotificationsScreen());

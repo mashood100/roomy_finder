@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/choose_maitenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/summary.dart';
 

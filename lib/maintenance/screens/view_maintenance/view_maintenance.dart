@@ -19,7 +19,7 @@ import 'package:roomy_finder/components/maintenance_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/maintenance/helpers/get_sub_category_icon.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/add_note_and_picture.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 

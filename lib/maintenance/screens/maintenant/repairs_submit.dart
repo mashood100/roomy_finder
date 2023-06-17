@@ -12,7 +12,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/add_note_and_picture.dart';
 
 class RepairsSubmitsScreen extends StatefulWidget {

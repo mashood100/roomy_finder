@@ -1,3 +1,4 @@
+import 'package:badges/badges.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
@@ -126,20 +127,22 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             Card(
               child: ListTile(
                 onTap: () => Get.to(() => const NotificationsScreen()),
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.transparent,
-                  foregroundImage: AssetImage("assets/icons/notification.png"),
-                ),
+                leading: Obx(() {
+                  var badge = AppController.instance.badges["notifications"];
+                  return Badge(
+                    badgeContent: Text(badge.toString()),
+                    showBadge: badge! > 0,
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      foregroundImage:
+                          AssetImage("assets/icons/notification.png"),
+                    ),
+                  );
+                }),
                 title: const Text('Notifications'),
-                subtitle: Text(
-                  "${AppController.instance.unreadNotificationCount}"
-                  " unread notifications",
-                ),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => const NotificationsScreen());
-                  },
-                  icon: const Icon(Icons.chevron_right),
+                trailing: const IconButton(
+                  onPressed: null,
+                  icon: Icon(Icons.chevron_right),
                 ),
               ),
             ),
@@ -166,16 +169,21 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             Card(
               child: ListTile(
                 onTap: () => Get.to(() => const MyBookingsCreen()),
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.transparent,
-                  foregroundImage: AssetImage("assets/icons/booking.png"),
-                ),
+                leading: Obx(() {
+                  var badge = AppController.instance.badges["bookings"];
+                  return Badge(
+                    badgeContent: Text(badge.toString()),
+                    showBadge: badge! > 0,
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      foregroundImage: AssetImage("assets/icons/booking.png"),
+                    ),
+                  );
+                }),
                 title: const Text('My Bookings'),
-                trailing: IconButton(
-                  onPressed: () {
-                    Get.to(() => const MyBookingsCreen());
-                  },
-                  icon: const Icon(Icons.chevron_right),
+                trailing: const IconButton(
+                  onPressed: null,
+                  icon: Icon(Icons.chevron_right),
                 ),
               ),
             ),
@@ -183,17 +191,22 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               Card(
                 child: ListTile(
                   onTap: () => Get.toNamed("/maintenance"),
-                  leading: const CircleAvatar(
-                    backgroundColor: Colors.transparent,
-                    foregroundImage:
-                        AssetImage("assets/maintenance/maintenace.png"),
-                  ),
+                  leading: Obx(() {
+                    var badge = AppController.instance.badges["maintenances"];
+                    return Badge(
+                      badgeContent: Text(badge.toString()),
+                      showBadge: badge! > 0,
+                      child: const CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        foregroundImage:
+                            AssetImage("assets/maintenance/maintenace.png"),
+                      ),
+                    );
+                  }),
                   title: const Text('Maintenance'),
-                  trailing: IconButton(
-                    onPressed: () {
-                      Get.toNamed("/maintenance");
-                    },
-                    icon: const Icon(Icons.chevron_right),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
                   ),
                 ),
               ),
@@ -250,15 +263,27 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
-        icon: Image.asset(
-          "assets/icons/person.png",
-          height: 30,
-          width: 30,
-          color: ROOMY_PURPLE,
-        ),
+        icon: Obx(() {
+          var maintenancesBadge = AppController.instance.badges["maintenances"];
+          var bookingsBadge = AppController.instance.badges["bookings"];
+          var notificationsBadge =
+              AppController.instance.badges["notifications"];
+
+          var sum = maintenancesBadge! + bookingsBadge! + notificationsBadge!;
+          return Badge(
+            badgeContent: Text("$sum"),
+            showBadge: sum > 0,
+            child: Image.asset(
+              "assets/icons/person.png",
+              height: 30,
+              width: 30,
+              color: ROOMY_PURPLE,
+            ),
+          );
+        }),
         isCurrent: isCurrent,
       ),
-      label: 'Account'.tr,
+      label: 'Account',
     );
   }
 

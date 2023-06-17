@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/label.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
@@ -13,10 +18,50 @@ import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 class _MyBookingsController extends LoadingController {
   final RxList<PropertyBooking> propertyBookings = <PropertyBooking>[].obs;
 
+  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+  late final StreamSubscription<RemoteMessage> fcmSubscription;
+
   @override
   void onInit() {
     _fetchData();
     super.onInit();
+
+    Future.delayed(const Duration(), () {
+      AppController.instance.resetBadge("bookings");
+    });
+
+    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchData();
+      }
+    });
+
+    fcmSubscription =
+        FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+      final data = event.data;
+
+      if (data["event"] == "new-booking") {
+        ApiService.fetchBooking(data["bookingId"].toString()).then((b) {
+          if (b != null) {
+            showToast("New booking");
+            propertyBookings.insert(0, b);
+            update();
+          }
+        });
+      } else if (data["event"] == "booking-cancelled") {
+        final id = data["bookingId"].toString();
+        propertyBookings.removeWhere((e) => e.id == id);
+        showToast("One booking cancelled");
+        update();
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    fGBGNotifierSubScription.cancel();
+    fcmSubscription.cancel();
   }
 
   Future<void> _fetchData({bool isReFresh = true}) async {
@@ -61,46 +106,37 @@ class MyBookingsCreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(_MyBookingsController());
-    return RefreshIndicator(
-      onRefresh: controller._fetchData,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("My Bookings"),
-          backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-          actions: [
-            Obx(() {
-              return IconButton(
-                onPressed:
-                    controller.isLoading.isTrue ? null : controller._fetchData,
-                icon: const Icon(Icons.refresh),
-              );
-            })
-          ],
-        ),
-        body: Obx(() {
-          if (controller.isLoading.isTrue) {
-            return const Center(child: CupertinoActivityIndicator());
-          }
-          if (controller.hasFetchError.isTrue) {
-            return Center(
-              child: Column(
-                children: [
-                  const Text("Failed to fetch data"),
-                  OutlinedButton(
-                    onPressed: controller._fetchData,
-                    child: const Text("Refresh"),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return GetBuilder<_MyBookingsController>(builder: (controller) {
-            if (controller.propertyBookings.isEmpty) {
+    return WillPopScope(
+      onWillPop: () async {
+        AppController.instance.resetBadge("bookings");
+        return true;
+      },
+      child: RefreshIndicator(
+        onRefresh: controller._fetchData,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("My Bookings"),
+            backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+            actions: [
+              Obx(() {
+                return IconButton(
+                  onPressed: controller.isLoading.isTrue
+                      ? null
+                      : controller._fetchData,
+                  icon: const Icon(Icons.refresh),
+                );
+              })
+            ],
+          ),
+          body: Obx(() {
+            if (controller.isLoading.isTrue) {
+              return const Center(child: CupertinoActivityIndicator());
+            }
+            if (controller.hasFetchError.isTrue) {
               return Center(
                 child: Column(
                   children: [
-                    const Text("No data."),
+                    const Text("Failed to fetch data"),
                     OutlinedButton(
                       onPressed: controller._fetchData,
                       child: const Text("Refresh"),
@@ -109,87 +145,122 @@ class MyBookingsCreen extends StatelessWidget {
                 ),
               );
             }
-            return ListView.separated(
-              itemBuilder: (context, index) {
-                final booking = controller.propertyBookings[index];
 
-                return GestureDetector(
-                  onTap: () async {
-                    await Get.to(
-                      () => ViewPropertyBookingScreen(booking: booking),
-                    );
-                    controller.update();
-                  },
-                  child: Card(
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: booking.ad.images.isEmpty
-                              ? Image.asset(
-                                  "assets/images/default_room.png",
-                                  height: 120,
-                                  width: 140,
-                                  fit: BoxFit.cover,
-                                )
-                              : CachedNetworkImage(
-                                  imageUrl: booking.ad.images[0],
-                                  height: 120,
-                                  width: 140,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Label(
-                                label: "Property : ",
-                                value: "${booking.quantity} ${booking.ad.type}"
-                                    "${booking.quantity > 1 ? "s" : ""}",
-                                boldValue: true,
-                              ),
-                              Label(
-                                label: "Location : ",
-                                value: "${booking.ad.address["location"]}",
-                                boldValue: true,
-                              ),
-                              Label(
-                                label: "Status     : ",
-                                value: booking.isPayed
-                                    ? "Paid"
-                                    : booking.capitaliezedStatus,
-                                boldValue: true,
-                                valueColor: booking.isPayed || booking.isOffered
-                                    ? Colors.green
-                                    : booking.isPending
-                                        ? Colors.blue
-                                        : Colors.red,
-                              ),
-                              Label(
-                                label: "Date  : ",
-                                value:
-                                    Jiffy.parseFromDateTime(booking.createdAt)
-                                        .yMMMEdjm,
-                                fontSize: 12,
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
+            return GetBuilder<_MyBookingsController>(builder: (controller) {
+              if (controller.propertyBookings.isEmpty) {
+                return Center(
+                  child: Column(
+                    children: [
+                      const Text("No data."),
+                      OutlinedButton(
+                        onPressed: controller._fetchData,
+                        child: const Text("Refresh"),
+                      ),
+                    ],
                   ),
                 );
-              },
-              itemCount: controller.propertyBookings.length,
-              separatorBuilder: (BuildContext context, int index) {
-                return const Divider();
-              },
-            );
-          });
-        }),
+              }
+              return ListView.separated(
+                itemBuilder: (context, index) {
+                  final booking = controller.propertyBookings[index];
+
+                  return _BookingCard(
+                    booking: booking,
+                    onTap: () async {
+                      await Get.to(
+                        () => ViewPropertyBookingScreen(booking: booking),
+                      );
+
+                      if (booking.status == "declined") {
+                        controller.propertyBookings.remove(booking);
+                      }
+                      controller.update();
+                    },
+                  );
+                },
+                itemCount: controller.propertyBookings.length,
+                separatorBuilder: (BuildContext context, int index) {
+                  return const Divider();
+                },
+              );
+            });
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  const _BookingCard({
+    required this.booking,
+    this.onTap,
+  });
+
+  final PropertyBooking booking;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: booking.ad.images.isEmpty
+                  ? Image.asset(
+                      "assets/images/default_room.png",
+                      height: 120,
+                      width: 140,
+                      fit: BoxFit.cover,
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: booking.ad.images[0],
+                      height: 120,
+                      width: 140,
+                      fit: BoxFit.cover,
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Label(
+                    label: "Property : ",
+                    value: "${booking.quantity} ${booking.ad.type}"
+                        "${booking.quantity > 1 ? "s" : ""}",
+                    boldValue: true,
+                  ),
+                  Label(
+                    label: "Location : ",
+                    value: "${booking.ad.address["location"]}",
+                    boldValue: true,
+                  ),
+                  Label(
+                    label: "Status     : ",
+                    value:
+                        booking.isPayed ? "Paid" : booking.capitaliezedStatus,
+                    boldValue: true,
+                    valueColor: booking.isPayed || booking.isOffered
+                        ? Colors.green
+                        : booking.isPending
+                            ? Colors.blue
+                            : Colors.red,
+                  ),
+                  Label(
+                    label: "Date  : ",
+                    value: Jiffy.parseFromDateTime(booking.createdAt).yMMMEdjm,
+                    fontSize: 12,
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

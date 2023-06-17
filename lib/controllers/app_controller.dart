@@ -1,16 +1,21 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_locale.dart';
 import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/app_version.dart';
 import 'package:roomy_finder/models/country.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:roomy_finder/models/user.dart';
 
 class AppController extends GetxController {
@@ -33,8 +38,6 @@ class AppController extends GetxController {
 
   String? userPassword;
 
-  final RxBool haveNewMessage = false.obs;
-  final RxInt unreadNotificationCount = 0.obs;
   final country = Country.UAE.obs;
 
   static AppVersion? updateVersion;
@@ -81,6 +84,9 @@ class AppController extends GetxController {
 
     // PushNotifications
     allowPushNotifications = (await getAllowPushNotifications()).obs;
+
+    // Badges
+    _initializeBages();
   }
 
   // API key
@@ -301,6 +307,110 @@ class AppController extends GetxController {
 
     // Any time the token refreshes, store this in the database too.
     FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
+  }
+
+  // ************ Notification badges ****************** //
+
+  static const _basicBadges = {
+    "bookings": 0,
+    "notifications": 0,
+    "messages": 0,
+    "maintenances": 0,
+  };
+
+  RxMap<String, int> badges = _basicBadges.obs;
+
+  void incrementBadge(String key, [int value = 1, bool increment = false]) {
+    if (!badges.containsKey(key)) return;
+
+    badges({...badges, key: badges[key]! + value});
+
+    saveBadges(badges, increment);
+  }
+
+  void resetBadge(String key) {
+    if (!badges.containsKey(key)) return;
+
+    badges({...badges, key: 0});
+
+    saveBadges(badges);
+  }
+
+  static Future<void> staticIncrementBadge(
+    String key, [
+    int value = 1,
+  ]) async {
+    final appDir = await getApplicationSupportDirectory();
+
+    final file = File(path.join(appDir.path, "badges.json"));
+
+    final Map<String, int> data;
+
+    if (!file.existsSync()) {
+      file.createSync();
+
+      data = _basicBadges;
+    } else {
+      final oldBages = await getSaveBadges();
+
+      data = {..._basicBadges, ...?oldBages};
+    }
+
+    saveBadges(data);
+  }
+
+  static Future<void> saveBadges(
+    Map<String, int> badges, [
+    bool? increment,
+  ]) async {
+    try {
+      final appDir = await getApplicationSupportDirectory();
+
+      final file = File(path.join(appDir.path, "badges.json"));
+
+      if (!file.existsSync()) file.createSync();
+
+      if (increment == true) {
+        final oldBages = await getSaveBadges();
+        if (oldBages != null) {
+          badges = badges.map((key, value) {
+            if (oldBages.containsKey(key)) value += oldBages[key]!;
+
+            return MapEntry(key, value);
+          });
+        }
+      }
+
+      file.writeAsStringSync(json.encode({..._basicBadges, ...badges}));
+    } catch (e) {
+      log(e);
+    }
+  }
+
+  static Future<Map<String, int>?> getSaveBadges() async {
+    try {
+      final appDir = await getApplicationSupportDirectory();
+
+      final file = File(path.join(appDir.path, "badges.json"));
+
+      if (!file.existsSync()) return null;
+
+      final content = await file.readAsString();
+
+      var map = Map<String, int>.from(json.decode(content));
+      // print("Saved Badges : $map");
+      return map;
+    } catch (e) {
+      log(e);
+
+      return null;
+    }
+  }
+
+  void _initializeBages() {
+    getSaveBadges().then((value) {
+      if (value != null) badges(value);
+    });
   }
 }
 

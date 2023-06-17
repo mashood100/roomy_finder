@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/components/maintenance_button.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/add_location.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:time_picker_spinner/time_picker_spinner.dart';

@@ -15,7 +15,7 @@ import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/models/chat_message.dart';
+import 'package:roomy_finder/models/chat_message_v1.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/screens/messages/flyer_chat.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -162,123 +162,163 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ChatTabController());
-    return GetBuilder<ChatTabController>(builder: (context) {
-      if (controller.hasError.isTrue) {
-        return Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              const Text("Failed to load chats"),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () =>
-                    controller._fetchConversations(isRefresh: true),
-                child: const Text("Reload"),
-              ),
-              const Spacer(),
-            ],
-          ),
-        );
-      }
-      if (controller.conversations.isEmpty) {
-        return const Center(child: Text("No Chat for now"));
-      }
 
-      return ListView.builder(
-        itemBuilder: (context, index) {
-          final conv = controller.conversations[index];
-
-          return ListTile(
-            contentPadding: const EdgeInsets.only(left: 10, right: 10),
-            onTap: () async {
-              conv.haveUnreadMessage = false;
-              await Get.to(() {
-                return FlyerChatScreen(
-                  conversation: conv,
-                  myId: AppController.me.id,
-                  otherId: conv.other.id,
-                );
-              });
-              ChatConversation.sortConversations();
-              controller.update();
-              AwesomeNotifications().cancelAll();
-            },
-            leading: CircleAvatar(
-              radius: 20,
-              foregroundImage: conv.other.profilePicture != null
-                  ? CachedNetworkImageProvider(conv.other.profilePicture!)
-                  : null,
-              child: Text(conv.other.fullName[0].toUpperCase()),
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return RefreshIndicator(
+      onRefresh: () async {
+        await controller._fetchConversations(isRefresh: true);
+      },
+      child: GetBuilder<ChatTabController>(builder: (context) {
+        if (controller.hasError.isTrue) {
+          return Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  conv.other.fullName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                const Spacer(),
+                const Text("Failed to load chats"),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: controller.isLoading.isTrue
+                      ? null
+                      : () => controller._fetchConversations(isRefresh: true),
+                  label: const Text("Reload"),
+                  icon: Builder(builder: (context) {
+                    if (controller.isLoading.isTrue) {
+                      return const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CupertinoActivityIndicator(),
+                      );
+                    }
+                    return const Icon(Icons.refresh);
+                  }),
                 ),
-                if (conv.lastMessage != null)
-                  Text(
-                    relativeTimeText(conv.lastMessage!.createdAt,
-                        fromNow: false),
-                    style: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
+                const Spacer(),
               ],
             ),
-            subtitle: Builder(
-              builder: (context) {
-                final msg = conv.lastMessage;
+          );
+        }
+        if (controller.conversations.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text("No Chat for now"),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: controller.isLoading.isTrue
+                      ? null
+                      : () => controller._fetchConversations(isRefresh: true),
+                  label: const Text("Reload"),
+                  icon: Builder(builder: (context) {
+                    if (controller.isLoading.isTrue) {
+                      return const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CupertinoActivityIndicator(),
+                      );
+                    }
+                    return const Icon(Icons.refresh);
+                  }),
+                ),
+              ],
+            ),
+          );
+        }
 
-                if (msg == null) return const SizedBox();
+        return ListView.builder(
+          itemBuilder: (context, index) {
+            final conv = controller.conversations[index];
 
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        msg.body ?? "",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            return ListTile(
+              contentPadding: const EdgeInsets.only(left: 10, right: 10),
+              onTap: () async {
+                conv.haveUnreadMessage = false;
+                await Get.to(() {
+                  return FlyerChatScreen(
+                    conversation: conv,
+                    myId: AppController.me.id,
+                    otherId: conv.other.id,
+                  );
+                });
+                ChatConversation.sortConversations();
+                controller.update();
+                AwesomeNotifications().cancelAll();
+              },
+              leading: CircleAvatar(
+                radius: 20,
+                foregroundImage: conv.other.profilePicture != null
+                    ? CachedNetworkImageProvider(conv.other.profilePicture!)
+                    : null,
+                child: Text(conv.other.fullName[0].toUpperCase()),
+              ),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    conv.other.fullName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (conv.lastMessage != null)
+                    Text(
+                      relativeTimeText(conv.lastMessage!.createdAt,
+                          fromNow: false),
+                      style: const TextStyle(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                        color: Colors.grey,
                       ),
                     ),
-                    if (msg.isMine && !msg.isRecieved)
-                      const Icon(
-                        Icons.done,
-                        color: Colors.grey,
-                        size: 16,
-                      )
-                    else if (msg.isMine)
-                      Icon(
-                        Icons.done_all_outlined,
-                        color: msg.isRead ? Colors.blue : Colors.grey,
-                        size: 16,
-                      )
-                    else if (conv.haveUnreadMessage)
-                      const Icon(
-                        Icons.circle,
-                        color: Colors.blue,
-                        size: 16,
-                      )
-                  ],
-                );
-              },
-            ),
-            // trailing: SizedBox(
-            //   width: 40,
-            //   child: IconButton(
-            //     onPressed: () {},
-            //     icon: const Icon(CupertinoIcons.ellipsis_vertical),
-            //   ),
-            // ),
-          );
-        },
-        itemCount: controller.conversations.length,
-      );
-    });
+                ],
+              ),
+              subtitle: Builder(
+                builder: (context) {
+                  final msg = conv.lastMessage;
+
+                  if (msg == null) return const SizedBox();
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          msg.body ?? "",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (msg.isMine && !msg.isRecieved)
+                        const Icon(
+                          Icons.done,
+                          color: Colors.grey,
+                          size: 16,
+                        )
+                      else if (msg.isMine)
+                        Icon(
+                          Icons.done_all_outlined,
+                          color: msg.isRead ? Colors.blue : Colors.grey,
+                          size: 16,
+                        )
+                      else if (conv.haveUnreadMessage)
+                        const Icon(
+                          Icons.circle,
+                          color: Colors.blue,
+                          size: 16,
+                        )
+                    ],
+                  );
+                },
+              ),
+              // trailing: SizedBox(
+              //   width: 40,
+              //   child: IconButton(
+              //     onPressed: () {},
+              //     icon: const Icon(CupertinoIcons.ellipsis_vertical),
+              //   ),
+              // ),
+            );
+          },
+          itemCount: controller.conversations.length,
+        );
+      }),
+    );
   }
 
   @override
@@ -288,22 +328,22 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
       title: const Text('Chats'),
       centerTitle: false,
       elevation: 0,
-      actions: [
-        GetBuilder<ChatTabController>(builder: (controller) {
-          if (controller.isLoading.isTrue) {
-            return const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CupertinoActivityIndicator(
-                color: Colors.white,
-              ),
-            );
-          }
-          return IconButton(
-            onPressed: controller._fetchConversations,
-            icon: const Icon(Icons.refresh),
-          );
-        })
-      ],
+      // actions: [
+      //   GetBuilder<ChatTabController>(builder: (controller) {
+      //     if (controller.isLoading.isTrue) {
+      //       return const Padding(
+      //         padding: EdgeInsets.all(8.0),
+      //         child: CupertinoActivityIndicator(
+      //           color: Colors.white,
+      //         ),
+      //       );
+      //     }
+      //     return IconButton(
+      //       onPressed: controller._fetchConversations,
+      //       icon: const Icon(Icons.refresh),
+      //     );
+      //   })
+      // ],
     );
   }
 
@@ -311,18 +351,22 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
-        icon: Badge(
-          showBadge: AppController.instance.haveNewMessage.isTrue,
-          child: Image.asset(
-            "assets/icons/chat.png",
-            height: 30,
-            width: 30,
-            color: ROOMY_PURPLE,
-          ),
-        ),
+        icon: Obx(() {
+          var badge = AppController.instance.badges["messages"];
+          return Badge(
+            badgeContent: Text(badge.toString()),
+            showBadge: badge! > 0,
+            child: Image.asset(
+              "assets/icons/chat.png",
+              height: 30,
+              width: 30,
+              color: ROOMY_PURPLE,
+            ),
+          );
+        }),
         isCurrent: isCurrent,
       ),
-      label: 'Chats'.tr,
+      label: 'Chats',
     );
   }
 
@@ -332,12 +376,13 @@ class MessagesTab extends StatelessWidget implements HomeScreenSupportable {
   @override
   void onIndexSelected(int index) {
     final controller = Get.put(ChatTabController());
-    controller.update();
-    AppController.instance.haveNewMessage(false);
+
+    AppController.instance.resetBadge("messages");
 
     AwesomeNotifications().cancelAll();
     for (var id in ChatConversation.foregroudChatNotificationsIds) {
       AwesomeNotifications().cancel(id);
     }
+    controller.update();
   }
 }

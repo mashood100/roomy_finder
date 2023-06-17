@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:roomy_finder/models/property_ad.dart';
@@ -37,6 +38,8 @@ class PropertyBooking {
   bool get isMine => poster.isMe;
   bool get isOffered => status == 'offered';
   bool get isPending => status == 'pending';
+  bool get isCancelled => status == 'cancelled';
+  bool get isDeclined => status == 'declined';
 
   /// The price of the ad with to the renttype choosen
   num get adPricePerRentype {
@@ -195,5 +198,21 @@ class PropertyBooking {
   @override
   int get hashCode {
     return id.hashCode;
+  }
+
+  void updateFrom(PropertyBooking other) {
+    // id= other.id;
+    ad = other.ad;
+    poster = other.poster;
+    client = other.client;
+    quantity = other.quantity;
+    status = other.status;
+    checkIn = other.checkIn;
+    checkOut = other.checkOut;
+    rentType = other.rentType;
+    isPayed = other.isPayed;
+    createdAt = other.createdAt;
+    paymentService = other.paymentService;
+    transactionId = other.transactionId;
   }
 }

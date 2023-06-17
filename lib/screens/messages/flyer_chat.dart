@@ -28,7 +28,7 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/chat_message.dart';
+import 'package:roomy_finder/models/chat_message_v1.dart';
 import 'package:roomy_finder/models/chat_user.dart';
 
 class FlyerChatScreenController extends LoadingController {
@@ -110,7 +110,7 @@ class FlyerChatScreenController extends LoadingController {
     });
 
     FirebaseMessaging.onMessage.asBroadcastStream().listen((remoteMessage) {
-      AppController.instance.haveNewMessage(false);
+      AppController.instance.resetBadge("messages");
 
       final data = remoteMessage.data;
 

@@ -71,7 +71,10 @@ class HomeController extends LoadingController {
 
     super.onInit();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+    FirebaseMessaging.instance.subscribeToTopic("new-property-ad");
+    FirebaseMessaging.instance.subscribeToTopic("new-roommate-ad");
+
+    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
       // AppController.instance.haveNewMessage(false);
       switch (data["event"]) {
@@ -88,10 +91,35 @@ class HomeController extends LoadingController {
           if (currentTabIndex.value == 3) {
             // AwesomeNotifications().cancelAll();
           } else {
-            AppController.instance.haveNewMessage(true);
+            AppController.instance.incrementBadge("messages");
           }
 
           break;
+
+        case "new-booking":
+        case "booking-offered":
+        case "booking-declined":
+        case "booking-cancelled":
+        case "pay-property-rent-fee-completed-client":
+        case "pay-property-rent-fee-completed-landlord":
+        case "pay-property-rent-fee-paid-cash":
+          AppController.instance.incrementBadge("bookings");
+          break;
+
+        case '':
+          AppController.instance.incrementBadge("maintenances");
+          break;
+
+        case "maintenance-offer-new":
+        case "maintenance-offer-accepted":
+        case "maintenance-offer-declined":
+        case "maintenance-offer-submit":
+        case "maintenance-offer-submit-approved":
+        case "maintenance-offer-submit-rejected":
+        case "maintenance-paid-successfully":
+          AppController.instance.incrementBadge("maintenances");
+          break;
+
         default:
       }
     });
@@ -100,8 +128,8 @@ class HomeController extends LoadingController {
   @override
   void onClose() {
     if (_popTimer != null) _popTimer!.cancel();
-    fGBGNotifierSubScription.cancel();
     super.onClose();
+    fGBGNotifierSubScription.cancel();
   }
 
   // Initial Remote message handler

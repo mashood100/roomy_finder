@@ -5,7 +5,7 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/maintenance.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/view_maintenance/view_maintenance.dart';
 
 class FindMaintenancesScreen extends StatefulWidget {

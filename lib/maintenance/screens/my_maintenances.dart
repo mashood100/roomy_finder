@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/maintenance.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/maintenant/repairs_submit.dart';
 import 'package:roomy_finder/maintenance/screens/see_maintenance_offers.dart';
 import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
@@ -52,6 +53,10 @@ class _MyMaintenancesScreenState extends State<MyMaintenancesScreen> {
   void initState() {
     _fetchData();
     super.initState();
+
+    Future.delayed(const Duration(), () {
+      AppController.instance.resetBadge("maintenances");
+    });
 
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;

@@ -1,11 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:roomy_finder/models/user.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-
-import 'package:roomy_finder/controllers/app_controller.dart';
 
 class AppNotication {
   final String id;
@@ -67,45 +63,6 @@ class AppNotication {
   @override
   int get hashCode {
     return id.hashCode;
-  }
-
-  static Future<List<AppNotication>> getSavedNotifications() async {
-    try {
-      final notifications = <AppNotication>[];
-
-      final pref = await SharedPreferences.getInstance();
-
-      final key = "${AppController.me.id}notifications";
-
-      final notificationsJson = pref.getStringList(key) ?? [];
-
-      for (final n in notificationsJson) {
-        notifications.add(AppNotication.fromJson(n));
-      }
-
-      return notifications;
-    } catch (e) {
-      debugPrint('$e');
-      return [];
-    }
-  }
-
-  static Future<bool> deleteNotifications(AppNotication notication) async {
-    try {
-      final pref = await SharedPreferences.getInstance();
-
-      final key = "${AppController.me.id}notifications";
-
-      var notificationsJson = pref.getStringList(key) ?? [];
-
-      notificationsJson.remove(notication.toJson());
-
-      pref.setStringList(key, notificationsJson);
-      return true;
-    } catch (e) {
-      debugPrint('$e');
-      return false;
-    }
   }
 
   // User to be user fo saving notification

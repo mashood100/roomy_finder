@@ -5,15 +5,19 @@ import 'package:get/get.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/models/chat_message_v1.dart';
-import 'package:roomy_finder/models/chat_user.dart';
+import 'package:roomy_finder/models/chat_message_v2.dart';
+import 'package:roomy_finder/models/user.dart';
 
-class ChatConversation {
-  final ChatUser other;
-  ChatMessage? lastMessage;
-  ChatConversation({required this.other, this.lastMessage});
+class ChatConversationV2 {
+  final User other;
+  ChatMessageV2? lastMessage;
 
-  ChatUser get me => AppController.me.chatUser;
+  ChatConversationV2({
+    required this.other,
+    this.lastMessage,
+  });
+
+  User get me => AppController.me;
   static bool homeTabIsChat = false;
   static String? currrentChatKey;
   static void Function()? currrentChatOnTapCallBack;
@@ -41,54 +45,27 @@ class ChatConversation {
     }
   }
 
-  static String createConvsertionKey(String myId, String friendId) {
-    return "$myId-$friendId";
-  }
+  static List<ChatConversationV2> conversations = [];
 
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'other': other.toMap(),
-      'lastMessage': lastMessage!.toMap(),
-    };
-  }
-
-  factory ChatConversation.fromMap(Map<String, dynamic> map) {
-    return ChatConversation(
-      other: ChatUser.fromMap(map['other'] as Map<String, dynamic>),
-      lastMessage: map['lastMessage'] != null
-          ? ChatMessage.fromMap(map['lastMessage'] as Map<String, dynamic>)
-          : null,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory ChatConversation.fromJson(String source) =>
-      ChatConversation.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  void updateLastMessage(ChatMessage message) => lastMessage = message;
-
-  static List<ChatConversation> conversations = [];
-
-  static void addConversation(ChatConversation conversation) {
+  static void addConversation(ChatConversationV2 conversation) {
     if (!conversations.contains(conversation)) {
       conversations.insert(0, conversation);
     }
   }
 
-  static void addAllConversations(List<ChatConversation> conversations) {
+  static void addAllConversations(List<ChatConversationV2> conversations) {
     for (var conv in conversations) {
-      if (!ChatConversation.conversations.contains(conv)) {
-        ChatConversation.conversations.insert(0, conv);
+      if (!ChatConversationV2.conversations.contains(conv)) {
+        ChatConversationV2.conversations.insert(0, conv);
       }
     }
   }
 
-  static void removeConversation(ChatConversation conversation) {
+  static void removeConversation(ChatConversationV2 conversation) {
     conversations.remove(conversation);
   }
 
-  static ChatConversation? findConversation(String key) {
+  static ChatConversationV2? findConversation(String key) {
     return conversations.firstWhereOrNull((c) => c.key == key);
   }
 
@@ -102,7 +79,7 @@ class ChatConversation {
   }
 
   @override
-  bool operator ==(covariant ChatConversation other) {
+  bool operator ==(covariant ChatConversationV2 other) {
     if (identical(this, other)) return true;
 
     return this.other == other.other && other.lastMessage == lastMessage;
@@ -110,4 +87,25 @@ class ChatConversation {
 
   @override
   int get hashCode => other.hashCode ^ lastMessage.hashCode;
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'other': other.toMap(),
+      'lastMessage': lastMessage?.toMap(),
+    };
+  }
+
+  factory ChatConversationV2.fromMap(Map<String, dynamic> map) {
+    return ChatConversationV2(
+      other: User.fromMap(map['other'] as Map<String, dynamic>),
+      lastMessage: map['lastMessage'] != null
+          ? ChatMessageV2.fromMap(map['lastMessage'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory ChatConversationV2.fromJson(String source) =>
+      ChatConversationV2.fromMap(json.decode(source) as Map<String, dynamic>);
 }

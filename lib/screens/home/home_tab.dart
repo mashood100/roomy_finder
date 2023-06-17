@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
+
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
@@ -18,10 +24,9 @@ import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
+// import 'package:roomy_finder/screens/test/home.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class _HomeTabController extends LoadingController {
   final _targetAds = "Room".obs;
@@ -33,31 +38,57 @@ class _HomeTabController extends LoadingController {
 
   final canSeeDetails = AppController.me.isPremium.obs;
 
+  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+
   @override
   void onInit() {
     super.onInit();
 
     _fetchHommeAds();
 
+    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchHommeAds();
+      }
+    });
+
     FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
       switch (data["event"]) {
-        case "plan-upgraded-successfully":
-          AppController.instance.user.update((val) {
-            if (val == null) return;
-            val.isPremium = true;
-          });
-          final pref = await SharedPreferences.getInstance();
-          if (pref.get("user") != null) {
-            AppController.instance.saveUser();
+        case "new-property-ad":
+          final adId = data["adId"];
+
+          final ad = await ApiService.fetchPropertyAd(adId);
+
+          if (ad != null) {
+            _homePropertyAds.insert(0, ad);
+            showToast("New property posted");
+            update();
           }
-          showToast("Plan upgraded successfully");
+
+          break;
+        case "new-roommate-ad":
+          final adId = data["adId"];
+
+          final ad = await ApiService.fetchRoommateAd(adId);
+
+          if (ad != null) {
+            _homeRoommateAds.insert(0, ad);
+            update();
+            showToast("New roommate posted");
+          }
 
           break;
         default:
       }
     });
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    fGBGNotifierSubScription.cancel();
   }
 
   Future<void> _fetchHommeAds() async {
@@ -614,6 +645,12 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
       ),
 
       actions: [
+        // IconButton(
+        //   onPressed: () {
+        //     Get.to(() => const TestHomeScreen());
+        //   },
+        //   icon: const Icon(Icons.access_alarm),
+        // ),
         Builder(builder: (context) {
           return IconButton(
             onPressed: () async {

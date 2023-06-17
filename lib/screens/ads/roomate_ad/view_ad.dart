@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -20,7 +19,7 @@ import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
-import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/screens/test/chat_room.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -50,11 +49,9 @@ class _ViewRoommateAdController extends LoadingController {
 
       if (res.statusCode == 204) {
         isLoading(false);
-        await showConfirmDialog(
-          "Ad deleted successfully. You will never"
-          " see it again after you leave this screen",
-          isAlert: true,
-        );
+        await showConfirmDialog("Ad deleted successfully.", isAlert: true);
+        Get.back(result: {"deletedId": ad.id});
+
         deleteManyFilesFromUrl(ad.images);
         deleteManyFilesFromUrl(ad.videos);
       } else if (res.statusCode == 404) {
@@ -92,14 +89,7 @@ class _ViewRoommateAdController extends LoadingController {
   }
 
   Future<void> chatWithUser() async {
-    final conv = ChatConversation(other: ad.poster.chatUser);
-    Get.to(
-      () => FlyerChatScreen(
-        conversation: conv,
-        myId: AppController.me.id,
-        otherId: ad.poster.id,
-      ),
-    );
+    moveToChatRoom(Get.context!, ad.poster);
   }
 
   void _viewImage(String source) {

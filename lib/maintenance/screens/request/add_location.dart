@@ -5,7 +5,7 @@ import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/maintenance_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/city_location.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/confirmation.dart';
 
 class AddLocationScreen extends StatefulWidget {
