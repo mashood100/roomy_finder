@@ -18,10 +18,13 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           const Spacer(flex: 3),
           Center(
-            child: Image.asset(
-              "assets/images/logo.png",
-              height: 150,
-              width: 150,
+            child: Hero(
+              tag: "logo",
+              child: Image.asset(
+                "assets/images/logo.png",
+                height: 120,
+                width: 120,
+              ),
             ),
           ),
           const Text(
@@ -63,7 +66,6 @@ class WelcomeScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 50),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(

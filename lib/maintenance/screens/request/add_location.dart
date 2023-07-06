@@ -120,9 +120,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Appartment number
+                // Apartment number
                 InlineTextField(
-                  labelText: "Appartment number",
+                  labelText: "Apartment number",
                   enabled: !_isLoading,
                   initialValue: address["appartmentNumber"],
                   onChanged: (value) {

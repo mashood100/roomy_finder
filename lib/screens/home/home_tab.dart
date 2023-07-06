@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -24,7 +22,6 @@ import 'package:roomy_finder/screens/ads/property_ad/find_properties.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
-// import 'package:roomy_finder/screens/test/home.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -38,7 +35,7 @@ class _HomeTabController extends LoadingController {
 
   final canSeeDetails = AppController.me.isPremium.obs;
 
-  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
 
   @override
   void onInit() {
@@ -46,41 +43,9 @@ class _HomeTabController extends LoadingController {
 
     _fetchHommeAds();
 
-    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
         _fetchHommeAds();
-      }
-    });
-
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
-      final data = event.data;
-
-      switch (data["event"]) {
-        case "new-property-ad":
-          final adId = data["adId"];
-
-          final ad = await ApiService.fetchPropertyAd(adId);
-
-          if (ad != null) {
-            _homePropertyAds.insert(0, ad);
-            showToast("New property posted");
-            update();
-          }
-
-          break;
-        case "new-roommate-ad":
-          final adId = data["adId"];
-
-          final ad = await ApiService.fetchRoommateAd(adId);
-
-          if (ad != null) {
-            _homeRoommateAds.insert(0, ad);
-            update();
-            showToast("New roommate posted");
-          }
-
-          break;
-        default:
       }
     });
   }
@@ -88,7 +53,7 @@ class _HomeTabController extends LoadingController {
   @override
   void onClose() {
     super.onClose();
-    fGBGNotifierSubScription.cancel();
+    _fGBGNotifierSubScription.cancel();
   }
 
   Future<void> _fetchHommeAds() async {
@@ -97,7 +62,7 @@ class _HomeTabController extends LoadingController {
       _failedToLoadHomeAds(false);
 
       final res = await Dio().get(
-        "$API_URL/ads/recomended",
+        "$API_URL/ads/recommended",
         queryParameters: {
           "countryCode": AppController.instance.country.value.code,
         },
@@ -147,6 +112,7 @@ class _HomeTabController extends LoadingController {
   }
 
   List<PropertyAd> get _firstRowPropertyAds {
+    // final half = _homePropertyAds.length ~/ 2;
     if (_homePropertyAds.length <= 6) {
       return _homePropertyAds;
     } else {
@@ -415,12 +381,28 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: List.generate(6, (index) {
-                          return const Card(
+                          return Card(
                             child: SizedBox(
                               width: 150,
                               height: 200,
-                              child: CupertinoActivityIndicator(
-                                radius: 30,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.grey.withOpacity(0.5),
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  Text(
+                                    "...",
+                                    style: TextStyle(
+                                      color: Colors.grey.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -645,12 +627,6 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
       ),
 
       actions: [
-        // IconButton(
-        //   onPressed: () {
-        //     Get.to(() => const TestHomeScreen());
-        //   },
-        //   icon: const Icon(Icons.access_alarm),
-        // ),
         Builder(builder: (context) {
           return IconButton(
             onPressed: () async {
@@ -705,4 +681,26 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   void onIndexSelected(int index) {}
+
+  Future<void> onNewAd(String adType, String adId) async {
+    final controller = Get.put(_HomeTabController());
+
+    if (adType == "new-property-ad") {
+      final ad = await ApiService.fetchPropertyAd(adId);
+
+      if (ad != null) {
+        controller._homePropertyAds.insert(0, ad);
+        showToast("New property posted");
+        controller.update();
+      }
+    } else if (adType == "new-roommate-ad") {
+      final ad = await ApiService.fetchRoommateAd(adId);
+
+      if (ad != null) {
+        controller._homeRoommateAds.insert(0, ad);
+        controller.update();
+        showToast("New roommate posted");
+      }
+    }
+  }
 }

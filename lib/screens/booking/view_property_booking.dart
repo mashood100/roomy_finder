@@ -7,9 +7,9 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/components/alert.dart';
 import 'package:roomy_finder/components/label.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
@@ -17,7 +17,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/booking/pay_property_booking.dart';
-import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -26,14 +26,16 @@ class _ViewPropertyBookingScreenController extends LoadingController {
 
   _ViewPropertyBookingScreenController(this.booking);
 
-  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
-  late final StreamSubscription<RemoteMessage> fcmSubscription;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+  late final StreamSubscription<RemoteMessage> fcmStream;
 
   @override
   void onInit() {
     super.onInit();
 
-    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+    if (booking.isMine) _markBookingAsViewed();
+
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
         final b = await ApiService.fetchBooking(booking.id);
 
@@ -44,7 +46,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
       }
     });
 
-    fcmSubscription =
+    fcmStream =
         FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
       final id = data["bookingId"];
@@ -101,11 +103,11 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   @override
   void onClose() {
     super.onClose();
-    fcmSubscription.cancel();
-    fGBGNotifierSubScription.cancel();
+    fcmStream.cancel();
+    _fGBGNotifierSubScription.cancel();
   }
 
-  Future<void> acceptBooking(PropertyBooking booking) async {
+  Future<void> acceptBooking() async {
     final shouldContinue = await showConfirmDialog("Accept request?");
     if (shouldContinue != true) return;
     try {
@@ -140,7 +142,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
     }
   }
 
-  Future<void> declineBooking(PropertyBooking booking) async {
+  Future<void> declineBooking() async {
     final shouldContinue = await showConfirmDialog(
       "Decline request?",
     );
@@ -181,7 +183,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
     }
   }
 
-  Future<void> cancelBooking(PropertyBooking booking) async {
+  Future<void> cancelBooking() async {
     final shouldContinue = await showConfirmDialog(
       "Please confirm",
     );
@@ -221,32 +223,34 @@ class _ViewPropertyBookingScreenController extends LoadingController {
     }
   }
 
-  Future<void> payRent(PropertyBooking booking) async {
+  Future<void> payRent() async {
     await Get.to(() => PayProperyBookingScreen(booking: booking));
 
     update();
   }
 
-  Future<void> chatWithClient(PropertyBooking booking) async {
-    final conv = ChatConversation(other: booking.client.chatUser);
-    Get.to(() {
-      return FlyerChatScreen(
-        conversation: conv,
-        myId: AppController.me.id,
-        otherId: booking.client.id,
+  Future<void> _markBookingAsViewed() async {
+    try {
+      if (booking.isViewedByLandlord) return;
+
+      final res = await ApiService.getDio.get(
+        "/bookings/property-ad/${booking.id}/mark-booking-as-view",
       );
-    });
+
+      if (res.statusCode == 200) {
+        booking.isViewedByLandlord = true;
+      }
+    } catch (e) {
+      Get.log("$e");
+    }
   }
 
-  Future<void> chatWithLandlord(PropertyBooking booking) async {
-    final conv = ChatConversation(other: booking.poster.chatUser);
-    Get.to(() {
-      return FlyerChatScreen(
-        conversation: conv,
-        myId: AppController.me.id,
-        otherId: booking.client.id,
-      );
-    });
+  Future<void> chatWithClient() async {
+    moveToChatRoom(AppController.me, booking.client, booking: booking);
+  }
+
+  Future<void> chatWithLandlord() async {
+    moveToChatRoom(AppController.me, booking.poster, booking: booking);
   }
 }
 
@@ -260,7 +264,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('View booking'),
-        backgroundColor: ROOMY_ORANGE,
+        backgroundColor: ROOMY_PURPLE,
       ),
       body: Obx(() {
         return Stack(
@@ -379,7 +383,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       "${booking.ad.address['buildingName']}",
                                 ),
                                 Label(
-                                  label: "Appartment number",
+                                  label: "Apartment number",
                                   value:
                                       "${booking.ad.address['appartmentNumber']}",
                                 ),
@@ -424,10 +428,10 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                         label: "Email",
                                         value: booking.poster.email,
                                       ),
-                                      Label(
-                                        label: "Phone",
-                                        value: booking.poster.phone,
-                                      ),
+                                      // Label(
+                                      //   label: "Phone",
+                                      //   value: booking.poster.phone,
+                                      // ),
                                       Label(
                                         label: "Gender",
                                         value: booking.poster.gender,
@@ -487,9 +491,9 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                   Label(
                                       label: "Email",
                                       value: booking.client.email),
-                                  Label(
-                                      label: "Phone",
-                                      value: booking.client.phone),
+                                  // Label(
+                                  //     label: "Phone",
+                                  //     value: booking.client.phone),
                                   Label(
                                       label: "Gender",
                                       value: booking.client.gender),
@@ -506,9 +510,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                   backgroundColor: Colors.red),
                               onPressed: controller.isLoading.isTrue
                                   ? null
-                                  : () {
-                                      controller.cancelBooking(booking);
-                                    },
+                                  : controller.cancelBooking,
                               child: const Text(
                                 "Cancel booking",
                                 style: TextStyle(color: Colors.white),
@@ -525,8 +527,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       backgroundColor: Colors.red),
                                   onPressed: controller.isLoading.isTrue
                                       ? null
-                                      : () =>
-                                          controller.declineBooking(booking),
+                                      : controller.declineBooking,
                                   child: const Text(
                                     "Decline",
                                     style: TextStyle(color: Colors.white),
@@ -541,7 +542,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       backgroundColor: Colors.green),
                                   onPressed: controller.isLoading.isTrue
                                       ? null
-                                      : () => controller.acceptBooking(booking),
+                                      : controller.acceptBooking,
                                   child: const Text(
                                     "Accept",
                                     style: TextStyle(color: Colors.white),
@@ -566,9 +567,9 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                   ? null
                                   : () {
                                       if (booking.isMine) {
-                                        controller.chatWithClient(booking);
+                                        controller.chatWithClient();
                                       } else {
-                                        controller.chatWithLandlord(booking);
+                                        controller.chatWithLandlord();
                                       }
                                     },
                               child: booking.isMine
@@ -598,7 +599,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                               ),
                               onPressed: controller.isLoading.isTrue
                                   ? null
-                                  : () => controller.payRent(booking),
+                                  : controller.payRent,
                               child: const Text(
                                 "Pay rent",
                                 style: TextStyle(color: Colors.white),
@@ -639,26 +640,10 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(5),
-                                      child: CachedNetworkImage(
-                                        imageUrl: e,
+                                      child: LoadingProgressImage(
+                                        image: CachedNetworkImageProvider(e),
                                         width: double.infinity,
                                         fit: BoxFit.cover,
-                                        errorWidget: (ctx, e, trace) {
-                                          return const SizedBox(
-                                            width: double.infinity,
-                                            height: 150,
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              size: 50,
-                                            ),
-                                          );
-                                        },
-                                        progressIndicatorBuilder:
-                                            (context, url, downloadProgress) {
-                                          return CircularProgressIndicator(
-                                            value: downloadProgress.progress,
-                                          );
-                                        },
                                       ),
                                     ),
                                   ),

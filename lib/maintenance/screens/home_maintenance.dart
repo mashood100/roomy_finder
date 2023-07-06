@@ -4,13 +4,14 @@ import 'package:badges/badges.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/maintenance/screens/find_maintenances.dart';
 import 'package:roomy_finder/maintenance/screens/maintenant/my_offers.dart';
 import 'package:roomy_finder/maintenance/screens/my_maintenances.dart';
 import 'package:roomy_finder/maintenance/screens/request/request_maintenance.dart';
-import 'package:roomy_finder/screens/messages/view_notifications.dart';
+import 'package:roomy_finder/screens/utility_screens/view_notifications.dart';
 import 'package:roomy_finder/screens/user/balance.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
 
@@ -51,7 +52,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
           );
         });
     if (shouldLogout == true) {
-      AppController.instance.logout();
+      await AppController.instance.logout();
       Get.offAllNamed('/login');
     }
   }
@@ -179,10 +180,10 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
                     onTap: () => Get.to(() => const NotificationsScreen()),
                     leading: Obx(() {
                       var badge =
-                          AppController.instance.badges["notifications"];
+                          AppNotification.unReadNotificationsCount.value;
                       return Badge(
                         badgeContent: Text(badge.toString()),
-                        showBadge: badge! > 0,
+                        showBadge: badge > 0,
                         child: const CircleAvatar(
                           backgroundColor: Colors.transparent,
                           foregroundImage:

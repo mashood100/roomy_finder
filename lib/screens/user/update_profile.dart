@@ -121,7 +121,7 @@ class _UpdateProfileController extends LoadingController {
 
         showToast("Info updated successlly");
         _emailVerificationCode = "";
-        AppController.instance.saveUser();
+        AppController.saveUser(AppController.me);
       } else {
         showToast("Update failed");
       }

@@ -51,6 +51,22 @@ class PropertyAd {
     }
   }
 
+  bool get autoApprovalIsActivated {
+    if (autoApproval == null) return false;
+
+    final date = DateTime.tryParse("${autoApproval?["expireAt"]}");
+
+    if (date == null) return false;
+
+    if (DateTime.now().isAfter(date)) return false;
+
+    return true;
+  }
+
+  bool get autoApprovalIsEnabled {
+    return autoApprovalIsActivated && autoApproval?["enabled"] == true;
+  }
+
   List<String> get technologyAmenities {
     return amenities.where((e) {
       return ["WIFI", "TV"].contains(e);

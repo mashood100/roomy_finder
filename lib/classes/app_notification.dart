@@ -1,26 +1,31 @@
 import 'dart:convert';
 
-import 'package:roomy_finder/models/user.dart';
+import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
-class AppNotication {
+class AppNotification {
   final String id;
   final String message;
   final String event;
+  final String? title;
   final DateTime createdAt;
   final bool isRead;
 
-  AppNotication({
+  static final unReadNotificationsCount = 0.obs;
+
+  AppNotification({
     required this.id,
     required this.message,
     required this.event,
+    this.title,
     required this.createdAt,
     required this.isRead,
   });
 
-  AppNotication.fromNow({
+  AppNotification.fromNow({
     required this.message,
     required this.event,
+    this.title,
     required this.isRead,
   })  : createdAt = DateTime.now(),
         id = const Uuid().v4();
@@ -29,16 +34,18 @@ class AppNotication {
     return <String, dynamic>{
       'id': id,
       'message': message,
+      'title': title,
       'event': event,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'isRead': isRead,
     };
   }
 
-  factory AppNotication.fromMap(Map<String, dynamic> map) {
-    return AppNotication(
+  factory AppNotification.fromMap(Map<String, dynamic> map) {
+    return AppNotification(
       id: map['id'] as String,
       message: map['message'] as String,
+      title: map['title'] as String?,
       event: map['event'] as String,
       isRead: map['isRead'] == true,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
@@ -47,15 +54,16 @@ class AppNotication {
 
   String toJson() => json.encode(toMap());
 
-  factory AppNotication.fromJson(String source) =>
-      AppNotication.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory AppNotification.fromJson(String source) =>
+      AppNotification.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() =>
-      'AppNotication(message: $message, event: $event, createdAt: $createdAt)';
+  String toString() {
+    return 'AppNotication(message: $message, event: $event, createdAt: $createdAt)';
+  }
 
   @override
-  bool operator ==(covariant AppNotication other) {
+  bool operator ==(covariant AppNotification other) {
     if (identical(this, other)) return true;
     return other.id == id;
   }
@@ -64,7 +72,4 @@ class AppNotication {
   int get hashCode {
     return id.hashCode;
   }
-
-  // User to be user fo saving notification
-  static User? currentUser;
 }

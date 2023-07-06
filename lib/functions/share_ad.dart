@@ -5,12 +5,14 @@ import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:roomy_finder/utilities/data.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<Uri> _createShareChanceLink(ad) async {
   final String title;
   final String description;
-  final String? imageUrl;
+  final String imageUrl =
+      ad.images.isNotEmpty ? ad.images[0] : DEFAULT_ROOM_FIREBASE_LINK;
   final String adId;
   final String adType;
 
@@ -18,13 +20,11 @@ Future<Uri> _createShareChanceLink(ad) async {
     title = "${ad.type} for rent. ${formatMoney(ad.prefferedRentDisplayPrice)}";
     description = "${ad.quantity} ${ad.type}${ad.quantity > 1 ? 's' : ''} "
         "in ${ad.address["city"]}, ${ad.address["location"]}";
-    imageUrl = ad.images.isNotEmpty ? ad.images[0] : null;
     adId = ad.id;
     adType = "property-ad";
   } else if (ad is RoommateAd) {
     title = "${ad.action}. Budget : ${formatMoney(ad.budget)}";
     description = "${ad.address["city"]}, ${ad.address["location"]}";
-    imageUrl = ad.images.isNotEmpty ? ad.images[0] : null;
     adId = ad.id;
     adType = "roommate-ad";
   } else {
@@ -37,7 +37,7 @@ Future<Uri> _createShareChanceLink(ad) async {
     androidParameters: AndroidParameters(packageName: packageInfo.packageName),
     iosParameters: IOSParameters(bundleId: packageInfo.packageName),
     socialMetaTagParameters: SocialMetaTagParameters(
-      imageUrl: imageUrl != null ? Uri.parse(imageUrl) : null,
+      imageUrl: Uri.parse(imageUrl),
       title: title,
       description: description,
     ),

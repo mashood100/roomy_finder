@@ -20,4 +20,83 @@ const shadowedBoxDecoration = BoxDecoration(
 );
 
 const DELETE_ACCOUNT_MESSAGE =
-    """By deleting your account, all your personal information and your ads will be deleted without possibility of been recovered. It's recommended that you withdraw all the money in your account before perfomming this action because we(Roomy Finder) will not refund any money to deleted accounts.""";
+    "By deleting your account, all your personal information"
+    " and your ads will be deleted without possibility of been"
+    " recovered. It's recommended that you withdraw all the money "
+    "in your account before perfomming this action because "
+    "we(Roomy Finder) will not refund any money to deleted accounts.";
+
+final urlRegex = RegExp(
+  r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
+);
+
+final roomyFinderDynamicLinkDomainRegex1 = RegExp(
+  r"(https?:\/\/(.+?\.)?((roomyfinder.page.link)|(roomyfinder.com))(\/[A-Za-z0-9\-\._~:\/\?#\[\]@!$&'\(\)\*\+,;\=]*)?)",
+  multiLine: true,
+);
+
+const DEFAULT_ROOM_FIREBASE_LINK =
+    "https://firebasestorage.googleapis.com/v0/b/"
+    "roomy-finder.appspot.com/o/files%2Fdefault_room.png?"
+    "alt=media&token=bea37726-a601-40e1-a734-b8ab2c663331";
+
+const DOCUMENT_EXTENSIONS = [
+  '.doc',
+  '.docx',
+  '.odt',
+  '.rtf',
+  '.txt',
+  '.wpd',
+  '.wps',
+  '.pdf',
+  '.xps',
+  '.djvu',
+  '.epub',
+  '.mobi',
+  '.fb2',
+  '.xls',
+  '.xlsx',
+  '.ods',
+  '.csv',
+  '.tsv',
+  '.numbers',
+  '.pages',
+  '.ppt',
+  '.pptx',
+  '.odp',
+  '.key',
+  '.impress',
+  '.html',
+  '.htm',
+  '.xml',
+  '.xhtml',
+  '.php',
+  '.asp',
+  '.aspx',
+  '.css',
+  '.js',
+  '.json',
+];
+
+const OTHER_EXTENSIONS = [
+  '.zip',
+  '.rar',
+  '.tar',
+  '.gz',
+  '.7z',
+  '.iso',
+  '.bin',
+  '.exe',
+  '.msi',
+  '.jar',
+  '.deb',
+  '.rpm',
+  '.pkg',
+  '.apk',
+  '.sh',
+  '.bat',
+  '.cmd',
+  '.ps1',
+  '.vbs',
+  '.bat',
+];

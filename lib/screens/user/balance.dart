@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +25,8 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
   var _isLoading = false;
   String? stripeConnectId;
 
+  late final StreamSubscription<RemoteMessage> fcmStream;
+
   // Account balance
   num _amountToWithDraw = 0;
   String? withdrawMethod;
@@ -41,7 +45,7 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
   void initState() {
     fetchAccountDetails();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+    fcmStream = FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
       final data = event.data;
       // AppController.instance.haveNewMessage(false);
       switch (data["event"]) {
@@ -59,6 +63,7 @@ class _UserBalanceScreenState extends State<UserBalanceScreen> {
   @override
   void dispose() {
     _paypalEmailController.dispose();
+    fcmStream.cancel();
     super.dispose();
   }
 

@@ -186,19 +186,23 @@ class PayProperyBookingScreen extends StatelessWidget {
                             )}",
                             fontSize: 16,
                           ),
-                          Label(
-                            label: "Service fee",
-                            value: "(3%)  ${formatMoney(
-                              booking.calculateFee(0.03) *
-                                  AppController.convertionRate,
-                            )}",
-                            fontSize: 16,
-                          ),
                           Builder(builder: (context) {
+                            final serviceFee = AppController.me.serviceFee ?? 3;
+                            return Label(
+                              label: "Service fee",
+                              value: "($serviceFee%)  ${formatMoney(
+                                booking.calculateFee(serviceFee / 100) *
+                                    AppController.convertionRate,
+                              )}",
+                              fontSize: 16,
+                            );
+                          }),
+                          Builder(builder: (context) {
+                            final serviceFee = AppController.me.serviceFee ?? 3;
                             var total = booking.rentFee +
                                 booking.commissionFee +
                                 booking.vatFee +
-                                booking.calculateFee(0.03);
+                                booking.calculateFee(serviceFee / 100);
                             if (booking.ad.deposit) {
                               total +=
                                   booking.ad.depositPrice! * booking.quantity;

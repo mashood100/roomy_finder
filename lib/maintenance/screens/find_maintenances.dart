@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/maintenance.dart';
@@ -19,6 +22,9 @@ class _FindMaintenancesScreenState extends State<FindMaintenancesScreen> {
   bool _isLoading = false;
 
   final _maintenances = <Maintenance>[];
+
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+  late final StreamSubscription<RemoteMessage> fcmStream;
 
   Future<void> _fetchData() async {
     try {
@@ -59,7 +65,14 @@ class _FindMaintenancesScreenState extends State<FindMaintenancesScreen> {
     _fetchData();
     super.initState();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchData();
+      }
+    });
+
+    fcmStream =
+        FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
       switch (data["event"]) {
         case "maintenance-request-new":
@@ -74,6 +87,13 @@ class _FindMaintenancesScreenState extends State<FindMaintenancesScreen> {
         default:
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _fGBGNotifierSubScription.cancel();
+    fcmStream.cancel();
   }
 
   @override

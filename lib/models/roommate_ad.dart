@@ -6,7 +6,7 @@ import 'package:roomy_finder/models/user.dart';
 class RoommateAd {
   String id;
   User poster; // The user who poster the ad
-  String type; // "Studio", "Appartment", "House"
+  String type; // "Studio", "Apartment", "House"
   String rentType; // Monthly, Weekly, Daily
   String action; // "NEED ROOM", "HAVE ROOM"
   num budget;

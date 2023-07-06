@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'dart:io';
 
+import "package:path/path.dart" as path;
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -11,14 +13,16 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:pinput/pinput.dart';
+import 'package:roomy_finder/functions/third_parties_providers.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
@@ -26,13 +30,10 @@ import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:uuid/uuid.dart';
-import "package:path/path.dart" as path;
 
 class _RegistrationController extends LoadingController {
   final _formkeyCredentials = GlobalKey<FormState>();
 
-  final _isVerifyingPhone = false.obs;
   final _isVerifiyingEmail = false.obs;
 
   late final PageController _pageController;
@@ -53,7 +54,7 @@ class _RegistrationController extends LoadingController {
   bool get isMaintenant => accountType.value == UserAccountType.maintainer;
 
   // Information
-  final accountType = UserAccountType.landlord.obs;
+  final accountType = UserAccountType.none.obs;
   final _images = <CroppedFile>[].obs;
   final information = <String, String>{
     "email": "",
@@ -156,7 +157,7 @@ class _RegistrationController extends LoadingController {
 
   Future<void> sendSmsCode() async {
     try {
-      _isVerifyingPhone(true);
+      isLoading(true);
       resetSmsTimer();
       secondsLeft(59 * 10);
       _piniputController.clear();
@@ -177,7 +178,7 @@ class _RegistrationController extends LoadingController {
       Get.log("$trace");
       showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
     } finally {
-      _isVerifyingPhone(false);
+      isLoading(false);
     }
   }
 
@@ -210,7 +211,7 @@ class _RegistrationController extends LoadingController {
     );
   }
 
-  Future<void> saveCredentials(String otpCode) async {
+  Future<void> _saveCredentials(String otpCode) async {
     try {
       isLoading(true);
 
@@ -228,7 +229,8 @@ class _RegistrationController extends LoadingController {
             .ref()
             .child('images')
             .child("propile-pictures")
-            .child('/${const Uuid().v4()}${path.extension(_images[0].path)}');
+            .child(
+                '/${createDateTimeFileName()}${path.extension(_images[0].path)}');
 
         final uploadTask =
             imgRef.putData(await File(_images[0].path).readAsBytes());
@@ -251,7 +253,6 @@ class _RegistrationController extends LoadingController {
 
       if (res.statusCode == 403) {
         showToast(res.data["message"] ?? "Incorrect OTP code");
-        isLoading(false);
         return;
       } else if (res.statusCode == 409) {
         showGetSnackbar(
@@ -263,14 +264,12 @@ class _RegistrationController extends LoadingController {
             onPressed: () => Get.offAndToNamed("/login"),
           ),
         );
-        isLoading(false);
         return;
       } else if (res.statusCode == 500) {
         showGetSnackbar(
           "someThingWentWrong".tr,
           severity: Severity.error,
         );
-        isLoading(false);
         return;
       } else if (res.statusCode == 201) {
         final User user = User.fromMap(res.data);
@@ -280,7 +279,8 @@ class _RegistrationController extends LoadingController {
         AppController.instance.userPassword = information["password"];
         AppController.setupFCMTokenHandler();
 
-        AppNotication.currentUser = user;
+        await FirebaseAuth.instance
+            .signInWithCustomToken(res.data["firebaseToken"]);
 
         if (user.isMaintenant) {
           Get.offAllNamed("/maintenance");
@@ -323,7 +323,7 @@ class _RegistrationController extends LoadingController {
     }
   }
 
-  Future<bool> validateCredentials() async {
+  Future<bool> _validateCredentials() async {
     try {
       if (_formkeyCredentials.currentState?.validate() != true) return false;
 
@@ -343,17 +343,17 @@ class _RegistrationController extends LoadingController {
       }
       isLoading(true);
 
-      final exist = await ApiService.checkIfUserExist(information["email"]!);
+      // final exist = await ApiService.checkIfUserExist(information["email"]!);
 
-      if (exist) {
-        showGetSnackbar(
-          "This email address already have an account. Please login instead".tr,
-          title: "registration".tr,
-          severity: Severity.warning,
-        );
-        isLoading(false);
-        return false;
-      }
+      // if (exist) {
+      //   showGetSnackbar(
+      //     "This email address already have an account. Please login instead".tr,
+      //     title: "registration".tr,
+      //     severity: Severity.warning,
+      //   );
+      //   isLoading(false);
+      //   return false;
+      // }
 
       return true;
     } catch (e, trace) {
@@ -364,6 +364,48 @@ class _RegistrationController extends LoadingController {
     } finally {
       isLoading(false);
     }
+  }
+
+  Future<bool> _validateFisrtPage() async {
+    if (!_emailIsVerified) {
+      showToast("Please verify email");
+      return false;
+    }
+
+    if (accountType.value == UserAccountType.none) {
+      showToast("Please choose an account type");
+      return false;
+    }
+    if (acceptTermsAndConditions.isFalse) {
+      showToast("Please read and accept terms & conditions");
+      return false;
+    }
+    if (acceptLandlordPolicy.isFalse && isLandlord) {
+      showToast("Please read and accept landlord policies");
+      return false;
+    }
+
+    try {
+      isLoading(true);
+
+      final exist = await ApiService.checkIfUserExist(information["email"]!);
+
+      if (exist) {
+        showGetSnackbar(
+          "This email address already have an account. Please login instead".tr,
+          title: "registration".tr,
+          severity: Severity.warning,
+        );
+        return false;
+      }
+    } catch (e) {
+      showToast("Validation failed. Please check your connexion and try again");
+      Get.log("$e");
+    } finally {
+      isLoading(false);
+    }
+
+    return true;
   }
 
   Future<void> _pickProfilePicture({bool gallery = true}) async {
@@ -412,6 +454,120 @@ class _RegistrationController extends LoadingController {
       isLoading(false);
     }
   }
+
+  Future<void> _registerWithProvider(String provider) async {
+    try {
+      if (accountType.value == UserAccountType.none) {
+        showToast("Please choose an account type");
+        return;
+      }
+
+      if (acceptTermsAndConditions.isFalse) {
+        showToast("Please read and accept terms & conditions");
+        return;
+      }
+      if (acceptLandlordPolicy.isFalse && isLandlord) {
+        showToast("Please read and accept landlord policies");
+        return;
+      }
+      isLoading(true);
+
+      final UserCredential cred;
+
+      switch (provider) {
+        case "google.com":
+          cred = await ThirdPartyProvider.signInWithGoogle(true);
+
+          break;
+        case "apple.com":
+          cred = await ThirdPartyProvider.signInWithApple(true);
+
+          break;
+        // case "facebook.com":
+        //   cred = await ThirdPartyProvider.signInWithFacebook(true);
+
+        //   break;
+        default:
+          return;
+      }
+
+      final user = cred.user;
+
+      if (user != null) {
+        if (user.email == null) {
+          var message = "Can't sign up with this provider."
+              " Email address isn't available.";
+
+          showToast(message);
+          return;
+        }
+
+        var fullName = user.displayName!;
+
+        String firstName = fullName.split(" ")[0];
+        String lastName = "N/A";
+
+        if (fullName.split(" ").length > 1) lastName = fullName.split(" ")[1];
+
+        final data = {
+          "type": accountType.value.name,
+          "email": user.email!,
+          "phone": user.phoneNumber,
+          "firstName": firstName,
+          "lastName": lastName,
+          "profilePicture": user.photoURL,
+          "fcmToken": await FirebaseMessaging.instance.getToken(),
+          "userToken": await user.getIdToken(),
+          "authProvider": provider,
+        };
+        // print(data);
+        final res = await ApiService.getDio.post(
+          "/auth/registration-third-party",
+          data: data,
+        );
+
+        if (res.statusCode == 403) {
+          showToast(res.data["message"] ?? "Unauthorised registration");
+          return;
+        } else if (res.statusCode == 409) {
+          showGetSnackbar(
+            res.data["message"] ?? "This user already exist. Please login",
+            title: "registration".tr,
+            severity: Severity.warning,
+          );
+          return;
+        } else if (res.statusCode == 500) {
+          showToast("Something went wrong. Please try again later".tr);
+          return;
+        } else if (res.statusCode == 201) {
+          final User user = User.fromMap(res.data);
+
+          AppController.instance.user = user.obs;
+          AppController.instance.setIsFirstStart(false);
+          AppController.instance.userPassword = res.data["password"];
+          AppController.setupFCMTokenHandler();
+
+          if (user.isMaintenant) {
+            Get.offAllNamed("/maintenance");
+            FirebaseMessaging.instance
+                .subscribeToTopic("maintenance-broadcast");
+          } else {
+            Get.offAllNamed("/home");
+          }
+        } else {
+          showToast("Operation failed with status code ${res.statusCode}".tr);
+        }
+      } else {
+        showToast("Failed to sign up with provider. User not found".tr);
+      }
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      showToast("Failed to sign up with provider");
+    } finally {
+      isLoading(false);
+    }
+  }
 }
 
 class RegistrationScreen extends StatelessWidget {
@@ -451,16 +607,265 @@ class RegistrationScreen extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(
-                    left: 10,
-                    top: 30,
-                    right: 10,
-                    bottom: 60,
-                  ),
+                      left: 10, top: 30, right: 10, bottom: 60),
                   child: PageView(
                     controller: controller._pageController,
                     onPageChanged: (index) => controller._pageIndex(index),
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
+                      SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            // Choose Account type
+                            const Text("Please choose your account type"),
+                            const SizedBox(height: 20),
+                            // Account type
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                (
+                                  label: "Roommate",
+                                  value: UserAccountType.roommate
+                                ),
+                                (
+                                  label: "Landlord",
+                                  value: UserAccountType.landlord
+                                ),
+                                // (
+                                //   label: "Maintenant",
+                                //   value: UserAccountType.maintainer
+                                // ),
+                              ].map((e) {
+                                return GestureDetector(
+                                  onTap: controller.isLoading.isTrue
+                                      ? null
+                                      : () {
+                                          controller.accountType(e.value);
+                                        },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        controller.accountType.value == e.value
+                                            ? Icons
+                                                .check_circle_outline_outlined
+                                            : Icons.circle_outlined,
+                                        color: ROOMY_ORANGE,
+                                      ),
+                                      Text(
+                                        e.label,
+                                        style: const TextStyle(
+                                          color: ROOMY_PURPLE,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const Divider(height: 50),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InlineTextField(
+                                    labelWidth: 0,
+                                    // labelText: 'email'.tr,
+                                    hintText: "Enter your email address",
+                                    initialValue:
+                                        controller.information["email"],
+                                    enabled: controller.isLoading.isFalse &&
+                                        !controller._emailIsVerified,
+                                    onChanged: (value) {
+                                      controller.information["email"] =
+                                          value.toLowerCase();
+                                      controller._emailVerificationCode = "";
+                                      controller.update();
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'thisFieldIsRequired'.tr;
+                                      }
+                                      if (!value.isEmail) {
+                                        return 'invalidEmail'.tr;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                GetBuilder<_RegistrationController>(
+                                    builder: (controller) {
+                                  final color = controller._emailIsVerified
+                                      ? Colors.green
+                                      : !controller._canVerifyEmail
+                                          ? Colors.grey
+                                          : ROOMY_ORANGE;
+                                  return ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: color,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      side: BorderSide(color: color),
+                                    ),
+                                    onPressed: !controller._canVerifyEmail
+                                        ? null
+                                        : controller._verifyEmail,
+                                    child: controller._isVerifiyingEmail.isTrue
+                                        ? const CupertinoActivityIndicator()
+                                        : Text(
+                                            controller._emailIsVerified
+                                                ? "Verified"
+                                                : "Verify",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  );
+                                })
+                              ],
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            const Row(children: [
+                              Expanded(child: Divider()),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text("Or sign up with"),
+                              ),
+                              Expanded(child: Divider()),
+                            ]),
+
+                            const SizedBox(height: 30),
+
+                            // Third parties
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                (
+                                  label: "Google",
+                                  asset: "assets/images/social/google.png",
+                                  onTap: controller.isLoading.isTrue
+                                      ? null
+                                      : () => controller
+                                          ._registerWithProvider("google.com"),
+                                ),
+                                (
+                                  label: "Apple",
+                                  asset: "assets/images/social/apple.png",
+                                  onTap: controller.isLoading.isTrue
+                                      ? null
+                                      : () => controller
+                                          ._registerWithProvider("apple.com"),
+                                ),
+                                // (
+                                //   label: "Facebook",
+                                //   asset: "assets/images/social/facebook.png",
+                                //   onTap: controller.isLoading.isTrue
+                                //       ? null
+                                //       : () => controller._registerWithProvider(
+                                //           "facebook.com"),
+                                // )
+                              ].map((e) {
+                                return GestureDetector(
+                                  onTap: e.onTap,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Image.asset(
+                                        e.asset,
+                                        height: 40,
+                                        width: 40,
+                                      ),
+                                      // Text(e.label),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+
+                            const SizedBox(height: 30),
+                            // Agreements
+                            Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  (
+                                    label: "Terms & Conditions",
+                                    pdf: "assets/pdf/terms-and-conditions.pdf",
+                                    enabled: controller
+                                        .acceptTermsAndConditions.value,
+                                    onClick: controller.isLoading.isTrue
+                                        ? null
+                                        : () {
+                                            FocusManager.instance.primaryFocus
+                                                ?.unfocus();
+                                            controller.acceptTermsAndConditions
+                                                .toggle();
+                                          },
+                                  ),
+                                  if (controller.isLandlord)
+                                    (
+                                      label: "Landlord Agreement",
+                                      pdf: "assets/pdf/landlord_agreement.pdf",
+                                      enabled:
+                                          controller.acceptLandlordPolicy.value,
+                                      onClick: controller.isLoading.isTrue
+                                          ? null
+                                          : () {
+                                              FocusManager.instance.primaryFocus
+                                                  ?.unfocus();
+                                              controller.acceptLandlordPolicy
+                                                  .toggle();
+                                            },
+                                    ),
+                                ].map((e) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10.0,
+                                      horizontal: 10.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: controller.isLoading.isTrue
+                                              ? null
+                                              : () {
+                                                  Get.to(() => ViewPdfScreen(
+                                                      title: e.label,
+                                                      asset: e.pdf));
+                                                },
+                                          child: Text(
+                                            e.label,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: ROOMY_ORANGE,
+                                            ),
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        GestureDetector(
+                                          onTap: e.onClick,
+                                          child: Icon(
+                                            e.enabled
+                                                ? Icons
+                                                    .check_circle_outline_outlined
+                                                : Icons.circle_outlined,
+                                            color: ROOMY_ORANGE,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList()),
+                          ],
+                        ),
+                      ),
+
                       // Credentials
                       SingleChildScrollView(
                         child: Form(
@@ -468,94 +873,6 @@ class RegistrationScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Account type
-                              Row(
-                                children: [
-                                  const Spacer(),
-                                  // Roommate
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.roommate);
-                                    },
-                                    child: Icon(
-                                      controller.isRoommate
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.roommate);
-                                    },
-                                    child: const Text(
-                                      "Roommate",
-                                      style: TextStyle(
-                                        color: ROOMY_PURPLE,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  // Landlord
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.landlord);
-                                    },
-                                    child: Icon(
-                                      controller.isLandlord
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.landlord);
-                                    },
-                                    child: const Text(
-                                      "Landlord",
-                                      style: TextStyle(
-                                        color: ROOMY_PURPLE,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  // Maintainer
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.maintainer);
-                                    },
-                                    child: Icon(
-                                      controller.isMaintenant
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      controller.accountType(
-                                          UserAccountType.maintainer);
-                                    },
-                                    child: const Text(
-                                      "Maintainer",
-                                      style: TextStyle(
-                                        color: ROOMY_PURPLE,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                ],
-                              ),
-                              const Divider(),
                               InlineTextField(
                                 initialValue:
                                     controller.information["firstName"],
@@ -600,69 +917,6 @@ class RegistrationScreen extends StatelessWidget {
                                       },
                               ),
                               const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: InlineTextField(
-                                      labelText: 'email'.tr,
-                                      hintText: "emailAddress".tr,
-                                      initialValue:
-                                          controller.information["email"],
-                                      enabled: controller.isLoading.isFalse &&
-                                          !controller._emailIsVerified,
-                                      onChanged: (value) {
-                                        controller.information["email"] =
-                                            value.toLowerCase();
-                                        controller._emailVerificationCode = "";
-                                        controller.update();
-                                      },
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'thisFieldIsRequired'.tr;
-                                        }
-                                        if (!value.isEmail) {
-                                          return 'invalidEmail'.tr;
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  GetBuilder<_RegistrationController>(
-                                      builder: (controller) {
-                                    final color = controller._emailIsVerified
-                                        ? Colors.green
-                                        : !controller._canVerifyEmail
-                                            ? Colors.grey
-                                            : ROOMY_ORANGE;
-                                    return ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: color,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        side: BorderSide(color: color),
-                                      ),
-                                      onPressed: !controller._canVerifyEmail
-                                          ? null
-                                          : controller._verifyEmail,
-                                      child: controller
-                                              ._isVerifiyingEmail.isTrue
-                                          ? const CupertinoActivityIndicator()
-                                          : Text(
-                                              controller._emailIsVerified
-                                                  ? "Verified"
-                                                  : "Verify",
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                    );
-                                  })
-                                ],
-                              ),
                               const SizedBox(height: 10),
                               InlineTextField(
                                 labelText: 'password'.tr,
@@ -817,87 +1071,7 @@ class RegistrationScreen extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      Get.to(() {
-                                        return const ViewPdfScreen(
-                                          title: "Terms and conditions",
-                                          asset:
-                                              "assets/pdf/terms-and-conditions.pdf",
-                                        );
-                                      });
-                                    },
-                                    child: const Text(
-                                      "Terms and conditions",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: ROOMY_ORANGE,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  GestureDetector(
-                                    onTap: () {
-                                      FocusManager.instance.primaryFocus
-                                          ?.unfocus();
-                                      controller.acceptTermsAndConditions
-                                          .toggle();
-                                    },
-                                    child: Icon(
-                                      controller.acceptTermsAndConditions.value
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (controller.isLandlord)
-                                const SizedBox(height: 20),
-                              if (controller.isLandlord)
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        Get.to(() {
-                                          return const ViewPdfScreen(
-                                            title: "Landlord Agreement",
-                                            asset:
-                                                "assets/pdf/landlord_agreement.pdf",
-                                          );
-                                        });
-                                      },
-                                      child: const Text(
-                                        "Landlord Agreement",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: ROOMY_ORANGE,
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    GestureDetector(
-                                      onTap: () {
-                                        FocusManager.instance.primaryFocus
-                                            ?.unfocus();
-                                        controller.acceptLandlordPolicy
-                                            .toggle();
-                                      },
-                                      child: Icon(
-                                        controller.acceptLandlordPolicy.value
-                                            ? Icons
-                                                .check_circle_outline_outlined
-                                            : Icons.circle_outlined,
-                                        color: ROOMY_ORANGE,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              const SizedBox(height: 40),
+
                               // const Divider(height: 30),
                               // Center(
                               //   child: TextButton(
@@ -923,7 +1097,7 @@ class RegistrationScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             const SizedBox(height: 10),
-                            if (controller._pageIndex.value == 1)
+                            if (controller._pageIndex.value == 2)
                               FutureBuilder(
                                 future: controller._formattedPhoneNumber,
                                 builder: (ctx, asp) {
@@ -959,7 +1133,7 @@ class RegistrationScreen extends StatelessWidget {
                                   if (controller.secondsLeft.value <= 0) {
                                     showToast("Verification time out");
                                   } else {
-                                    controller.saveCredentials(val);
+                                    controller._saveCredentials(val);
                                   }
                                   // controller.saveCredentials(val);
                                 },
@@ -996,18 +1170,13 @@ class RegistrationScreen extends StatelessWidget {
                   ),
                 ),
                 if (controller.isLoading.isTrue)
-                  const LinearProgressIndicator(
-                    color: Color.fromRGBO(96, 15, 116, 1),
-                  ),
-                if (controller._isVerifyingPhone.isTrue)
                   Container(
                     alignment: Alignment.center,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.5),
-                      // borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.withOpacity(0.4),
+                    child: CircularProgressIndicator(
+                      color: Colors.grey.withOpacity(0.8),
+                      strokeWidth: 2,
                     ),
-                    child: const CupertinoActivityIndicator(radius: 50),
                   )
               ],
             ),
@@ -1029,7 +1198,9 @@ class RegistrationScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () => Get.off(() => const LoginScreen()),
+                    onPressed: controller.isLoading.isTrue
+                        ? null
+                        : () => Get.off(() => const LoginScreen()),
                     child: const Text(
                       'Login',
                       style: TextStyle(
@@ -1040,14 +1211,20 @@ class RegistrationScreen extends StatelessWidget {
                   ),
 
                   IconButton(
-                    onPressed: controller.isLoading.isTrue ||
-                            controller._isVerifyingPhone.isTrue
+                    onPressed: controller.isLoading.isTrue
                         ? null
                         : () async {
                             switch (controller._pageIndex.value) {
                               case 0:
                                 final isValid =
-                                    await controller.validateCredentials();
+                                    await controller._validateFisrtPage();
+                                if (!isValid) return;
+
+                                controller._moveToPage(1);
+                                break;
+                              case 1:
+                                final isValid =
+                                    await controller._validateCredentials();
                                 if (!isValid) return;
 
                                 controller.sendSmsCode();

@@ -1,17 +1,16 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs, sort_constructors_first, non_constant_identifier_names
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
-import 'package:roomy_finder/models/chat_user.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 
 class User {
   String id;
   String type;
   String email;
-  String phone;
+  String? phone;
   String firstName;
   String lastName;
   String country;
@@ -19,13 +18,14 @@ class User {
   String? profilePicture;
   bool isPremium;
   DateTime createdAt;
-  String fcmToken;
+  num? serviceFee;
+  num? VAT;
 
   User({
     required this.id,
     required this.type,
     required this.email,
-    required this.phone,
+    this.phone,
     required this.firstName,
     required this.lastName,
     required this.country,
@@ -33,7 +33,8 @@ class User {
     this.profilePicture,
     required this.isPremium,
     required this.createdAt,
-    required this.fcmToken,
+    this.serviceFee,
+    this.VAT,
   });
 
   String? get password => AppController.instance.userPassword;
@@ -56,45 +57,6 @@ class User {
     }
   }
 
-  ChatUser get chatUser => ChatUser(
-        id: id,
-        firstName: firstName,
-        lastName: lastName,
-        profilePicture: profilePicture,
-        fcmToken: fcmToken,
-        createdAt: createdAt,
-      );
-
-  User copyWith({
-    String? id,
-    String? type,
-    String? email,
-    String? phone,
-    String? firstName,
-    String? lastName,
-    String? country,
-    String? gender,
-    String? profilePicture,
-    bool? isPremium,
-    DateTime? createdAt,
-    String? fcmToken,
-  }) {
-    return User(
-      id: id ?? this.id,
-      type: type ?? this.type,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
-      country: country ?? this.country,
-      gender: gender ?? this.gender,
-      profilePicture: profilePicture ?? this.profilePicture,
-      isPremium: isPremium ?? this.isPremium,
-      createdAt: createdAt ?? this.createdAt,
-      fcmToken: fcmToken ?? this.fcmToken,
-    );
-  }
-
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
@@ -107,8 +69,9 @@ class User {
       'gender': gender,
       'profilePicture': profilePicture,
       'isPremium': isPremium,
+      'serviceFee': serviceFee,
+      'VAT': VAT,
       'createdAt': createdAt.toIso8601String(),
-      'fcmToken': fcmToken,
     };
   }
 
@@ -117,7 +80,7 @@ class User {
       id: map['id'] as String,
       type: map['type'] as String,
       email: map['email'] as String,
-      phone: map['phone'] as String,
+      phone: map['phone'] as String?,
       firstName: map['firstName'] as String,
       lastName: map['lastName'] as String,
       country: map['country'] as String,
@@ -125,7 +88,8 @@ class User {
       profilePicture: map['profilePicture'] as String?,
       isPremium: map['isPremium'] as bool,
       createdAt: DateTime.parse(map['createdAt'] as String),
-      fcmToken: map['fcmToken'] as String,
+      serviceFee: map['serviceFee'] as num?,
+      VAT: map['VAT'] as num?,
     );
   }
 
@@ -161,7 +125,7 @@ class User {
       backgroundColor: Colors.black,
       radius: size,
       child: Builder(builder: (context) {
-        final logoText = firstName[0] + lastName[0];
+        final logoText = fullName.isNotEmpty ? fullName[0] : "#";
 
         return CircleAvatar(
           radius: innerRadius,
@@ -180,12 +144,10 @@ class User {
     );
   }
 
-  // ignore: non_constant_identifier_names
   static User GUEST_USER = User(
     id: "010101010101010101010101",
     type: "geust",
     email: "",
-    phone: "",
     firstName: "",
     lastName: "",
     country: "",
@@ -193,6 +155,5 @@ class User {
     profilePicture: "",
     isPremium: false,
     createdAt: DateTime(2023),
-    fcmToken: "",
   );
 }

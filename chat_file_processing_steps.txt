@@ -1,0 +1,30 @@
+1 - Pick  the file form the device storage
+2 - Obtan the File Object
+    if the file is an image or a video, create the compressed string thumbnail
+    
+3 - send message with file : 
+    After sending the image, create folder Roomy Finder if it does exists in the device storage.
+    Create subfolders Images,Videos,Documents,Other, Audio.
+    Inside these subfolders, there are Send and Recieved folders
+4 - For files sent by user, the are copied to the respective sent folder and renamed by the name
+    of the uploaded file on firebase storage.
+
+5 - Wheb files are recieved by other users, if the thumbnail is available, it's used to show preview
+    but the file it self is not downloaded. 
+
+6 - When the user presses to download, The file is progressively downloded to the respective Recieved 
+    folder. and can be open by the device.
+
+7 - When messages are loaded, the files in the messages are first check for existence. If they dont 
+    exists, a download button is showned.
+
+      ************* FILE DOWNLOAD ***********
+
+To download a file : 
+
+1 - check read/Write permission on the device storage.
+2 - If permission is grannted, continue the downlod.
+3 - If permission is not grandted but can be requested, request permission and if grandted, continue
+    the download.
+4 - If permission isn't granted and permission is blocked. Alert the user to manually grant permission
+    On Android, if the user accepts to grant the permission manually, open the settings.

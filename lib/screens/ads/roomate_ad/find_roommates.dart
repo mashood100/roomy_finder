@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/components/advertising.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
@@ -170,9 +171,9 @@ class _FindRoommatesController extends LoadingController {
                         // Roommate type
                         InlineDropdown<String>(
                           labelText: 'Type'.tr,
-                          hintText: 'Appartment type'.tr,
+                          hintText: 'Apartment type'.tr,
                           value: filter["type"],
-                          items: const ["All", "Studio", "Appartment", "House"],
+                          items: const ["All", "Studio", "Apartment", "House"],
                           onChanged: (val) {
                             if (val != null) filter["type"] = val;
                             if (val == "All") filter.remove("type");
@@ -228,7 +229,7 @@ class _FindRoommatesController extends LoadingController {
                           labelText: 'Gender',
                           hintText: "Select gender",
                           value: filter["gender"],
-                          items: const ["Female", "Male", "Any"],
+                          items: const ["Female", "Male", "Mix"],
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -600,21 +601,11 @@ class _AdItem extends StatelessWidget {
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               )
-                            : CachedNetworkImage(
-                                imageUrl: ad.images.first,
+                            : LoadingProgressImage(
+                                image:
+                                    CachedNetworkImageProvider(ad.images.first),
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorWidget: (ctx, url, e) {
-                                  return const SizedBox(
-                                    width: 150,
-                                    height: 150,
-                                    child: CupertinoActivityIndicator(
-                                      radius: 30,
-                                      color: Colors.grey,
-                                      animating: false,
-                                    ),
-                                  );
-                                },
                               ),
                       ),
                       InkWell(

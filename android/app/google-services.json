@@ -14,7 +14,47 @@
       },
       "oauth_client": [
         {
-          "client_id": "274087124726-19av3s8gpq4rq87tut2hligsgcf759k8.apps.googleusercontent.com",
+          "client_id": "274087124726-aj9nq0de07rvf0a6egmt499opk7m84gl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gsccapitalgroup.roomy_finder",
+            "certificate_hash": "c037b125b539472589d3b4365017eb67c4c3adbd"
+          }
+        },
+        {
+          "client_id": "274087124726-g3g1bc6k5f4h0scne0eon7tip7h6m21v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gsccapitalgroup.roomy_finder",
+            "certificate_hash": "15b647075e7d43bbc390e99aadc6a3c42fb7b3b1"
+          }
+        },
+        {
+          "client_id": "274087124726-jj4mauk2gi0e6un4fuluurg5cm5ephug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gsccapitalgroup.roomy_finder",
+            "certificate_hash": "c228544173037d570eb41e44320e9eb3d816b5d0"
+          }
+        },
+        {
+          "client_id": "274087124726-smcq7sdj2tkpt2bhqva68oh4hk4e5bkn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gsccapitalgroup.roomy_finder",
+            "certificate_hash": "8051603369f10102ed96464e745e2220c357e752"
+          }
+        },
+        {
+          "client_id": "274087124726-ub477nd5f1ldtnnbjv78e3c070j3019h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gsccapitalgroup.roomy_finder",
+            "certificate_hash": "634a4eb9f7376f116fe2ace5598b8bb453a5fe27"
+          }
+        },
+        {
+          "client_id": "274087124726-anv7t6s6uc7o6aalolc9km44jnfa6cqv.apps.googleusercontent.com",
           "client_type": 3
         }
       ],

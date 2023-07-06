@@ -170,7 +170,7 @@ class ResetPasswordScreen extends GetView<_ResetPasswordScreenController> {
         body: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: PageView(
                 physics: const NeverScrollableScrollPhysics(),
                 controller: controller.pageController,

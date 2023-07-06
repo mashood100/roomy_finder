@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_placeholder.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -17,14 +19,14 @@ import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/city_location.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -227,10 +229,9 @@ class _PostPropertyAdController extends LoadingController {
       if (data["deposit"] != true) data.remove("depositPrice");
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -242,10 +243,9 @@ class _PostPropertyAdController extends LoadingController {
       imagesUrls = await Future.wait(imagesTaskFuture);
 
       final videoTaskFuture = videos.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('videos')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -314,10 +314,9 @@ class _PostPropertyAdController extends LoadingController {
       if (data["deposit"] != true) data.remove("depositPrice");
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -329,10 +328,9 @@ class _PostPropertyAdController extends LoadingController {
       imagesUrls = await Future.wait(imagesTaskFuture);
 
       final videoTaskFuture = videos.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('videos')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -521,9 +519,9 @@ class PostPropertyAdScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 20),
 
-                              // Appartment number
+                              // Apartment number
                               InlineTextField(
-                                labelText: "Appartment number",
+                                labelText: "Apartment number",
                                 enabled: controller.isLoading.isFalse,
                                 initialValue:
                                     controller.address["appartmentNumber"],
@@ -1431,9 +1429,10 @@ class PostPropertyAdScreen extends StatelessWidget {
                                                       fit: BoxFit.cover,
                                                     );
                                                   }
-                                                  return CachedNetworkImage(
-                                                    imageUrl:
-                                                        "${e["imageUrl"]}",
+                                                  return LoadingProgressImage(
+                                                    image:
+                                                        CachedNetworkImageProvider(
+                                                            "${e["imageUrl"]}"),
                                                     fit: BoxFit.cover,
                                                   );
                                                 }),
@@ -1696,8 +1695,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (controller.isLoading.isTrue)
-                  const LinearProgressIndicator(),
+                if (controller.isLoading.isTrue) const LoadingPlaceholder(),
               ],
             ),
           ),

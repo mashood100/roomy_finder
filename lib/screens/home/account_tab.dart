@@ -2,14 +2,18 @@ import 'package:badges/badges.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/models/maintenance.dart';
+import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
-import 'package:roomy_finder/screens/messages/view_notifications.dart';
+import 'package:roomy_finder/screens/utility_screens/view_images.dart';
+import 'package:roomy_finder/screens/utility_screens/view_notifications.dart';
 import 'package:roomy_finder/screens/user/balance.dart';
 import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
@@ -34,17 +38,21 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               return SizedBox(
                 width: Get.width - 20,
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: () {
                         if (AppController.me.profilePicture == null) return;
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (context) => CachedNetworkImage(
-                            imageUrl: AppController.me.profilePicture!,
-                          ),
-                        );
+
+                        Get.to(() {
+                          return ViewImages(
+                            images: [
+                              CachedNetworkImageProvider(
+                                AppController.me.profilePicture!,
+                              )
+                            ],
+                          );
+                        });
                       },
                       child: Obx(() {
                         final ImageProvider provider;
@@ -68,56 +76,60 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                       }),
                     ),
                     const SizedBox(width: 40),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: Get.width * 0.5,
-                          child: Text(
-                            me.fullName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        SizedBox(
-                          width: Get.width * 0.5,
-                          child: Text(
-                            me.type.replaceFirst(
-                              me.type[0],
-                              me.type[0].toUpperCase(),
-                            ),
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: Get.theme.appBarTheme.backgroundColor,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Get.to(() => const ViewProfileScreen());
-                          },
-                          icon: Icon(
-                            me.gender == "Male" ? Icons.person : Icons.person_4,
-                            color: Colors.grey,
-                          ),
-                          label: const Text(
-                            "All details",
-                            style: TextStyle(
-                              color: Colors.black,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: Get.width * 0.5,
+                            child: Text(
+                              me.fullName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(
+                            width: Get.width * 0.5,
+                            child: Text(
+                              me.type.replaceFirst(
+                                me.type[0],
+                                me.type[0].toUpperCase(),
+                              ),
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Get.theme.appBarTheme.backgroundColor,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Get.to(() => const ViewProfileScreen());
+                            },
+                            icon: Icon(
+                              me.gender == "Male"
+                                  ? Icons.person
+                                  : Icons.person_4,
+                              color: Colors.grey,
+                            ),
+                            label: const Text(
+                              "All details",
+                              style: TextStyle(
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   ],
                 ),
@@ -128,10 +140,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const NotificationsScreen()),
                 leading: Obx(() {
-                  var badge = AppController.instance.badges["notifications"];
+                  var badge = AppNotification.unReadNotificationsCount.value;
                   return Badge(
                     badgeContent: Text(badge.toString()),
-                    showBadge: badge! > 0,
+                    showBadge: badge > 0,
                     child: const CircleAvatar(
                       backgroundColor: Colors.transparent,
                       foregroundImage:
@@ -170,10 +182,11 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               child: ListTile(
                 onTap: () => Get.to(() => const MyBookingsCreen()),
                 leading: Obx(() {
-                  var badge = AppController.instance.badges["bookings"];
+                  var badge = PropertyBooking.unViewBookingsCount.value;
                   return Badge(
+                    // badgeStyle: const BadgeStyle(badgeColor: Colors.white),
                     badgeContent: Text(badge.toString()),
-                    showBadge: badge! > 0,
+                    showBadge: badge > 0,
                     child: const CircleAvatar(
                       backgroundColor: Colors.transparent,
                       foregroundImage: AssetImage("assets/icons/booking.png"),
@@ -187,29 +200,29 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 ),
               ),
             ),
-            if (AppController.me.isLandlord)
-              Card(
-                child: ListTile(
-                  onTap: () => Get.toNamed("/maintenance"),
-                  leading: Obx(() {
-                    var badge = AppController.instance.badges["maintenances"];
-                    return Badge(
-                      badgeContent: Text(badge.toString()),
-                      showBadge: badge! > 0,
-                      child: const CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        foregroundImage:
-                            AssetImage("assets/maintenance/maintenace.png"),
-                      ),
-                    );
-                  }),
-                  title: const Text('Maintenance'),
-                  trailing: const IconButton(
-                    onPressed: null,
-                    icon: Icon(Icons.chevron_right),
-                  ),
-                ),
-              ),
+            // if (AppController.me.isLandlord)
+            //   Card(
+            //     child: ListTile(
+            //       onTap: () => Get.toNamed("/maintenance"),
+            //       leading: Obx(() {
+            //         var badge = Maintenance.notificationsCount.value;
+            //         return Badge(
+            //           badgeContent: Text(badge.toString()),
+            //           showBadge: badge > 0,
+            //           child: const CircleAvatar(
+            //             backgroundColor: Colors.transparent,
+            //             foregroundImage:
+            //                 AssetImage("assets/maintenance/maintenace.png"),
+            //           ),
+            //         );
+            //       }),
+            //       title: const Text('Maintenance'),
+            //       trailing: const IconButton(
+            //         onPressed: null,
+            //         icon: Icon(Icons.chevron_right),
+            //       ),
+            //     ),
+            //   ),
             Card(
               child: ListTile(
                 onTap: () {
@@ -264,12 +277,12 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
         icon: Obx(() {
-          var maintenancesBadge = AppController.instance.badges["maintenances"];
-          var bookingsBadge = AppController.instance.badges["bookings"];
+          var maintenancesBadge = Maintenance.notificationsCount.value;
+          var bookingsBadge = PropertyBooking.unViewBookingsCount.value;
           var notificationsBadge =
-              AppController.instance.badges["notifications"];
+              AppNotification.unReadNotificationsCount.value;
 
-          var sum = maintenancesBadge! + bookingsBadge! + notificationsBadge!;
+          var sum = maintenancesBadge + bookingsBadge + notificationsBadge;
           return Badge(
             badgeContent: Text("$sum"),
             showBadge: sum > 0,

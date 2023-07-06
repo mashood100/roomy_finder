@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 
@@ -34,14 +35,14 @@ class ViewMaintenanceDetailsScreen extends StatelessWidget {
                   const Center(child: Text("Maintenant info")),
                   ...[
                     {"label": "Name", "value": m.maintenant?.fullName},
-                    {"label": "Phone", "value": m.maintenant?.phone},
+                    {"label": "Phone", "value": m.maintenant?.phone ?? "N/A"},
                     {"label": "Email", "value": m.maintenant?.email},
                   ].map((e) => _Label("${e["label"]}", "${e["value"]}")),
                 ] else ...[
                   const Center(child: Text("Landlord info")),
                   ...[
                     {"label": "Name", "value": m.landlord.fullName},
-                    {"label": "Phone", "value": m.landlord.phone},
+                    {"label": "Phone", "value": m.landlord.phone ?? "N/A"},
                     {"label": "Email", "value": m.landlord.email},
                   ].map((e) => _Label("${e["label"]}", "${e["value"]}")),
                 ],
@@ -54,7 +55,7 @@ class ViewMaintenanceDetailsScreen extends StatelessWidget {
                   "value": address['buildingName'] ?? "Not Provided",
                 },
                 {
-                  "label": "Appartment Number",
+                  "label": "Apartment Number",
                   "value": address['appartmentNumber'] ?? "Not Provided",
                 },
                 {
@@ -118,8 +119,8 @@ class ViewMaintenanceDetailsScreen extends StatelessWidget {
                         margin: const EdgeInsets.all(5),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: CachedNetworkImage(
-                            imageUrl: e,
+                          child: LoadingProgressImage(
+                            image: CachedNetworkImageProvider(e),
                             fit: BoxFit.cover,
                           ),
                         ),

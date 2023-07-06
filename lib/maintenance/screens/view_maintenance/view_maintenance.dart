@@ -9,9 +9,10 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/maintenance/helpers/show_dialog.dart';
-import 'package:uuid/uuid.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/inputs.dart';
@@ -175,8 +176,8 @@ class _ViewMaintenanceState extends State<ViewMaintenance> {
                             margin: const EdgeInsets.all(5),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: CachedNetworkImage(
-                                imageUrl: e,
+                              child: LoadingProgressImage(
+                                image: CachedNetworkImageProvider(e),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -367,10 +368,9 @@ class _ViewMaintenanceState extends State<ViewMaintenance> {
       }
 
       final imagesTaskFuture = _images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = _images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 

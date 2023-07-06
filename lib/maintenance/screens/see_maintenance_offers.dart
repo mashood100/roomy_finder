@@ -30,13 +30,14 @@ class _SeeMaintenanceOffersScreenState
 
   bool _isLoading = false;
 
-  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+  late final StreamSubscription<RemoteMessage> fcmStream;
 
   @override
   void initState() {
     super.initState();
 
-    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
         final newM = await ApiService.fetchMaitenance(widget.request.id);
 
@@ -47,7 +48,8 @@ class _SeeMaintenanceOffersScreenState
       }
     });
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
+    fcmStream =
+        FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
       switch (data["event"]) {
@@ -83,7 +85,8 @@ class _SeeMaintenanceOffersScreenState
   @override
   void dispose() {
     super.dispose();
-    fGBGNotifierSubScription.cancel();
+    _fGBGNotifierSubScription.cancel();
+    fcmStream.cancel();
   }
 
   Maintenance get m => widget.request;

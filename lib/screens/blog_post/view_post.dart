@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 
 class ViewBlogPostScreen extends StatelessWidget {
@@ -22,8 +23,8 @@ class ViewBlogPostScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(10)),
-                  child: CachedNetworkImage(
-                    imageUrl: post.imageUrl ?? "",
+                  child: LoadingProgressImage(
+                    image: CachedNetworkImageProvider("${post.imageUrl}"),
                     width: MediaQuery.of(context).size.height,
                     fit: BoxFit.fitWidth,
                     // errorWidget: (ctx, e, trace) {

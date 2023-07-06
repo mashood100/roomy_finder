@@ -40,7 +40,7 @@ class _AdvertisingWidgetState extends State<AdvertisingWidget> {
                 );
               }).toList(),
               options: CarouselOptions(
-                autoPlayInterval: const Duration(seconds: 10),
+                autoPlayInterval: const Duration(seconds: 15),
                 pageSnapping: true,
                 autoPlay: true,
                 // viewportFraction: 1,

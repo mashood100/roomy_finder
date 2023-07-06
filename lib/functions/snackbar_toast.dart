@@ -47,17 +47,16 @@ void showGetSnackbar(
 
   Get.snackbar(
     title ?? "Alert",
-
     message,
     duration: Duration(seconds: seconds),
-    borderRadius: 10,
+    borderRadius: 5,
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     margin: const EdgeInsets.all(5),
-    // backgroundColor: color,
+    backgroundColor: color,
     isDismissible: isDismissible,
     snackPosition: SnackPosition.BOTTOM,
-    colorText: color,
-    icon: Icon(Icons.notifications, color: color),
+    colorText: Colors.white,
+    icon: const Icon(Icons.notifications, color: Colors.white),
   );
 }
 

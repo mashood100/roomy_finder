@@ -29,6 +29,8 @@ class Maintenance {
   List<Map<String, dynamic>> submits;
   String? maintenantId;
 
+  static final notificationsCount = 0.obs;
+
   Maintenance({
     required this.id,
     required this.landlord,

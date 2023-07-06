@@ -54,16 +54,71 @@
 			<string>fetch</string>
 			<string>remote-notification</string>
 		</array>
+
+		<!-- Permission options for the `mediaLibrary` group -->
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Please grant permission to access your audio files</string>
+    <key>kTCCServiceMediaLibrary</key>
+    <string>Please grant permission to acces your media library</string>
+
+		 <!-- Permission options for the `photos` group -->
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Roomy Finder needs to access your images and videos</string>
+		<string>Your photo library will only be used when adding photos to your advert of profile</string>
+
+		<!-- Permission options for the `camera` group -->
+    <key>NSCameraUsageDescription</key>
+    <string>Your camera will only be used when adding photos to your advert of profile</string>
+
+		<!-- Permission options for the `microphone` group -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Your microphone is nedded to record voice messages</string>
+
+
 		<!-- Permission options for the `location` group -->
-		<key>NSLocationWhenInUseUsageDescription</key>
+		<!-- <key>NSLocationWhenInUseUsageDescription</key>
 		<string>Need location when in use</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>Always and when in use!</string>
 		<key>NSLocationUsageDescription</key>
 		<string>Older devices need location.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
-		<string>Can I have location always?</string>
+		<string>Can I have location always?</string> -->
+
+		<!-- Google Sign-in Section -->	
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.274087124726-nbjs3qdtqt77janq9tt8ai0pd1jfnk5c</string>
+				</array>
+			</dict>
+		</array>
+		<!-- End of the Google Sign-in Section -->
+
+		<!-- Facebook app -->
+		<!-- <key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb168868812852254</string>
+			</array>
+			</dict>
+		</array>
+		<key>FacebookAppID</key>
+		<string>168868812852254</string>
+		<key>FacebookClientToken</key>
+		<string>b1ae81d97a3ebd5f113e5fbd134ec8e0</string>
+		<key>FacebookDisplayName</key>
+		<string>Roomy Finder</string>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>fbapi</string>
+			<string>fb-messenger-share-api</string>
+		</array> -->
+		<!-- End of facebook -->
 	</dict>
 </plist>

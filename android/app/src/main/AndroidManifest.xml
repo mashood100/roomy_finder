@@ -1,15 +1,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.gsccapitalgroup.roomy_finder">
     <uses-permission android:name="android.permission.INTERNET"/>
-     <!-- Permissions options for the `location` group -->
+     
+    <!-- Permissions options for the `storage` group -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- Permissions options for the `microphone` or `speech` group -->
+     <!-- Permissions options for the `microphone` or `speech` group -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     
    <application
         android:label="Roomy Finder"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+
+         <!-- Facebook -->
+        <!-- <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
+        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/> -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -32,7 +43,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-        <!-- Dynamic link -->
+           
+            <!-- Dynamic link -->
             <intent-filter>
                 <action
                     android:name="android.intent.action.VIEW"/>
@@ -52,6 +64,23 @@
             </intent-filter>
         
         </activity>
+
+        <!-- Facebook activity -->
+        <!-- <activity android:name="com.facebook.FacebookActivity"
+            android:configChanges=
+                    "keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity> -->
+
 
          <!-- Image cropper -->
         <activity
