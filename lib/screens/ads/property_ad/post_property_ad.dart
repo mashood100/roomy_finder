@@ -70,7 +70,7 @@ class _PostPropertyAdController extends LoadingController {
     "description": "",
   }.obs;
 
-  final address = <String, String>{
+  final address = <String, String?>{
     "city": "",
     "location": "",
     "buildingName": "",
@@ -78,7 +78,7 @@ class _PostPropertyAdController extends LoadingController {
     "countryCode": AppController.instance.country.value.code,
   }.obs;
 
-  final socialPreferences = {
+  final socialPreferences = <String, Object?>{
     "numberOfPeople": "1 to 5",
     "grouping": "Single",
     "gender": "Mix",
@@ -126,12 +126,6 @@ class _PostPropertyAdController extends LoadingController {
       address["appartmentNumber"] =
           oldData!.address["appartmentNumber"].toString();
       amenties.value = oldData!.amenities;
-
-      if (oldData!.agentInfo != null) {
-        agentBrokerInformation(oldData!.agentInfo!);
-      }
-
-      socialPreferences(oldData!.socialPreferences);
     }
     super.onInit();
   }
@@ -475,7 +469,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               // Area
                               InlineDropdown<String>(
                                 labelText: 'Area',
-                                hintText: "Select for area",
+                                hintText: "Choose location",
                                 value: controller.address["location"]!.isEmpty
                                     ? null
                                     : controller.address["location"],
@@ -1120,13 +1114,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               value:
                                   controller.socialPreferences["numberOfPeople"]
                                       as String,
-                              items: const [
-                                "1 to 5",
-                                "5 to 10",
-                                "10 to 15",
-                                "15 to 20",
-                                "+20",
-                              ],
+                              items: PROPERTY_ADS_NUMBERS_OF_PEOPLES,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1142,7 +1130,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               labelText: 'gender'.tr,
                               value: controller.socialPreferences["gender"]
                                   as String,
-                              items: const ["Male", "Female", "Mix"],
+                              items: ALL_GENDERS_WITH_MIX,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1158,7 +1146,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               labelText: 'nationality'.tr,
                               value: controller.socialPreferences["nationality"]
                                   as String,
-                              items: allNationalities,
+                              items: ALL_NATIONALITIES,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1276,7 +1264,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               physics: const NeverScrollableScrollPhysics(),
                               crossAxisSpacing: 10,
                               mainAxisSpacing: 10,
-                              children: allAmenities
+                              children: ALL_AMENITIES
                                   .map(
                                     (e) => GestureDetector(
                                       onTap: () {

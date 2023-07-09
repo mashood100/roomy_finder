@@ -211,7 +211,7 @@ class _FindRoommatesController extends LoadingController {
                         const SizedBox(height: 20),
                         InlineDropdown<String>(
                           labelText: 'Area',
-                          hintText: "Select for area",
+                          hintText: "Select the location",
                           value: filter["location"],
                           items: getLocationsFromCity(
                             filter["city"].toString(),

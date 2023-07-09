@@ -82,35 +82,24 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(
-                            width: Get.width * 0.5,
-                            child: Text(
+                          Obx(() {
+                            var me = AppController.instance.user.value;
+                            return Text(
                               me.fullName,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          SizedBox(
-                            width: Get.width * 0.5,
-                            child: Text(
-                              me.type.replaceFirst(
-                                me.type[0],
-                                me.type[0].toUpperCase(),
-                              ),
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Get.theme.appBarTheme.backgroundColor,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                            );
+                          }),
+                          Builder(builder: (context) {
+                            final type = AppController.me.type;
+                            if (type.isEmpty) return const SizedBox();
+                            return Text(
+                              type.replaceFirst(type[0], type[0].toUpperCase()),
+                              style: const TextStyle(),
+                            );
+                          }),
                           OutlinedButton.icon(
                             onPressed: () {
                               Get.to(() => const ViewProfileScreen());
@@ -184,8 +173,10 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 leading: Obx(() {
                   var badge = PropertyBooking.unViewBookingsCount.value;
                   return Badge(
-                    // badgeStyle: const BadgeStyle(badgeColor: Colors.white),
-                    badgeContent: Text(badge.toString()),
+                    badgeContent: Text(
+                      badge.toString(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     showBadge: badge > 0,
                     child: const CircleAvatar(
                       backgroundColor: Colors.transparent,

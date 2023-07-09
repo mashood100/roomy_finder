@@ -527,7 +527,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         {
                           "label": "Nationality",
                           "asset": "assets/icons/globe.png",
-                          "value": ad.poster.country,
+                          "value": ad.aboutYou["nationality"] ?? "N/A",
                         },
                         {
                           "label": "Lifestyle",
@@ -744,7 +744,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       crossAxisSpacing: 10,
-                      children: allAmenities
+                      children: ALL_AMENITIES
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(
@@ -776,7 +776,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     childAspectRatio: 1.2,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
-                    children: roommateInterests
+                    children: ROOMMATE_INTERESTS
                         .where((e) => ad.interests.contains(e["value"]))
                         .map((e) {
                       return Container(

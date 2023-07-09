@@ -39,11 +39,14 @@ class LoadingProgressImage extends StatelessWidget {
         height: height,
         width: width,
         errorBuilder: (ctx, e, trace) {
-          return Text(
-            "Failed to load!",
-            style: TextStyle(
-              fontSize: _loadingSize * 0.2,
-              color: Colors.grey.withOpacity(0.5),
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              "Failed to load media!",
+              style: TextStyle(
+                fontSize: _loadingSize * 0.2,
+                color: Colors.grey.withOpacity(0.5),
+              ),
             ),
           );
         },
@@ -58,29 +61,32 @@ class LoadingProgressImage extends StatelessWidget {
             progress = chuck.cumulativeBytesLoaded / chuck.expectedTotalBytes!;
           }
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                height: _loadingSize,
-                width: _loadingSize,
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    color: Colors.grey.withOpacity(0.5),
-                    strokeWidth: 2,
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  height: _loadingSize,
+                  width: _loadingSize,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      color: Colors.grey.withOpacity(0.5),
+                      strokeWidth: 2,
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                "${((progress ?? 0) * 100).toInt()}%",
-                style: TextStyle(
-                  fontSize: _loadingSize * 0.2,
-                  color: Colors.grey.withOpacity(0.5),
+                Text(
+                  "${((progress ?? 0) * 100).toInt()}%",
+                  style: TextStyle(
+                    fontSize: _loadingSize * 0.2,
+                    color: Colors.grey.withOpacity(0.5),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

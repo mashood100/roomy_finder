@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart';
+import 'package:roomy_finder/classes/file_helprer.dart';
 
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -101,6 +102,10 @@ class ChatMessageV2 {
   void addDeletes(String userId, [DateTime? date]) {
     if (deletes.any((e) => e == userId)) return;
     deletes.add(userId);
+
+    if (userId == AppController.me.id) {
+      FileHelper.deleteFiles(files.map((e) => e.url).toList());
+    }
   }
 
   Map<String, dynamic> createLocalNotificationPayload(String key,

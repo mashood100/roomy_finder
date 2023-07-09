@@ -71,13 +71,11 @@ class _PostRoommateAdController extends LoadingController {
     // "lifeStyle": "Early Bird",
   }.obs;
 
-  final address = <String, String>{
-    // "city": "",
-    // "location": "",
+  final address = <String, String?>{
     "countryCode": AppController.instance.country.value.code,
   }.obs;
 
-  final socialPreferences = {
+  final socialPreferences = <String, Object?>{
     "grouping": "Single",
     "nationality": "Arab",
     "smoking": false,
@@ -338,7 +336,7 @@ class _PostRoommateAdController extends LoadingController {
             shrinkWrap: true,
             crossAxisCount: 2,
             childAspectRatio: 2.5,
-            children: allLanguages
+            children: ALL_LANGUAGUES
                 .where((e) => !languages.contains(e))
                 .map(
                   (e) => GestureDetector(
@@ -832,7 +830,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'rentType'.tr,
                   value: controller.information["rentType"] as String?,
-                  items: const ["Monthly", "Weekly", "Daily"],
+                  items: RENT_TYPES,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -905,7 +903,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Area
                 InlineDropdown<String>(
                   labelText: 'Area',
-                  hintText: "Select for area",
+                  hintText: "Select the location",
                   value: controller.address["location"]?.isEmpty == true
                       ? null
                       : controller.address["location"],
@@ -956,7 +954,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                children: allAmenities
+                children: ALL_AMENITIES
                     .map(
                       (e) => GestureDetector(
                         onTap: () {
@@ -1023,7 +1021,7 @@ class PostRoommateAdScreen extends StatelessWidget {
               InlineDropdown<String>(
                 labelText: 'gender'.tr,
                 value: controller.socialPreferences["gender"] as String?,
-                items: const ["Male", "Female", "Mix"],
+                items: ALL_GENDERS_WITH_MIX,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1037,7 +1035,7 @@ class PostRoommateAdScreen extends StatelessWidget {
               InlineDropdown<String>(
                 labelText: 'nationality'.tr,
                 value: controller.socialPreferences["nationality"] as String?,
-                items: allNationalities,
+                items: ALL_NATIONALITIES,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1052,7 +1050,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 labelText: 'Lifestyle'.tr,
                 hintText: 'Select lifestyle',
                 value: controller.socialPreferences["lifeStyle"] as String?,
-                items: const ["Early Bird", "Night Owl"],
+                items: ALL_LIFE_STYLES,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1082,7 +1080,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                   mainAxisSpacing: 20,
                   crossAxisSpacing: 20,
                   childAspectRatio: 1.5,
-                  children: allSocialPreferences.map((e) {
+                  children: ALL_SOCIAL_PREFERENCES.map((e) {
                     return GestureDetector(
                       onTap: () {
                         if (controller.socialPreferences[e["value"]] == true) {
@@ -1147,7 +1145,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'gender'.tr,
                   value: controller.aboutYou["gender"] as String?,
-                  items: const ["Male", "Female"],
+                  items: ALL_GENDERS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1188,7 +1186,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'occupation'.tr,
                   value: controller.aboutYou["occupation"] as String?,
-                  items: const ["Professional", "Student", "Other"],
+                  items: ALL_OCCUPATIONS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1202,7 +1200,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'nationality'.tr,
                   value: controller.aboutYou["nationality"] as String?,
-                  items: allNationalities,
+                  items: ALL_NATIONALITIES,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1216,7 +1214,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'astrologicalSign'.tr,
                   value: controller.aboutYou["astrologicalSign"] as String?,
-                  items: astrologicalSigns,
+                  items: ASTROLOGICAL_SIGNS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1266,7 +1264,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                         onPressed: () async {
                           FocusScope.of(context).unfocus();
                           final result = await filterListData(
-                            allLanguages,
+                            ALL_LANGUAGUES,
                             excluded: controller.languages,
                           );
                           controller.languages.addAll(result);
@@ -1333,7 +1331,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 20,
                 mainAxisSpacing: 20,
-                children: roommateInterests
+                children: ROOMMATE_INTERESTS
                     .map(
                       (e) => GestureDetector(
                         onTap: () {

@@ -9,7 +9,6 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as path;
@@ -30,14 +29,13 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/chat/chat_room_helper.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
-import 'package:roomy_finder/screens/home/conversations_tab.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 
 part './chat_room_controller.dart';
 
-class _ChatRoomScreen extends StatefulWidget {
+class _ChatRoomScreen extends StatelessWidget {
   const _ChatRoomScreen({
     required this.conversation,
     this.initialRoommateAd,
@@ -49,102 +47,18 @@ class _ChatRoomScreen extends StatefulWidget {
   final PropertyBooking? initialBooking;
 
   @override
-  State<_ChatRoomScreen> createState() => _ChatRoomScreenState();
-}
-
-class _ChatRoomScreenState extends State<_ChatRoomScreen> {
-  // Foreground-background
-  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
-
-  ChatConversationV2 get conv => widget.conversation;
-
-  void _clearChatNotifications() {
-    for (var id in conv.localNotificationsIds) {
-      LocalNotificationController.plugin.cancel(id);
-    }
-
-    conv.localNotificationsIds.clear();
-  }
-
-  void _initChatRoom() {
-    final controller =
-        Get.find<_ChatRoomController>(tag: widget.conversation.key);
-    controller.conversation = conv;
-    widget.conversation.markOthersMessagesAsRead();
-
-    controller.update();
-
-    ChatConversationV2.onChatEventCallback = controller._chatEventsCallback;
-
-    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
-      if (event == FGBGType.foreground) {
-        controller._fetchMessages;
-        controller._isForeground = true;
-        _clearChatNotifications();
-
-        conv.markOthersMessagesAsRead();
-
-        controller.socket
-            .emitWithAck("message-read", {"key": conv.key}, ack: (_) {});
-      } else {
-        controller._isForeground = false;
-        controller.socket
-            .emitWithAck("message-read", {"key": conv.key}, ack: (_) {});
-
-        if (controller._voiceRecoder.isRecording) {
-          controller._voiceRecoder.stopRecorder();
-        }
-      }
-
-      controller.update();
-
-      Get.log("FOREGROUND/BACKGROUND LISTENNER : $event");
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _clearChatNotifications();
-
-    Future.delayed(Duration.zero, _initChatRoom);
-  }
-
-  @override
-  void dispose() {
-    ChatConversationV2.onChatEventCallback = null;
-    _fGBGNotifierSubScription.cancel();
-    widget.conversation.markOthersMessagesAsRead();
-
-    final controller =
-        Get.find<_ChatRoomController>(tag: widget.conversation.key);
-
-    controller._newMessageSoundPlayer.closePlayer();
-    VoicePlayerHelper.player.closePlayer();
-    controller._voiceRecoder.closeRecorder();
-
-    ChatConversationV2.onChatEventCallback = null;
-
-    controller._recordStream?.cancel();
-
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     Get.put(
       _ChatRoomController(
-        widget.conversation,
-        initialRoommateAd: widget.initialRoommateAd,
-        initialBooking: widget.initialBooking,
+        conversation,
+        initialRoommateAd: initialRoommateAd,
+        initialBooking: initialBooking,
       ),
-      tag: widget.conversation.key,
-      permanent: true,
+      tag: conversation.key,
     );
 
     return GetBuilder<_ChatRoomController>(
-      tag: widget.conversation.key,
+      tag: conversation.key,
       builder: (controller) {
         return Scaffold(
           // backgroundColor: Colors.white70,
@@ -163,11 +77,10 @@ class _ChatRoomScreenState extends State<_ChatRoomScreen> {
             title: controller.isSelectMode.isFalse
                 ? Row(
                     children: [
-                      widget.conversation.other
-                          .ppWidget(size: 20, borderColor: false),
+                      conversation.other.ppWidget(size: 20, borderColor: false),
                       const SizedBox(width: 10),
                       GetBuilder<_ChatRoomController>(
-                        tag: widget.conversation.key,
+                        tag: conversation.key,
                         builder: (controller) {
                           return Text(controller.conversation.other.fullName);
                         },
@@ -268,7 +181,7 @@ class _ChatRoomScreenState extends State<_ChatRoomScreen> {
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewPadding.bottom + 50,
                   ),
-                  child: ScrollablePositionedList.separated(
+                  child: ScrollablePositionedList.builder(
                     initialScrollIndex: controller.messages.isEmpty
                         ? 0
                         : controller.messages.length - 1,
@@ -352,59 +265,6 @@ class _ChatRoomScreenState extends State<_ChatRoomScreen> {
                         ),
                       );
                     },
-                    separatorBuilder: (context, index) {
-                      final msg = controller.messages[index];
-
-                      if (msg.isDeleted) return const SizedBox();
-
-                      if (index == controller.messages.length - 1) {
-                        return const SizedBox();
-                      }
-
-                      if (index > 0) {
-                        ChatMessageV2 previous = controller.messages[index - 1];
-
-                        var d1 = DateTime(
-                          previous.createdAt.year,
-                          previous.createdAt.month,
-                          previous.createdAt.day,
-                          previous.createdAt.hour,
-                        );
-                        var d2 = DateTime(
-                          msg.createdAt.year,
-                          msg.createdAt.month,
-                          msg.createdAt.day,
-                          msg.createdAt.hour,
-                        );
-
-                        if (d2.isAtSameMomentAs(d1)) return const SizedBox();
-                      }
-
-                      var diff2 = DateTime.now().difference(msg.createdAt);
-                      String text;
-
-                      var date = Jiffy.parseFromDateTime(msg.createdAt);
-
-                      if (diff2.inDays < 365) {
-                        text = date.MMMEd;
-                      } else {
-                        text = date.yMMMEd;
-                      }
-                      return Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(5)),
-                            color: Colors.black54,
-                          ),
-                          padding: const EdgeInsets.all(5.0),
-                          child: Text(
-                            text,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
                   ),
                 ),
                 if (controller.uploadTasks.isNotEmpty)
@@ -412,7 +272,7 @@ class _ChatRoomScreenState extends State<_ChatRoomScreen> {
                     color: Get.theme.appBarTheme.backgroundColor,
                     child: GetBuilder<_ChatRoomController>(
                       id: 'upload-tasks',
-                      tag: widget.conversation.key,
+                      tag: conversation.key,
                       builder: (controller) {
                         final max = controller.uploadTasks.length > 1
                             ? 1
@@ -472,7 +332,7 @@ class _ChatRoomScreenState extends State<_ChatRoomScreen> {
           ),
           bottomSheet: GetBuilder<_ChatRoomController>(
             id: "bottom-widget",
-            tag: widget.conversation.key,
+            tag: conversation.key,
             builder: (controller) {
               if (controller.conversation.iAmBlocked ||
                   controller.conversation.iHaveBlocked) {
@@ -535,7 +395,7 @@ class _BottomInputWidget extends StatelessWidget {
     ChatMessageV2? rpMsg = controller.repliedMessage;
 
     return Container(
-      color: ROOMY_ORANGE,
+      color: ROOMY_PURPLE,
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewPadding.bottom,
       ),
@@ -548,7 +408,7 @@ class _BottomInputWidget extends StatelessWidget {
               margin: const EdgeInsets.all(5.0),
               padding: const EdgeInsets.all(5.0),
               decoration: const BoxDecoration(
-                color: ROOMY_ORANGE,
+                color: ROOMY_PURPLE,
                 borderRadius: BorderRadius.all(Radius.circular(5)),
               ),
               child: Row(
@@ -558,6 +418,7 @@ class _BottomInputWidget extends StatelessWidget {
                       rpMsg.content ?? rpMsg.typedMessage,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                   GestureDetector(
@@ -602,14 +463,27 @@ class _BottomInputWidget extends StatelessWidget {
                     if (controller._voiceRecoder.isRecording) {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Text("${time.inMinutes}:$sec"),
+                        child: Text(
+                          "${time.inMinutes}:$sec",
+                          style: const TextStyle(color: Colors.white),
+                        ),
                       );
                     }
-                    return IconButton(
-                      onPressed: controller.uploadTasks.isNotEmpty
+
+                    return GestureDetector(
+                      onTap: controller.uploadTasks.isNotEmpty
                           ? null
                           : controller._sendMedia,
-                      icon: const Icon(Icons.attach_file),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.all(3),
+                        child:
+                            const Icon(Icons.attach_file, color: ROOMY_PURPLE),
+                      ),
                     );
                   }),
                   Expanded(
@@ -634,8 +508,10 @@ class _BottomInputWidget extends StatelessWidget {
                                   horizontal: 10,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(20)),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(20),
+                                  ),
+                                  borderSide: BorderSide.none,
                                 ),
                               ),
                               controller: controller._newMessageController,
@@ -656,6 +532,7 @@ class _BottomInputWidget extends StatelessWidget {
                             child: Text(
                               "Swipe left to cancel",
                               textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                       ],
@@ -664,7 +541,12 @@ class _BottomInputWidget extends StatelessWidget {
                   if (controller._newMessageController.text.isEmpty)
                     GestureDetector(
                       onTapDown: (details) {
-                        controller._startVoiceRecord();
+                        if (controller._voiceRecoder.isRecording) {
+                          controller._stopVoiceRecord(true);
+                        } else {
+                          controller._startVoiceRecord();
+                        }
+                        controller.update(["bottom-widget"]);
                       },
                       onTapUp: (details) {
                         if (controller._voiceRecoderDragOffset.value > 100) {
@@ -694,26 +576,43 @@ class _BottomInputWidget extends StatelessWidget {
                         }
                       },
                       child: Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.green.shade900,
+                          color: Colors.white,
                         ),
                         padding: const EdgeInsets.all(8),
                         margin: const EdgeInsets.all(3),
-                        child: const Icon(Icons.mic, color: Colors.white),
+                        child: Icon(
+                          controller._voiceRecoder.isRecording
+                              ? Icons.send
+                              : Icons.mic,
+                          color: ROOMY_PURPLE,
+                        ),
                       ),
                     )
                   else
-                    IconButton(
-                      onPressed: controller._newMessageController.text.isEmpty
+                    GestureDetector(
+                      onTap: controller._newMessageController.text.isEmpty
                           ? null
-                          : () => controller._sendMessage({
-                                "type": "text",
-                                "content":
-                                    controller._newMessageController.text,
-                                "recieverId": controller.other.id,
-                              }),
-                      icon: const Icon(Icons.send),
+                          : () {
+                              controller._sendMessage(
+                                {
+                                  "type": "text",
+                                  "content":
+                                      controller._newMessageController.text,
+                                  "recieverId": controller.other.id,
+                                },
+                              );
+                            },
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.all(3),
+                        child: const Icon(Icons.send, color: ROOMY_PURPLE),
+                      ),
                     ),
                 ],
               ),
@@ -732,11 +631,10 @@ Future<void> moveToChatRoom(
   PropertyBooking? booking,
 }) async {
   try {
-    final controller = Get.put(ConversationsController());
-
     final key = ChatConversationV2.createKey(first.id, second.id);
 
-    var conv = controller.conversations.firstWhereOrNull((e) => e.key == key);
+    var conv =
+        ChatConversationV2.conversations.firstWhereOrNull((e) => e.key == key);
 
     conv ??= ChatConversationV2(
       key: key,

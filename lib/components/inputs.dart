@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
+extension on List {
+  List<T> removeDupicates<T>() {
+    final newList = [];
+
+    for (var e in this) {
+      if (!newList.contains(e)) newList.add(e);
+    }
+
+    return List<T>.from(this);
+  }
+}
+
 class InlineTextField extends StatelessWidget {
   const InlineTextField({
     super.key,
@@ -21,7 +33,9 @@ class InlineTextField extends StatelessWidget {
     this.inputFormatters,
     this.readOnly,
     this.onTap,
+    this.onSubmit,
     this.autofocus = false,
+    this.textInputAction,
   });
 
   final String? labelText;
@@ -41,6 +55,8 @@ class InlineTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final void Function()? onTap;
+  final void Function(String? value)? onSubmit;
+  final TextInputAction? textInputAction;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +98,8 @@ class InlineTextField extends StatelessWidget {
               inputFormatters: inputFormatters,
               keyboardType: keyboardType,
               onTap: onTap,
+              textInputAction: textInputAction,
+              onFieldSubmitted: onSubmit,
             ),
           ),
         )
@@ -91,17 +109,18 @@ class InlineTextField extends StatelessWidget {
 }
 
 class InlineDropdown<T> extends StatelessWidget {
-  const InlineDropdown({
+  InlineDropdown({
     super.key,
-    required this.items,
+    required List<T> items,
     this.dropDownItemBuilder,
     this.labelText,
-    this.value,
+    T? value,
     this.onChanged,
     this.labelWidth,
     this.hintText,
     this.validator,
-  });
+  })  : value = items.contains(value) ? value : null,
+        items = items.removeDupicates();
 
   final List<T> items;
   final DropdownMenuItem<T> Function(T item)? dropDownItemBuilder;

@@ -86,21 +86,11 @@ class FileHelper {
     return false;
   }
 
-  static Future<String> getPossibleLocalPath(
-    Uri uri, [
-    bool isSent = false,
-  ]) async {
-    Directory? directory;
+  static Future<String> getPossibleLocalPath(Uri uri) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final directory = Directory("${appDir.path}/$_folder/");
 
-    if (Platform.isAndroid) {
-      directory = Directory("/storage/emulated/0/$_folder/");
-    } else {
-      directory = await getDownloadsDirectory();
-    }
-
-    directory ??= await getApplicationSupportDirectory();
-
-    // print(directory.path);
+    if (!directory.existsSync()) directory.createSync(recursive: true);
 
     var fileName = path.basename(Uri.decodeComponent(uri.path));
     var ext = path.extension(fileName);
@@ -124,28 +114,33 @@ class FileHelper {
     return path.join(
       directory.path,
       "Media",
-      isSent ? "Sent" : "",
       subFolder,
       fileName,
     );
   }
 
   static Future<bool> copyFileToPath(File file, String filePath) async {
-    var canWrite = await requestPermission(Permission.storage);
-    if (!canWrite) return false;
-
     file.copySync(filePath);
 
     return true;
+  }
+
+  static Future<void> deleteFiles(List<String> urls) async {
+    for (var e in urls) {
+      try {
+        final path = await getPossibleLocalPath(Uri.parse(e));
+
+        File(path).deleteSync();
+      } catch (e, trace) {
+        Get.log("$e\n$trace");
+      }
+    }
   }
 
   static Future<String?> downloadFileFromUri(
     Uri uri, [
     void Function(int count, int total)? onRecieved,
   ]) async {
-    var canWrite = await requestPermission(Permission.storage);
-    if (!canWrite) return null;
-
     final savePath = await getPossibleLocalPath(uri);
 
     final file = File(savePath);

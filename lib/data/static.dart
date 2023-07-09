@@ -1,4 +1,6 @@
-const allNationalities = [
+// ignore_for_file: constant_identifier_names
+
+const ALL_NATIONALITIES = [
   'Mix',
   'African',
   'American',
@@ -17,7 +19,7 @@ const allNationalities = [
   'Turkish'
 ];
 
-const astrologicalSigns = [
+const ASTROLOGICAL_SIGNS = [
   'AQUARIUS',
   'ARIES',
   'CANCER',
@@ -32,7 +34,7 @@ const astrologicalSigns = [
   'VIRGO'
 ];
 
-const allLanguages = [
+const ALL_LANGUAGUES = [
   "Arabic",
   "Chinese",
   "English",
@@ -47,7 +49,7 @@ const allLanguages = [
   "Urdu",
 ];
 
-const allAmenities = [
+const ALL_AMENITIES = [
   {
     "value": "WIFI",
     "asset": "assets/icons/wifi.png",
@@ -102,7 +104,7 @@ const allAmenities = [
   },
 ];
 
-const roommateInterests = [
+const ROOMMATE_INTERESTS = [
   {
     "value": "Reading",
     "asset": "assets/icons/book.png",
@@ -153,7 +155,7 @@ const roommateInterests = [
   },
 ];
 
-const allSocialPreferences = [
+const ALL_SOCIAL_PREFERENCES = [
   {
     "value": "smoking",
     "label": "Smoking",

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:socket_io_client/socket_io_client.dart';
 
 class User {
   String id;
@@ -13,8 +14,8 @@ class User {
   String? phone;
   String firstName;
   String lastName;
-  String country;
-  String gender;
+  String? country;
+  String? gender;
   String? profilePicture;
   bool isPremium;
   DateTime createdAt;
@@ -28,8 +29,8 @@ class User {
     this.phone,
     required this.firstName,
     required this.lastName,
-    required this.country,
-    required this.gender,
+    this.country,
+    this.gender,
     this.profilePicture,
     required this.isPremium,
     required this.createdAt,
@@ -83,8 +84,8 @@ class User {
       phone: map['phone'] as String?,
       firstName: map['firstName'] as String,
       lastName: map['lastName'] as String,
-      country: map['country'] as String,
-      gender: map['gender'] as String,
+      country: map['country'] as String?,
+      gender: map['gender'] as String?,
       profilePicture: map['profilePicture'] as String?,
       isPremium: map['isPremium'] as bool,
       createdAt: DateTime.parse(map['createdAt'] as String),
@@ -136,12 +137,27 @@ class User {
               : CachedNetworkImageProvider(profilePicture!)) as ImageProvider,
           onForegroundImageError: (e, trace) {},
           child: Text(
-            logoText,
+            logoText.toUpperCase(),
             style: TextStyle(fontSize: size * 0.9),
           ),
         );
       }),
     );
+  }
+
+  Map<String, dynamic> get socketOption {
+    var options = OptionBuilder()
+        .setAuth({
+          "userId": AppController.me.id,
+          "password": AppController.me.password
+        })
+        .disableAutoConnect()
+        .setTransports(["websocket"])
+        .build();
+
+    options["auth"];
+
+    return options;
   }
 
   static User GUEST_USER = User(
@@ -150,9 +166,6 @@ class User {
     email: "",
     firstName: "",
     lastName: "",
-    country: "",
-    gender: "",
-    profilePicture: "",
     isPremium: false,
     createdAt: DateTime(2023),
   );

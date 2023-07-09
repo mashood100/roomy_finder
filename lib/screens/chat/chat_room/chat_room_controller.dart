@@ -11,6 +11,7 @@ class _ChatRoomController extends LoadingController {
 
   late final ItemScrollController _scrollController;
   late final TextEditingController _newMessageController;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
 
   ChatConversationV2 conversation;
   final List<ChatMessageV2> selectedMessages = [];
@@ -62,6 +63,9 @@ class _ChatRoomController extends LoadingController {
     _scrollController = ItemScrollController();
     _newMessageController = TextEditingController();
 
+// Room event callback
+    ChatConversationV2.onChatEventCallback = _chatEventsCallback;
+
 // New message voice player
     _newMessageSoundPlayer = FlutterSoundPlayer(logLevel: Level.warning);
     _newMessageSoundPlayer.openPlayer().then((_) {
@@ -81,36 +85,39 @@ class _ChatRoomController extends LoadingController {
       _voiceRecoder.setSubscriptionDuration(const Duration(seconds: 1));
     });
 
-    final option = OptionBuilder().setAuth({
-      "userId": AppController.me.id,
-      "password": AppController.me.password,
-    }).setTransports(["websocket"]).build();
-
 // Socket
 
-    socket = io(SERVER_URL, option);
+    socket = io(SERVER_URL, AppController.me.socketOption);
 
     socket.connect();
 
 // Background foreground
-    // _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
-    //   if (event == FGBGType.foreground) {
-    //     _fetchMessages;
-    //     _isForeground = true;
-    //   } else {
-    //     _isForeground = false;
-    //     socket.emitWithAck("message-read", {"key": conversation.key},
-    //         ack: (_) {});
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchMessages;
+        _isForeground = true;
 
-    //     _clearChatNotifications();
+        conversation.markOthersMessagesAsRead();
 
-    //     if (_voiceRecoder.isRecording) _voiceRecoder.stopRecorder();
-    //   }
+        conversation.updateFromStorage(me.id).then((val) => update());
 
-    //   update();
+        socket.emitWithAck(
+          "message-read",
+          {"key": conversation.key},
+          ack: (_) {},
+        );
+      } else {
+        _isForeground = false;
 
-    //   Get.log("FOREGROUND/BACKGROUND LISTENNER : $event");
-    // });
+        _clearChatNotifications();
+
+        if (_voiceRecoder.isRecording) _voiceRecoder.stopRecorder();
+      }
+
+      update();
+
+      Get.log("FOREGROUND/BACKGROUND LISTENNER : $event");
+    });
 
 // Recorder
     _recordStream = _voiceRecoder.onProgress?.listen((event) {
@@ -142,9 +149,37 @@ class _ChatRoomController extends LoadingController {
     super.onClose();
     // _scrollController.dispose();
     _newMessageController.dispose();
+
+    ChatConversationV2.onChatEventCallback = null;
+    _fGBGNotifierSubScription.cancel();
+
+    _newMessageSoundPlayer.closePlayer();
+
+    VoicePlayerHelper.player.closePlayer();
+
+    if (!_voiceRecoder.isStopped) _voiceRecoder.closeRecorder();
+
+    ChatConversationV2.onChatEventCallback = null;
+
+    _recordStream?.cancel();
+
+    if (conversation.messages.isNotEmpty) {
+      ChatConversationV2.addConversation(conversation);
+    }
+
+    conversation.markOthersMessagesAsRead();
   }
 
-  // Chat Events
+// Clear notifications
+  void _clearChatNotifications() {
+    for (var id in conversation.localNotificationsIds) {
+      LocalNotificationController.plugin.cancel(id);
+    }
+
+    conversation.localNotificationsIds.clear();
+  }
+
+// Chat Events
   void _chatEventsCallback(String event, dynamic data, String k) {
     if (k != conversation.key) return;
 
@@ -152,6 +187,12 @@ class _ChatRoomController extends LoadingController {
 
     if (event == "new-message-v2") {
       try {
+        final msg = ChatMessageV2.fromMap(data["message"]);
+
+        if (!conversation.messages.contains(msg)) {
+          conversation.messages.add(msg);
+        }
+
         _scrollDown();
 
         if (_isForeground) {
@@ -166,8 +207,6 @@ class _ChatRoomController extends LoadingController {
             ack: (_) {},
           );
         } else {
-          final msg = ChatMessageV2.fromMap(data["message"]);
-
           try {
             LocalNotificationController.showNotification(
               conversation.other.fullName,
@@ -175,9 +214,7 @@ class _ChatRoomController extends LoadingController {
               payload: {"key": conversation.key, "messageId": msg.id},
               category: AppNotificationCategory.messaging,
               groupKey: conversation.other.fullName,
-            )
-                .then((id) => conversation.localNotificationsIds.add(id))
-                .catchError((e) => Get.log("$e"));
+            ).then((id) => conversation.localNotificationsIds.remove(id));
           } catch (e, trace) {
             Get.log("$e");
             Get.log("$trace");
@@ -220,8 +257,11 @@ class _ChatRoomController extends LoadingController {
 
   Future<void> _startVoiceRecord() async {
     try {
-      if (!await FileHelper.requestPermission(Permission.microphone)) {
-        showToast("Permission refused");
+      var canRecord = await Permission.microphone.isGranted ||
+          await Permission.microphone.isLimited;
+
+      if (!canRecord) {
+        FileHelper.requestPermission(Permission.microphone);
         return;
       }
 

@@ -9,7 +9,6 @@ import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
 import 'package:swipe_to/swipe_to.dart';
 
-import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/chat_message_v2.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/components/chat_files_preview.dart';
@@ -105,6 +104,20 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
     return _playedProgress.inSeconds / _totalDuraton.inSeconds;
   }
 
+  String get sentDateString {
+    var date = widget.msg.createdAt.toLocal();
+    var today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    ).toLocal();
+
+    if (date.isBefore(today)) {
+      return Jiffy.parseFromDateTime(date).yMMMEd;
+    }
+    return Jiffy.parseFromDateTime(date).Hm;
+  }
+
   Future<void> _pauseVoice() async {
     if (isPlaying) await _player.pausePlayer();
 
@@ -121,7 +134,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
       fromDataBuffer: msg.voiceFile,
       whenFinished: () {
         _playedProgress = Duration.zero;
-        setState(() {});
+        if (mounted) setState(() {});
       },
     );
 
@@ -152,15 +165,6 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
     if (_player.isPlaying || _player.isPaused) {
       await _player.seekToPlayer(_playedProgress);
     }
-  }
-
-  String get formattedDate {
-    var diff = DateTime.now().difference(widget.msg.createdAt.toLocal());
-    var x = Jiffy.parseFromDateTime(widget.msg.createdAt.toLocal());
-    if (diff.inDays < 1) {
-      return x.Hm;
-    }
-    return relativeTimeText(widget.msg.createdAt);
   }
 
   bool get isDeleted {
@@ -443,7 +447,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                               } else if (widget.msg.isRead) {
                                 return const Icon(
                                   Icons.done_all,
-                                  color: Colors.blue,
+                                  color: ROOMY_PURPLE,
                                   size: 15,
                                 );
                               } else if (widget.msg.isRecieved) {
@@ -463,7 +467,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                           ),
                         if (widget.msg.isMine) const SizedBox(width: 5),
                         Text(
-                          formattedDate,
+                          sentDateString,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,

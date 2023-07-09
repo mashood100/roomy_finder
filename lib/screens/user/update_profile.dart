@@ -25,13 +25,7 @@ class _UpdateProfileController extends LoadingController {
 
   // Information
   final accountType = UserAccountType.landlord.obs;
-  final information = <String, String>{
-    "gender": "Male",
-    "email": "",
-    "firstName": "",
-    "lastName": "",
-    // "country": allCountriesNames[0],
-  };
+  final information = <String, String?>{};
 
   bool get _canVerifyEmail {
     return isLoading.isFalse &&
@@ -43,11 +37,16 @@ class _UpdateProfileController extends LoadingController {
 
   @override
   void onInit() {
-    information["gender"] = AppController.me.gender;
+    if (["Male", "Femal"].contains(AppController.me.gender)) {
+      information["gender"] = AppController.me.gender;
+    }
     information["email"] = AppController.me.email;
     information["firstName"] = AppController.me.firstName;
     information["lastName"] = AppController.me.lastName;
-    information["country"] = AppController.me.country;
+
+    if (allCountriesNames.contains(AppController.me.country)) {
+      information["country"] = AppController.me.country;
+    }
     super.onInit();
   }
 
@@ -112,11 +111,11 @@ class _UpdateProfileController extends LoadingController {
         AppController.instance.user.update((val) {
           if (val == null) return;
 
-          val.gender = information["gender"] as String;
+          val.gender = information["gender"];
           val.email = information["email"] as String;
           val.firstName = information["firstName"] as String;
           val.lastName = information["lastName"] as String;
-          val.country = information["country"] as String;
+          val.country = information["country"];
         });
 
         showToast("Info updated successlly");
@@ -161,9 +160,10 @@ class UpdateUserProfile extends StatelessWidget {
                       // information
                       const SizedBox(height: 10),
                       InlineDropdown<String>(
-                        labelText: 'Gender'.tr,
-                        value: controller.information["gender"] as String,
-                        items: const ["Male", "Female", 'N/A'],
+                        labelText: 'Gender',
+                        hintText: "Select your gender",
+                        value: controller.information["gender"],
+                        items: ALL_GENDERS,
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {
@@ -270,8 +270,9 @@ class UpdateUserProfile extends StatelessWidget {
                       const SizedBox(height: 10),
                       InlineDropdown<String>(
                         labelText: 'country'.tr,
+                        hintText: "Select your country",
                         value: controller.information["country"],
-                        items: ["N/A", ...allCountriesNames],
+                        items: allCountriesNames,
                         onChanged: controller.isLoading.isTrue
                             ? null
                             : (val) {

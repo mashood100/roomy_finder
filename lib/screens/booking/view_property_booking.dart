@@ -422,7 +422,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       ),
                                       Label(
                                         label: "Country",
-                                        value: booking.poster.country,
+                                        value: booking.poster.country ?? 'N/A',
                                       ),
                                       Label(
                                         label: "Email",
@@ -434,7 +434,7 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       // ),
                                       Label(
                                         label: "Gender",
-                                        value: booking.poster.gender,
+                                        value: booking.poster.gender ?? 'N/A',
                                       ),
                                     ]
                                   : [
@@ -486,8 +486,9 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                       label: "Name",
                                       value: booking.client.fullName),
                                   Label(
-                                      label: "Country",
-                                      value: booking.client.country),
+                                    label: "Country",
+                                    value: booking.client.country ?? "N/A",
+                                  ),
                                   Label(
                                       label: "Email",
                                       value: booking.client.email),
@@ -495,8 +496,9 @@ class ViewPropertyBookingScreen extends StatelessWidget {
                                   //     label: "Phone",
                                   //     value: booking.client.phone),
                                   Label(
-                                      label: "Gender",
-                                      value: booking.client.gender),
+                                    label: "Gender",
+                                    value: booking.client.gender ?? "N/A",
+                                  ),
                                 ],
                               ),
                             ),

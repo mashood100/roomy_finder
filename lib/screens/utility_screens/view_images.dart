@@ -58,7 +58,7 @@ class _ViewImagesState extends State<ViewImages> {
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
-                          "Failed to load image!\n $e",
+                          "Failed to load image!",
                           style: TextStyle(
                             color: Colors.grey.withOpacity(0.5),
                           ),

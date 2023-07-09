@@ -11,7 +11,6 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/functions/third_parties_providers.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
@@ -63,9 +62,7 @@ class _LoginController extends LoadingController {
           AppController.instance.setIsFirstStart(false);
 
           if (user.isMaintenant) {
-            Get.offAllNamed("/maintenance");
-            FirebaseMessaging.instance
-                .subscribeToTopic("maintenance-broadcast");
+            showToast("Maintenance accounts are temporally unavailable");
           } else {
             Get.offAllNamed("/home");
           }
@@ -114,112 +111,6 @@ class _LoginController extends LoadingController {
         ("Failed to login. Please check your internet connection and try again"),
         severity: Severity.error,
       );
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  Future<void> _loginWithProvider(String provider) async {
-    try {
-      isLoading(true);
-
-      final UserCredential cred;
-
-      switch (provider) {
-        case "google.com":
-          cred = await ThirdPartyProvider.signInWithGoogle(true);
-
-          break;
-        case "apple.com":
-          cred = await ThirdPartyProvider.signInWithApple(true);
-
-          break;
-        // case "facebook.com":
-        //   cred = await ThirdPartyProvider.signInWithFacebook(true);
-
-        //   break;
-        default:
-          return;
-      }
-
-      final user = cred.user;
-
-      if (user != null) {
-        if (user.email == null) {
-          var message = "Can't sign up with this provider."
-              " Email address isn't available.";
-
-          showToast(message);
-          return;
-        }
-
-        final data = {
-          "fcmToken": await FirebaseMessaging.instance.getToken(),
-          "userToken": await user.getIdToken(),
-        };
-        // print(data);
-        final res =
-            await ApiService.getDio.post("/auth/login-third-party", data: data);
-
-        switch (res.statusCode) {
-          case 200:
-            final user = User.fromMap(res.data);
-
-            AppController.instance.user = user.obs;
-            AppController.instance.userPassword = res.data["password"];
-            AppController.setupFCMTokenHandler();
-
-            await AppController.saveUser(user);
-            await AppController.saveUserPassword(res.data["password"]);
-
-            AppController.instance.setIsFirstStart(false);
-
-            if (user.isMaintenant) {
-              Get.offAllNamed("/maintenance");
-              FirebaseMessaging.instance
-                  .subscribeToTopic("maintenance-broadcast");
-            } else {
-              Get.offAllNamed("/home");
-            }
-
-            break;
-          case 403:
-            if (res.data["code"] == "diabled") {
-              showGetSnackbar(
-                "Account disabled. Please contactact the support team".tr,
-                severity: Severity.error,
-              );
-            } else {
-              showGetSnackbar(
-                "Incorrect credentials".tr,
-                severity: Severity.error,
-              );
-            }
-
-            break;
-          case 404:
-            showGetSnackbar(
-              "Account not found. Please sign up",
-              severity: Severity.error,
-            );
-
-            break;
-          case 500:
-            showGetSnackbar(
-              "someThingWentWrong".tr,
-              severity: Severity.error,
-            );
-            break;
-          default:
-            throw ApiServiceException(statusCode: res.statusCode);
-        }
-      } else {
-        showToast("Failed to log in with provider. User not found".tr);
-      }
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-      showToast("Failed to log in with provider");
     } finally {
       isLoading(false);
     }
@@ -349,64 +240,6 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 10),
 
-                              const Row(children: [
-                                Expanded(child: Divider()),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 10),
-                                  child: Text("Or login with"),
-                                ),
-                                Expanded(child: Divider()),
-                              ]),
-
-                              const SizedBox(height: 10),
-                              // Third parties
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  (
-                                    label: "Google",
-                                    asset: "assets/images/social/google.png",
-                                    onTap: controller.isLoading.isTrue
-                                        ? null
-                                        : () => controller
-                                            ._loginWithProvider("google.com"),
-                                  ),
-                                  (
-                                    label: "Apple",
-                                    asset: "assets/images/social/apple.png",
-                                    onTap: controller.isLoading.isTrue
-                                        ? null
-                                        : () => controller
-                                            ._loginWithProvider("apple.com"),
-                                  ),
-                                  // (
-                                  //   label: "Facebook",
-                                  //   asset: "assets/images/social/facebook.png",
-                                  //   onTap: controller.isLoading.isTrue
-                                  //       ? null
-                                  //       : () => controller
-                                  //           ._loginWithProvider("facebook.com"),
-                                  // )
-                                ].map((e) {
-                                  return GestureDetector(
-                                    onTap: e.onTap,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          e.asset,
-                                          height: 35,
-                                          width: 35,
-                                        ),
-                                        // Text(e.label),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-
-                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   SizedBox(

@@ -10,8 +10,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:roomy_finder/classes/chat_file_system.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
-import 'package:roomy_finder/screens/home/conversations_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
@@ -82,7 +82,7 @@ class LocalNotificationController {
         default:
       }
     } else {
-      _defaultNotificationTapHandler(data, true);
+      defaultNotificationTapHandler(data, true);
     }
   }
 
@@ -126,7 +126,7 @@ class LocalNotificationController {
         default:
       }
     } else {
-      _defaultNotificationTapHandler(data, false);
+      defaultNotificationTapHandler(data, false);
     }
   }
 
@@ -264,13 +264,14 @@ class LocalNotificationController {
       "new-message-v2",
       "pay-cash-survey-landlord",
       "pay-cash-survey-tenant",
+      "message-reply-succeded"
     ].contains(event);
 
     if (shouldSaveNotification) {
       _saveNotification(
-        data["event"],
+        data["event"] ?? "Roomy Finder",
         notification?.body ?? data["message"],
-        notification?.title ?? data["title"],
+        notification?.title ?? data["title"] ?? data["notificationTitle"],
       );
     }
 
@@ -292,6 +293,7 @@ class LocalNotificationController {
         }
       }
     } else {
+      var title = data["notificationTitle"].toString();
       switch (event) {
         case "pay-cash-survey-landlord":
           final survey = jsonDecode(data["payload"]);
@@ -316,13 +318,52 @@ class LocalNotificationController {
           break;
         case "new-message-v2":
           category = AppNotificationCategory.messaging;
-          final chatMessage = ChatMessageV2.fromJson(data["message"]);
+          final msg = ChatMessageV2.fromJson(data["message"]);
+
           showNotification(
-            data["notificationTitle"].toString(),
-            chatMessage.content ?? chatMessage.typedMessage,
-            payload: chatMessage.createLocalNotificationPayload(data["key"]),
+            title,
+            msg.content ?? msg.typedMessage,
+            payload: msg.createLocalNotificationPayload(data["key"]),
             category: category,
           );
+
+          final key =
+              ChatConversationV2.createKey(msg.recieverId, msg.senderId);
+
+          var conv = await ChatFileSystem.getConversation(msg.recieverId, key);
+
+          if (conv == null) {
+            final sender = User(
+              id: msg.senderId,
+              type: "landlord",
+              email: "guest@email.com",
+              firstName: title,
+              lastName: "",
+              isPremium: false,
+              createdAt: DateTime.now(),
+            );
+
+            final reciever = User(
+              id: msg.recieverId,
+              type: "landlord",
+              email: "guest@email.com",
+              firstName: "Guest",
+              lastName: "",
+              isPremium: false,
+              createdAt: DateTime.now(),
+            );
+
+            conv = ChatConversationV2(
+              key: key,
+              first: sender,
+              second: reciever,
+              messages: [msg],
+              blocks: [],
+            );
+          }
+
+          await conv.saveToStorage(msg.recieverId);
+
           break;
         default:
       }
@@ -478,22 +519,31 @@ class LocalNotificationController {
   }
 
   static void handleFCMMessageOpenedAppMessage(RemoteMessage msg) {
-    _defaultNotificationTapHandler(msg.data, true);
+    if (msg.data["event"] == "new-message-v2") {
+      ChatConversationV2.initialMessage = Map<String, dynamic>.from(msg.data);
+
+      return;
+    }
+
+    defaultNotificationTapHandler(msg.data, true);
   }
 
-  static void handleInitialMessage(NotificationResponse res) {
-    if (AppController.haveOpenInitialMessage) return;
+  static void handleInitialMessage(NotificationResponse not) {
+    if (not.payload != null) {
+      var data = jsonDecode(not.payload!) as Map<String, dynamic>;
 
-    if (res.payload != null) {
-      var data = jsonDecode(res.payload!) as Map<String, dynamic>;
+      if (data["event"] == "new-message-v2") {
+        ChatConversationV2.initialMessage =
+            Map<String, dynamic>.from(jsonDecode(not.payload!));
 
-      if (data["event"] == "new-message-v2") return;
+        return;
+      }
 
-      _defaultNotificationTapHandler(data, true);
+      defaultNotificationTapHandler(data, true);
     }
   }
 
-  static void _defaultNotificationTapHandler(
+  static void defaultNotificationTapHandler(
       Map<String, dynamic> data, bool isForeground) {
     final event = data["event"];
 
@@ -560,8 +610,8 @@ class LocalNotificationController {
 
       User? user;
       try {
-        final ctl = Get.find<ConversationsController>();
-        final conv = ctl.conversations.firstWhereOrNull((e) => e.key == key);
+        final conv = ChatConversationV2.conversations
+            .firstWhereOrNull((e) => e.key == key);
 
         if (conv != null) user = conv.other;
       } catch (_) {}

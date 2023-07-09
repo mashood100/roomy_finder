@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
 import 'package:flutter/material.dart';
 
@@ -100,3 +100,26 @@ const OTHER_EXTENSIONS = [
   '.vbs',
   '.bat',
 ];
+
+const PROPERTY_ADS_NUMBERS_OF_PEOPLES = [
+  "1 to 5",
+  "5 to 10",
+  "10 to 15",
+  "15 to 20",
+  "+20"
+];
+
+/// ["Male", "Female"]
+const ALL_GENDERS = ["Male", "Female"];
+
+/// ["Male", "Female", "Mix"]
+const ALL_GENDERS_WITH_MIX = ["Male", "Female", "Mix"];
+
+/// ["Monthly", "Weekly", "Daily"]
+const RENT_TYPES = ["Monthly", "Weekly", "Daily"];
+
+/// ["Early Bird", "Night Owl"]
+const ALL_LIFE_STYLES = ["Early Bird", "Night Owl"];
+
+///  ["Professional", "Student", "Other"]
+const ALL_OCCUPATIONS = ["Professional", "Student", "Other"];

@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:badges/badges.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/chat_file_system.dart';
+import 'package:socket_io_client/socket_io_client.dart';
+import 'package:socket_io_client/socket_io_client.dart' as dd;
 
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
@@ -20,13 +25,15 @@ import 'package:roomy_finder/models/chat_conversation_v2.dart';
 import 'package:roomy_finder/models/chat_message_v2.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:socket_io_client/socket_io_client.dart';
 
-class ConversationsController extends LoadingController {
+class _ConversationsController extends LoadingController {
   late final Socket socket;
 
-  List<ChatConversationV2> conversations = [];
   late final StreamSubscription<RemoteMessage> fcmStream;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+
+  RxList<ChatConversationV2> get conversations =>
+      ChatConversationV2.conversations;
 
   int get unReadMessagesCount {
     var count = conversations.isEmpty
@@ -38,19 +45,25 @@ class ConversationsController extends LoadingController {
     return count;
   }
 
+  Future<void> _getInitalSaveMessages() async {
+    final data =
+        await ChatFileSystem.getSavedConversations(AppController.me.id);
+
+    conversations.addAll(data);
+
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();
     isLoading.value = true;
 
-    final option = OptionBuilder().setAuth({
-      "userId": AppController.me.id,
-      "password": AppController.me.password,
-    }).setTransports(["websocket"]).build();
-
-    socket = io(SERVER_URL, option);
+    socket = io(SERVER_URL, AppController.me.socketOption);
 
     socket.connect();
+
+    _getInitalSaveMessages();
 
     socket.onConnect((id) {
       _fetchConversations();
@@ -81,19 +94,31 @@ class ConversationsController extends LoadingController {
     fcmStream = FirebaseMessaging.onMessage
         .asBroadcastStream()
         .listen((event) => _fcmHandler(event.data));
+// Background foreground
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchConversations(true);
+      } else {}
+    });
   }
 
   @override
   void onClose() {
     super.onClose();
     socket.dispose();
+    socket.disconnect();
+    socket.clearListeners();
+    socket.destroy();
+
+    dd.cache.clear();
 
     fcmStream.cancel();
+    _fGBGNotifierSubScription.cancel();
   }
 
-  Future<void> _fetchConversations() async {
+  Future<void> _fetchConversations([bool? silent]) async {
     if (AppController.me.isGuest) return;
-    isLoading(true);
+    if (silent != true) isLoading(true);
     hasFetchError(false);
     update();
 
@@ -118,6 +143,27 @@ class ConversationsController extends LoadingController {
         conversations.clear();
 
         conversations.addAll(data.whereType<ChatConversationV2>().toList());
+
+        for (var conv in data) {
+          if (conv == null) return;
+
+          final index = conversations.indexOf(conv);
+
+          if (index == -1) {
+            conversations.add(conv);
+          } else {
+            conversations[index].updateMessages(conv.messages);
+          }
+          conv.saveToStorage(conv.me.id);
+        }
+
+        var initialNot = ChatConversationV2.initialMessage;
+        if (initialNot != null) {
+          LocalNotificationController.defaultNotificationTapHandler(
+              initialNot, true);
+
+          ChatConversationV2.initialMessage = null;
+        }
       } else {
         hasFetchError(true);
       }
@@ -241,6 +287,8 @@ class ConversationsController extends LoadingController {
 
     conv.messages.add(chatMessage);
 
+    conv.markOthersMessagesAsRead();
+
     update();
 
     // if (ChatConversationV2.onChatEventCallback != null) {
@@ -285,6 +333,8 @@ class ConversationsController extends LoadingController {
 
       conv.messages.add(msg);
 
+      await conv.saveToStorage(msg.recieverId);
+
       socket.emitWithAck(
         "message-recieved",
         {"messageId": msg.id, "key": key},
@@ -313,6 +363,8 @@ class ConversationsController extends LoadingController {
         }
       }
 
+      _sortConversations();
+
       update();
     } catch (e, trace) {
       Get.log("$e");
@@ -322,6 +374,9 @@ class ConversationsController extends LoadingController {
 
   void _fcmHandler(Map<String, dynamic> data) {
     switch (data["event"]) {
+      case "new-message-v2":
+        _newMessageHandler({...data, "message": jsonDecode(data["message"])});
+
       case "message-read":
         _messageReadHandler(data);
 
@@ -354,134 +409,136 @@ class ChatConversationsTab extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ConversationsController());
+    final controller = Get.put(_ConversationsController());
 
-    return RefreshIndicator.adaptive(
-      onRefresh: controller._fetchConversations,
-      child: GetBuilder<ConversationsController>(builder: (context) {
-        return Stack(
-          children: [
-            Builder(
-              builder: (context) {
-                if (controller.hasFetchError.isTrue) {
-                  return const Center(
-                    child: Text(
-                      "Failed to load chats. Please refresh",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
-                }
-                if (controller.conversations.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "No Chat for now",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
-                }
+    return GetBuilder<_ConversationsController>(builder: (context) {
+      return Stack(
+        children: [
+          Builder(
+            builder: (context) {
+              if (controller.hasFetchError.isTrue) {
+                return const Center(
+                  child: Text(
+                    "Failed to load chats. Please refresh",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+              if (controller.conversations.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "No Chat for now",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
 
-                return ListView.builder(
-                  itemBuilder: (context, index) {
-                    final conv = controller.conversations[index];
+              final data = controller.conversations
+                  .where((c) => c.messages.isNotEmpty)
+                  .toList();
 
-                    return ListTile(
-                      contentPadding:
-                          const EdgeInsets.only(left: 10, right: 10),
-                      onTap: () async {
-                        // print(conv.messages
-                        //     .map((e) => (e.recieveds, e.isRecieved)));
-                        // return;
-                        await moveToChatRoom(conv.first, conv.second);
+              return ListView.builder(
+                itemBuilder: (context, index) {
+                  final conv = data[index];
 
-                        controller._sortConversations();
-                        controller.update();
-                      },
-                      leading: conv.other.ppWidget(size: 22),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                  return ListTile(
+                    contentPadding: const EdgeInsets.only(left: 10, right: 10),
+                    onTap: () async {
+                      // print(conv.messages
+                      //     .map((e) => (e.recieveds, e.isRecieved)));
+                      // return;
+                      await moveToChatRoom(conv.first, conv.second);
+
+                      controller._sortConversations();
+                      conv.markOthersMessagesAsRead();
+                      conv.unReadMessageCount;
+                      controller.update();
+                    },
+                    leading: conv.other.ppWidget(size: 22),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          conv.other.fullName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        if (conv.lastMessage != null)
                           Text(
-                            conv.other.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            relativeTimeText(conv.lastMessage!.createdAt,
+                                fromNow: false),
+                            style: const TextStyle(
+                              fontStyle: FontStyle.italic,
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
-                          if (conv.lastMessage != null)
-                            Text(
-                              relativeTimeText(conv.lastMessage!.createdAt,
-                                  fromNow: false),
-                              style: const TextStyle(
-                                fontStyle: FontStyle.italic,
-                                fontSize: 12,
-                                color: Colors.grey,
+                      ],
+                    ),
+                    subtitle: Builder(
+                      builder: (context) {
+                        final msg = conv.lastMessage;
+
+                        if (msg == null) return const SizedBox();
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                msg.content ?? "Sent a ${msg.type}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                        ],
-                      ),
-                      subtitle: Builder(
-                        builder: (context) {
-                          final msg = conv.lastMessage;
-
-                          if (msg == null) return const SizedBox();
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  msg.content ?? "Sent a ${msg.type}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                            if (msg.isMine && msg.isRead)
+                              const Icon(
+                                Icons.done_all,
+                                color: Colors.blue,
+                                size: 16,
+                              )
+                            else if (msg.isMine && msg.isRecieved)
+                              const Icon(
+                                Icons.done_all,
+                                color: Colors.grey,
+                                size: 16,
+                              )
+                            else if (msg.isMine)
+                              const Icon(
+                                Icons.done,
+                                color: Colors.grey,
+                                size: 16,
                               ),
-                              if (msg.isMine && msg.isRead)
-                                const Icon(
-                                  Icons.done_all,
+                            if (conv.unReadMessageCount > 0)
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
                                   color: Colors.blue,
-                                  size: 16,
-                                )
-                              else if (msg.isMine && msg.isRecieved)
-                                const Icon(
-                                  Icons.done_all,
-                                  color: Colors.grey,
-                                  size: 16,
-                                )
-                              else if (msg.isMine)
-                                const Icon(
-                                  Icons.done,
-                                  color: Colors.grey,
-                                  size: 16,
                                 ),
-                              if (conv.unReadMessageCount > 0)
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.blue,
-                                  ),
-                                  child: Text("${conv.unReadMessageCount}"),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                      // trailing: SizedBox(
-                      //   width: 40,
-                      //   child: IconButton(
-                      //     onPressed: () {
-                      //       print(conv.messages.map((e) => e.reads).toList());
-                      //     },
-                      //     icon: const Icon(CupertinoIcons.ellipsis_vertical),
-                      //   ),
-                      // ),
-                    );
-                  },
-                  itemCount: controller.conversations.length,
-                );
-              },
-            ),
-            if (controller.isLoading.isTrue) const LoadingPlaceholder()
-          ],
-        );
-      }),
-    );
+                                child: Text("${conv.unReadMessageCount}"),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    // trailing: SizedBox(
+                    //   width: 40,
+                    //   child: IconButton(
+                    //     onPressed: () {
+                    //       print(conv.messages.map((e) => e.reads).toList());
+                    //     },
+                    //     icon: const Icon(CupertinoIcons.ellipsis_vertical),
+                    //   ),
+                    // ),
+                  );
+                },
+                itemCount: data.length,
+              );
+            },
+          ),
+          if (controller.isLoading.isTrue) const LoadingPlaceholder()
+        ],
+      );
+    });
   }
 
   @override
@@ -492,7 +549,7 @@ class ChatConversationsTab extends StatelessWidget
       centerTitle: false,
       elevation: 0,
       actions: [
-        GetBuilder<ConversationsController>(builder: (controller) {
+        GetBuilder<_ConversationsController>(builder: (controller) {
           return IconButton(
             onPressed: controller.isLoading.isTrue
                 ? null
@@ -508,7 +565,7 @@ class ChatConversationsTab extends StatelessWidget
   BottomNavigationBarItem navigationBarItem(isCurrent) {
     return BottomNavigationBarItem(
       icon: CustomBottomNavbarIcon(
-        icon: GetBuilder<ConversationsController>(builder: (controller) {
+        icon: GetBuilder<_ConversationsController>(builder: (controller) {
           var badge = controller.unReadMessagesCount;
           return Badge(
             badgeContent: Text(badge.toString()),
@@ -532,8 +589,9 @@ class ChatConversationsTab extends StatelessWidget
 
   @override
   void onIndexSelected(int index) {
-    final controller = Get.put(ConversationsController());
+    final controller = Get.put(_ConversationsController());
 
+    controller._sortConversations();
     controller.update();
   }
 }

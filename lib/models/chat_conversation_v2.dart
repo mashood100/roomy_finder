@@ -2,15 +2,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:get/get.dart';
+import 'package:roomy_finder/classes/chat_file_system.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/chat_message_v2.dart';
 import 'package:roomy_finder/models/user.dart';
 
 class ChatConversationV2 {
+  static final conversations = RxList<ChatConversationV2>.from([]);
+  static Map<String, dynamic>? initialMessage;
+
   final String key;
   final User first;
   final User second;
-  final List<ChatMessageV2> messages;
+  List<ChatMessageV2> messages;
   final DateTime createdAt;
   DateTime? updatedAt;
   final List<String> blocks;
@@ -81,7 +86,9 @@ class ChatConversationV2 {
     DateTime? createdAt,
     this.updatedAt,
     required this.blocks,
-  }) : createdAt = createdAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now() {
+    messages.removeWhere((m) => m.isDeleted);
+  }
 
   void markMyMessagesAsRead() {
     for (int i = messages.length - 1; i >= 0; i--) {
@@ -166,5 +173,42 @@ class ChatConversationV2 {
 
   void sortMessages() {
     messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  static void addConversation(ChatConversationV2 conversationV2) {
+    if (!conversations.contains(conversationV2)) {
+      conversations.add(conversationV2);
+    }
+  }
+
+  // Message file system
+
+  @pragma("vm:entry-point")
+  Future<bool> saveToStorage(String userId) async {
+    return await ChatFileSystem.saveConversation(userId, this);
+  }
+
+  @pragma("vm:entry-point")
+  Future<bool> updateFromStorage(String userId) async {
+    final stConv = await ChatFileSystem.getConversation(userId, key);
+
+    if (stConv != null) {
+      messages = stConv.messages;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void updateMessages(List<ChatMessageV2> otherMessages) {
+    for (int i = otherMessages.length - 1; i >= 0; i--) {
+      var m = otherMessages[i];
+
+      if (!messages.contains(m)) {
+        messages.add(m);
+      } else {
+        break;
+      }
+    }
   }
 }

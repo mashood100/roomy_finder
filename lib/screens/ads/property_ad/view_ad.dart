@@ -934,7 +934,7 @@ class ViewPropertyAd extends StatelessWidget {
                       childAspectRatio: 2,
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
-                      children: allAmenities
+                      children: ALL_AMENITIES
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(

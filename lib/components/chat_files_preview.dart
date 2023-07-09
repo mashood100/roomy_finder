@@ -132,6 +132,14 @@ class _ChatMessgeFilePreviewState extends State<ChatMessgeFilePreview> {
 
   Future<void> downloadFile() async {
     try {
+      // var haveStoragePermission = await Permission.storage.isGranted ||
+      //     await Permission.storage.isLimited;
+
+      // if (!haveStoragePermission) {
+      //   FileHelper.requestPermission(Permission.storage);
+      //   return;
+      // }
+
       setState(() => isDownloading = true);
 
       localPath = await FileHelper.downloadFileFromUri(

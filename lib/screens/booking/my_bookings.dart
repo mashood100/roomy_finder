@@ -234,65 +234,74 @@ class _BookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Badge(
-        isLabelVisible: booking.isMine && !booking.isViewedByLandlord,
-        child: Card(
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: booking.ad.images.isEmpty
-                    ? Image.asset(
-                        "assets/images/default_room.png",
-                        height: 120,
-                        width: 140,
-                        fit: BoxFit.cover,
-                      )
-                    : LoadingProgressImage(
-                        image: CachedNetworkImageProvider(booking.ad.images[0]),
-                        height: 120,
-                        width: 140,
-                        fit: BoxFit.cover,
-                      ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Label(
-                        label: "Property : ",
-                        value: "${booking.quantity} ${booking.ad.type}"
-                            "${booking.quantity > 1 ? "s" : ""}",
-                        boldValue: true,
-                      ),
-                      Label(
-                        label: "Location : ",
-                        value: "${booking.ad.address["location"]}",
-                        boldValue: true,
-                      ),
-                      Label(
-                        label: "Status     : ",
-                        value: booking.capitaliezedStatus,
-                        boldValue: true,
-                        valueColor: booking.isPayed || booking.isOffered
-                            ? Colors.green
-                            : booking.isPending
-                                ? Colors.blue
-                                : Colors.red,
-                      ),
-                      Text(
-                        Jiffy.parseFromDateTime(booking.createdAt).yMMMEdjm,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+      child: Card(
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: booking.ad.images.isEmpty
+                  ? Image.asset(
+                      "assets/images/default_room.png",
+                      height: 120,
+                      width: 140,
+                      fit: BoxFit.cover,
+                    )
+                  : LoadingProgressImage(
+                      image: CachedNetworkImageProvider(booking.ad.images[0]),
+                      height: 120,
+                      width: 140,
+                      fit: BoxFit.cover,
+                    ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Label(
+                      label: "Property : ",
+                      value: "${booking.quantity} ${booking.ad.type}"
+                          "${booking.quantity > 1 ? "s" : ""}",
+                      boldValue: true,
+                    ),
+                    Label(
+                      label: "Location : ",
+                      value: "${booking.ad.address["location"]}",
+                      boldValue: true,
+                    ),
+                    Label(
+                      label: "Status     : ",
+                      value: booking.capitaliezedStatus,
+                      boldValue: true,
+                      valueColor: booking.isPayed || booking.isOffered
+                          ? Colors.green
+                          : booking.isPending
+                              ? Colors.blue
+                              : Colors.red,
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          Jiffy.parseFromDateTime(booking.createdAt).yMMMEdjm,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        if (booking.isMine && !booking.isViewedByLandlord)
+                          const Icon(
+                            Icons.circle,
+                            color: Colors.red,
+                            size: 15,
+                          )
+                      ],
+                    ),
+                  ],
                 ),
-              )
-            ],
-          ),
+              ),
+            )
+          ],
         ),
       ),
     );

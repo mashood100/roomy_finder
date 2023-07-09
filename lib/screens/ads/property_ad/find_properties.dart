@@ -114,7 +114,7 @@ class _FindPropertiesController extends LoadingController {
                       // Property type
                       InlineDropdown<String>(
                         labelText: 'Type'.tr,
-                        hintText: 'Want do you want'.tr,
+                        hintText: 'What do you want'.tr,
                         value: filter["type"],
                         items: const [
                           "All",
@@ -160,7 +160,7 @@ class _FindPropertiesController extends LoadingController {
                       const SizedBox(height: 20),
                       InlineDropdown<String>(
                         labelText: 'Area',
-                        hintText: "Select for area",
+                        hintText: "Select the location",
                         value: filter["location"],
                         items: getLocationsFromCity(
                           filter["city"].toString(),
