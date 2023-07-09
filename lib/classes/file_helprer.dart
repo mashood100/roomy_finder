@@ -120,7 +120,15 @@ class FileHelper {
   }
 
   static Future<bool> copyFileToPath(File file, String filePath) async {
-    file.copySync(filePath);
+    final newFile = File(filePath);
+
+    var bytes = file.readAsBytesSync();
+
+    newFile.createSync(recursive: true);
+
+    newFile.writeAsBytesSync(bytes);
+
+    file.deleteSync();
 
     return true;
   }
@@ -130,7 +138,8 @@ class FileHelper {
       try {
         final path = await getPossibleLocalPath(Uri.parse(e));
 
-        File(path).deleteSync();
+        var file = File(path);
+        if (file.existsSync()) file.deleteSync();
       } catch (e, trace) {
         Get.log("$e\n$trace");
       }

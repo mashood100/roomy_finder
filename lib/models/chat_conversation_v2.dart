@@ -10,7 +10,6 @@ import 'package:roomy_finder/models/user.dart';
 
 class ChatConversationV2 {
   static final conversations = RxList<ChatConversationV2>.from([]);
-  static Map<String, dynamic>? initialMessage;
 
   final String key;
   final User first;

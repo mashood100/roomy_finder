@@ -60,6 +60,8 @@ class _ChatRoomController extends LoadingController {
   void onInit() {
     super.onInit();
 
+    _clearChatNotifications();
+
     _scrollController = ItemScrollController();
     _newMessageController = TextEditingController();
 
@@ -106,10 +108,9 @@ class _ChatRoomController extends LoadingController {
           {"key": conversation.key},
           ack: (_) {},
         );
+        _clearChatNotifications();
       } else {
         _isForeground = false;
-
-        _clearChatNotifications();
 
         if (_voiceRecoder.isRecording) _voiceRecoder.stopRecorder();
       }
@@ -150,7 +151,6 @@ class _ChatRoomController extends LoadingController {
     // _scrollController.dispose();
     _newMessageController.dispose();
 
-    ChatConversationV2.onChatEventCallback = null;
     _fGBGNotifierSubScription.cancel();
 
     _newMessageSoundPlayer.closePlayer();
@@ -186,14 +186,13 @@ class _ChatRoomController extends LoadingController {
     // print("Inner event : $event");
 
     if (event == "new-message-v2") {
+      conversation.markOthersMessagesAsRead();
       try {
         final msg = ChatMessageV2.fromMap(data["message"]);
 
         if (!conversation.messages.contains(msg)) {
           conversation.messages.add(msg);
         }
-
-        _scrollDown();
 
         if (_isForeground) {
           if (FileHelper.NEW_MESSAGE_SOUND != null) {
@@ -308,7 +307,7 @@ class _ChatRoomController extends LoadingController {
       }
 
       if (_recordDuration.inSeconds < 1) {
-        showToast("Voice must be nore than one second");
+        // showToast("Voice must be nore than one second");
         _recordDuration = Duration.zero;
 
         return;
@@ -354,7 +353,6 @@ class _ChatRoomController extends LoadingController {
       };
 
       _recordDuration = Duration.zero;
-      _scrollDown();
       repliedMessage = null;
 
       update(["bottom-widget"]);
@@ -371,6 +369,8 @@ class _ChatRoomController extends LoadingController {
             msg.id = res["message"]["id"];
             msg.isSending = false;
 
+            conversation.saveToStorage(AppController.me.id);
+
             update();
           } else {
             res["code"];
@@ -384,12 +384,9 @@ class _ChatRoomController extends LoadingController {
     }
   }
 
-  void _scrollDown() {
-    _scrollController.scrollTo(
-      index: messages.length - 1,
-      duration: const Duration(milliseconds: 100),
-    );
-  }
+  // void _scrollDown() {
+  //   _scrollController.jumpTo(index: messages.length - 1);
+  // }
 
   void _sortMessages() {
     if (messages.isEmpty) return;
@@ -464,7 +461,7 @@ class _ChatRoomController extends LoadingController {
 
           messages.add(msg);
 
-          _scrollDown();
+          conversation.saveToStorage(AppController.me.id);
 
           update();
 

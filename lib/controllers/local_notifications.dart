@@ -320,7 +320,7 @@ class LocalNotificationController {
           category = AppNotificationCategory.messaging;
           final msg = ChatMessageV2.fromJson(data["message"]);
 
-          showNotification(
+          final id = await showNotification(
             title,
             msg.content ?? msg.typedMessage,
             payload: msg.createLocalNotificationPayload(data["key"]),
@@ -361,7 +361,7 @@ class LocalNotificationController {
               blocks: [],
             );
           }
-
+          conv.localNotificationsIds.add(id);
           await conv.saveToStorage(msg.recieverId);
 
           break;
@@ -519,25 +519,12 @@ class LocalNotificationController {
   }
 
   static void handleFCMMessageOpenedAppMessage(RemoteMessage msg) {
-    if (msg.data["event"] == "new-message-v2") {
-      ChatConversationV2.initialMessage = Map<String, dynamic>.from(msg.data);
-
-      return;
-    }
-
     defaultNotificationTapHandler(msg.data, true);
   }
 
   static void handleInitialMessage(NotificationResponse not) {
     if (not.payload != null) {
       var data = jsonDecode(not.payload!) as Map<String, dynamic>;
-
-      if (data["event"] == "new-message-v2") {
-        ChatConversationV2.initialMessage =
-            Map<String, dynamic>.from(jsonDecode(not.payload!));
-
-        return;
-      }
 
       defaultNotificationTapHandler(data, true);
     }
