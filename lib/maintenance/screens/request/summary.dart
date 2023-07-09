@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:roomy_finder/components/maintenance_button.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/add_note_and_picture.dart';
 import 'package:roomy_finder/maintenance/screens/request/choose_maitenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/select_date_time.dart';

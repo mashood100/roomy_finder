@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 
 class ViewMaintenanceSubmitsScreen extends StatefulWidget {
   const ViewMaintenanceSubmitsScreen({super.key, required this.maintenance});

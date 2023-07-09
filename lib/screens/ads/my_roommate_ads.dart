@@ -95,17 +95,7 @@ class MyRoommateAdsScreen extends StatelessWidget {
           final data = controller.ads;
 
           if (data.isEmpty) {
-            return Center(
-              child: Column(
-                children: [
-                  const Text("No roommate ad"),
-                  OutlinedButton(
-                    onPressed: controller._fetchData,
-                    child: const Text("Refresh"),
-                  ),
-                ],
-              ),
-            );
+            return const Center(child: Text("No data"));
           }
 
           return ListView.builder(
@@ -125,7 +115,16 @@ class MyRoommateAdsScreen extends StatelessWidget {
               final ad = data[index];
               return RoommateAdWidget(
                 ad: ad,
-                onTap: () => Get.to(() => ViewRoommateAdScreen(ad: ad)),
+                onTap: () async {
+                  final res = await Get.to(() => ViewRoommateAdScreen(ad: ad));
+
+                  if (res is Map) {
+                    if (res["deletedId"] == ad.id) {
+                      controller.ads.remove(ad);
+                      controller.update();
+                    }
+                  }
+                },
               );
             },
             itemCount: data.length + 1,

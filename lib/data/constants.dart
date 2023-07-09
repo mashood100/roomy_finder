@@ -1,7 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
-// const SERVER_URL = "http://192.168.43.128:45000";
 // const SERVER_URL = "http://192.168.43.34:3000";
+// const SERVER_URL = "http://roomy-finder-dev-2.ap-1.evennode.com";
 const SERVER_URL = "http://roomy-finder-evennode.ap-1.evennode.com";
 
 const API_URL = "$SERVER_URL/api/v1";
@@ -17,6 +17,3 @@ const TERMS_AND_CONDITIONS_LINK = "$SERVER_URL/public/terms-and-conditions";
 const FEED_BACK_LINK = "$SERVER_URL/public/feedback";
 
 const SHARE_APP_LINK = "https://roomyfinder.page.link/share";
-
-// Google cloud
-const GOOGLE_CLOUD_API_KEY = "AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8";

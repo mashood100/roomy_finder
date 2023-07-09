@@ -4,12 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/prompt_user_password.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -21,7 +24,6 @@ import 'package:roomy_finder/screens/user/delete_account.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 
 class _ViewProfileController extends LoadingController {
@@ -98,7 +100,8 @@ class _ViewProfileController extends LoadingController {
           .ref()
           .child('images')
           .child("profile-pictures")
-          .child('/${const Uuid().v4()}${path.extension(_images[0].path)}');
+          .child(
+              '/${createDateTimeFileName()}${path.extension(_images[0].path)}');
 
       final uploadTask =
           imgRef.putData(await File(_images[0].path).readAsBytes());
@@ -121,7 +124,7 @@ class _ViewProfileController extends LoadingController {
               val.profilePicture = imageUrl;
             }
           });
-          AppController.instance.saveUser();
+          AppController.saveUser(AppController.me);
           update();
           break;
         default:
@@ -155,14 +158,14 @@ class _ViewProfileController extends LoadingController {
     }
   }
 
-  Future<void> _toggleShowPassword(BuildContext context) async {
+  Future<void> _toggleShowPassword() async {
     if (_showPassword.isTrue) {
       _showPassword(false);
       update();
       return;
     }
 
-    final password = await promptUserPassword(context);
+    final password = await promptUserPassword(Get.context!);
 
     if (password == null) return;
 
@@ -207,22 +210,9 @@ class _ViewProfileController extends LoadingController {
                     const SizedBox(height: 10),
 
                     // old password
-                    TextFormField(
+                    InlineTextField(
                       obscureText: !showOldPassword,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        border: const UnderlineInputBorder(),
-                        labelText: 'Old password'.tr,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            showOldPassword = !showOldPassword;
-                            setState(() {});
-                          },
-                          icon: showOldPassword
-                              ? const Icon(CupertinoIcons.eye_slash_fill)
-                              : const Icon(CupertinoIcons.eye_fill),
-                        ),
-                      ),
+                      hintText: 'Enter old password'.tr,
                       keyboardType: TextInputType.visiblePassword,
                       validator: (value) {
                         if (value !=
@@ -232,28 +222,22 @@ class _ViewProfileController extends LoadingController {
 
                         return null;
                       },
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setState(() => showOldPassword = !showOldPassword),
+                        icon: showOldPassword
+                            ? const Icon(CupertinoIcons.eye)
+                            : const Icon(CupertinoIcons.eye_slash),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     // new password
-                    TextFormField(
+                    InlineTextField(
                       obscureText: !showNewPassword,
                       onChanged: (value) {
                         newPassword = value;
                       },
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        border: const UnderlineInputBorder(),
-                        labelText: 'New password'.tr,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            showNewPassword = !showNewPassword;
-                            setState(() {});
-                          },
-                          icon: showNewPassword
-                              ? const Icon(CupertinoIcons.eye_slash_fill)
-                              : const Icon(CupertinoIcons.eye_fill),
-                        ),
-                      ),
+                      hintText: "Enter new password",
                       keyboardType: TextInputType.visiblePassword,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -265,27 +249,20 @@ class _ViewProfileController extends LoadingController {
                         }
                         return null;
                       },
-                      maxLength: 15,
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setState(() => showNewPassword = !showNewPassword),
+                        icon: showNewPassword
+                            ? const Icon(CupertinoIcons.eye)
+                            : const Icon(CupertinoIcons.eye_slash),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
 
                     // confirm new password
-                    TextFormField(
+                    InlineTextField(
                       obscureText: !showConfirmNewPassword,
-                      textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        border: const UnderlineInputBorder(),
-                        labelText: "Confirm password".tr,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            showConfirmNewPassword = !showConfirmNewPassword;
-                            setState(() {});
-                          },
-                          icon: showConfirmNewPassword
-                              ? const Icon(CupertinoIcons.eye_slash_fill)
-                              : const Icon(CupertinoIcons.eye_fill),
-                        ),
-                      ),
+                      hintText: "Confirm password",
                       keyboardType: TextInputType.visiblePassword,
                       validator: (value) {
                         if (value != newPassword) {
@@ -293,9 +270,15 @@ class _ViewProfileController extends LoadingController {
                         }
                         return null;
                       },
-                      maxLength: 15,
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() =>
+                            showConfirmNewPassword = !showConfirmNewPassword),
+                        icon: showConfirmNewPassword
+                            ? const Icon(CupertinoIcons.eye)
+                            : const Icon(CupertinoIcons.eye_slash),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -340,7 +323,7 @@ class _ViewProfileController extends LoadingController {
             showToast("Password updated successfully".tr);
 
             AppController.instance.userPassword = password;
-            AppController.instance.saveUserPassword(password);
+            AppController.saveUserPassword(password);
 
             break;
           default:
@@ -428,20 +411,11 @@ class ViewProfileScreen extends StatelessWidget {
                                 transition: Transition.zoom,
                               );
                             },
-                            child: CachedNetworkImage(
-                              imageUrl: AppController
-                                  .instance.user.value.profilePicture!,
+                            child: LoadingProgressImage(
+                              image: CachedNetworkImageProvider(AppController
+                                  .instance.user.value.profilePicture!),
                               width: double.infinity,
                               fit: BoxFit.fitWidth,
-                              errorWidget: (context, error, stackTrace) {
-                                return Container(
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    CupertinoIcons.profile_circled,
-                                    size: 60,
-                                  ),
-                                );
-                              },
                             ),
                           );
                         }),
@@ -488,20 +462,19 @@ class ViewProfileScreen extends StatelessWidget {
                         ),
                         Card(
                           child: ListTile(
+                            contentPadding: const EdgeInsets.only(left: 16),
                             title: Text("password".tr,
                                 style: textTheme.bodySmall!),
                             subtitle: Text(
                               controller._showPassword.isTrue
                                   ? '${me.password}'
-                                  : "• " * 15,
+                                  : "•" * 10,
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  onPressed: () {
-                                    controller._toggleShowPassword(context);
-                                  },
+                                  onPressed: controller._toggleShowPassword,
                                   icon: controller._showPassword.isTrue
                                       ? const Icon(Icons.visibility_off)
                                       : const Icon(Icons.visibility),
@@ -527,9 +500,12 @@ class ViewProfileScreen extends StatelessWidget {
                               children: [
                                 Label(label: "Full name", value: me.fullName),
                                 Label(label: "Email", value: me.email),
-                                Label(label: "Phone", value: me.phone),
-                                Label(label: "Gender", value: me.gender),
-                                Label(label: "Country", value: me.country),
+                                Label(label: "Phone", value: me.phone ?? "N/A"),
+                                Label(
+                                    label: "Gender", value: me.gender ?? "N/A"),
+                                Label(
+                                    label: "Country",
+                                    value: me.country ?? "N/A"),
                                 Label(
                                   label: "Status",
                                   value: me.type.replaceFirst(

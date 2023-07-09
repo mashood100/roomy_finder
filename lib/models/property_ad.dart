@@ -1,8 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:roomy_finder/models/user.dart';
 
 class PropertyAd {
@@ -27,6 +25,7 @@ class PropertyAd {
   Map<String, Object> address;
   Map<String, Object> socialPreferences;
   bool? needsPhotograph;
+  Map<String, Object>? autoApproval;
 
   String? shareLink;
 
@@ -50,6 +49,22 @@ class PropertyAd {
       default:
         return dailyPrice + dailyCommission;
     }
+  }
+
+  bool get autoApprovalIsActivated {
+    if (autoApproval == null) return false;
+
+    final date = DateTime.tryParse("${autoApproval?["expireAt"]}");
+
+    if (date == null) return false;
+
+    if (DateTime.now().isAfter(date)) return false;
+
+    return true;
+  }
+
+  bool get autoApprovalIsEnabled {
+    return autoApprovalIsActivated && autoApproval?["enabled"] == true;
   }
 
   List<String> get technologyAmenities {
@@ -101,6 +116,7 @@ class PropertyAd {
     required this.socialPreferences,
     this.needsPhotograph,
     this.shareLink,
+    this.autoApproval,
   });
 
   Map<String, dynamic> toMap() {
@@ -127,6 +143,7 @@ class PropertyAd {
       'socialPreferences': socialPreferences,
       'needsPhotograph': needsPhotograph,
       'shareLink': shareLink,
+      'autoApproval': autoApproval,
     };
   }
 
@@ -159,6 +176,9 @@ class PropertyAd {
           Map<String, Object>.from((map['socialPreferences'] as Map)),
       needsPhotograph: map["needsPhotograph"] == true,
       shareLink: map['shareLink'] as String?,
+      autoApproval: map["autoApproval"] == null
+          ? null
+          : Map<String, Object>.from((map['autoApproval'] as Map)),
     );
   }
 
@@ -174,49 +194,37 @@ class PropertyAd {
 
   @override
   bool operator ==(covariant PropertyAd other) {
-    if (identical(this, other)) return true;
-
-    return other.id == id &&
-        other.poster == poster &&
-        other.type == type &&
-        other.quantity == quantity &&
-        other.quantityTaken == quantityTaken &&
-        other.preferedRentType == preferedRentType &&
-        other.monthlyPrice == monthlyPrice &&
-        other.weeklyPrice == weeklyPrice &&
-        other.dailyPrice == dailyPrice &&
-        other.deposit == deposit &&
-        other.depositPrice == depositPrice &&
-        other.posterType == posterType &&
-        other.description == description &&
-        listEquals(other.images, images) &&
-        listEquals(other.videos, videos) &&
-        listEquals(other.amenities, amenities) &&
-        other.createdAt == createdAt &&
-        mapEquals(other.address, address) &&
-        mapEquals(other.socialPreferences, socialPreferences);
+    return other.id == id;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        poster.hashCode ^
-        type.hashCode ^
-        quantity.hashCode ^
-        quantityTaken.hashCode ^
-        preferedRentType.hashCode ^
-        monthlyPrice.hashCode ^
-        weeklyPrice.hashCode ^
-        dailyPrice.hashCode ^
-        deposit.hashCode ^
-        depositPrice.hashCode ^
-        posterType.hashCode ^
-        description.hashCode ^
-        images.hashCode ^
-        videos.hashCode ^
-        amenities.hashCode ^
-        createdAt.hashCode ^
-        address.hashCode ^
-        socialPreferences.hashCode;
+    return id.hashCode;
+  }
+
+  void updateFrom(PropertyAd other) {
+    // id= other.id;
+    poster = other.poster;
+    type = other.type;
+    quantity = other.quantity;
+    quantityTaken = other.quantityTaken;
+    preferedRentType = other.preferedRentType;
+    monthlyPrice = other.monthlyPrice;
+    weeklyPrice = other.weeklyPrice;
+    dailyPrice = other.dailyPrice;
+    deposit = other.deposit;
+    depositPrice = other.depositPrice;
+    posterType = other.posterType;
+    agentInfo = other.agentInfo;
+    description = other.description;
+    images = other.images;
+    videos = other.videos;
+    amenities = other.amenities;
+    createdAt = other.createdAt;
+    address = other.address;
+    socialPreferences = other.socialPreferences;
+    needsPhotograph = other.needsPhotograph;
+    shareLink = other.shareLink;
+    autoApproval = other.autoApproval;
   }
 }

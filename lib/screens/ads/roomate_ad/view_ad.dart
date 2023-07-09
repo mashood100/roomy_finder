@@ -2,25 +2,25 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
 import 'package:roomy_finder/components/ads.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/share_ad.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
-import 'package:roomy_finder/screens/messages/flyer_chat.dart';
+import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
+// import 'package:roomy_finder/screens/new_chat/chat_room.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -50,11 +50,9 @@ class _ViewRoommateAdController extends LoadingController {
 
       if (res.statusCode == 204) {
         isLoading(false);
-        await showConfirmDialog(
-          "Ad deleted successfully. You will never"
-          " see it again after you leave this screen",
-          isAlert: true,
-        );
+        await showConfirmDialog("Ad deleted successfully.", isAlert: true);
+        Get.back(result: {"deletedId": ad.id});
+
         deleteManyFilesFromUrl(ad.images);
         deleteManyFilesFromUrl(ad.videos);
       } else if (res.statusCode == 404) {
@@ -63,17 +61,6 @@ class _ViewRoommateAdController extends LoadingController {
           "Ad not found. It may have been deleted alredy",
           isAlert: true,
         );
-      } else if (res.statusCode == 400) {
-        isLoading(false);
-        var message = "This ad is booked. You must decline all "
-            "the bookings releted to this ad before deleting it.";
-
-        if (res.data["free-data"] != null) {
-          message += " The cuurent last Check out on this ad is"
-              " ${relativeTimeText(DateTime.parse(res.data["free-data"]))}";
-        }
-
-        await showConfirmDialog(message, isAlert: true);
       } else {
         showGetSnackbar(
           "Failed to book ad. Please try again",
@@ -92,14 +79,15 @@ class _ViewRoommateAdController extends LoadingController {
   }
 
   Future<void> chatWithUser() async {
-    final conv = ChatConversation(other: ad.poster.chatUser);
-    Get.to(
-      () => FlyerChatScreen(
-        conversation: conv,
-        myId: AppController.me.id,
-        otherId: ad.poster.id,
-      ),
-    );
+    moveToChatRoom(AppController.me, ad.poster);
+
+    // Get.to(
+    //   () => FlyerChatScreen(
+    //     conversation: conv,
+    //     myId: AppController.me.id,
+    //     otherId: ad.poster.id,
+    //   ),
+    // );
   }
 
   void _viewImage(String source) {
@@ -179,28 +167,11 @@ class ViewRoommateAdScreen extends StatelessWidget {
                                       transition: Transition.zoom,
                                     );
                                   },
-                                  child: CachedNetworkImage(
-                                    imageUrl: e,
+                                  child: LoadingProgressImage(
+                                    image: CachedNetworkImageProvider(e),
                                     height: 250,
                                     width: Get.width,
                                     fit: BoxFit.cover,
-                                    errorWidget: (ctx, e, trace) {
-                                      return const SizedBox(
-                                        child: CupertinoActivityIndicator(
-                                          radius: 30,
-                                          animating: false,
-                                        ),
-                                      );
-                                    },
-                                    progressIndicatorBuilder:
-                                        (context, url, downloadProgress) {
-                                      return Padding(
-                                        padding: const EdgeInsets.all(10.0),
-                                        child: CircularProgressIndicator(
-                                          value: downloadProgress.progress,
-                                        ),
-                                      );
-                                    },
                                   ),
                                 );
                               },
@@ -245,7 +216,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                             ),
                           ],
                           options: CarouselOptions(
-                            autoPlayInterval: const Duration(seconds: 10),
+                            autoPlayInterval: const Duration(seconds: 20),
                             pageSnapping: true,
                             autoPlay: true,
                             viewportFraction: 1,
@@ -292,15 +263,19 @@ class ViewRoommateAdScreen extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: List.generate(
-                                  ad.images.length + ad.videos.length,
-                                  (ind) => Icon(
-                                    controller._currentCarousselIndex == ind
-                                        ? Icons.circle
-                                        : Icons.circle_outlined,
-                                    size: 8,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                    ad.images.length + ad.videos.length, (ind) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 2),
+                                    child: Icon(
+                                      controller._currentCarousselIndex == ind
+                                          ? Icons.circle
+                                          : Icons.circle_outlined,
+                                      size: 8,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                }),
                               ),
                             );
                           },
@@ -363,40 +338,44 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 100, right: 10),
                       child: Row(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                ad.poster.fullName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  ad.poster.fullName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
                                 ),
-                              ),
-                              // Action : HAVE ROOM / NEED ROOM
-                              Text(
-                                ad.action,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
+                                // Action : HAVE ROOM / NEED ROOM
+                                Text(
+                                  ad.action,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
 
-                              const SizedBox(height: 10),
-                              // Location
-                              Text(
-                                "${ad.address["buildingName"] ?? "N/A"},"
-                                " ${ad.address["location"]},"
-                                " ${ad.address["city"]}",
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                                const SizedBox(height: 10),
+                                // Location
+                                Text(
+                                  "${ad.address["buildingName"] != null ? "${ad.address["buildingName"]}, " : ""}"
+                                  " ${ad.address["location"]},"
+                                  " ${ad.address["city"]}",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 10),
                           if (!ad.isMine)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -548,7 +527,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                         {
                           "label": "Nationality",
                           "asset": "assets/icons/globe.png",
-                          "value": ad.poster.country,
+                          "value": ad.aboutYou["nationality"] ?? "N/A",
                         },
                         {
                           "label": "Lifestyle",
@@ -765,7 +744,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       crossAxisSpacing: 10,
-                      children: allAmenities
+                      children: ALL_AMENITIES
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(
@@ -797,7 +776,7 @@ class ViewRoommateAdScreen extends StatelessWidget {
                     childAspectRatio: 1.2,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
-                    children: roommateInterests
+                    children: ROOMMATE_INTERESTS
                         .where((e) => ad.interests.contains(e["value"]))
                         .map((e) {
                       return Container(

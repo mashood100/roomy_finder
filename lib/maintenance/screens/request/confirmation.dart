@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
-import 'package:uuid/uuid.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/maintenance_button.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/maintenance/helpers/get_sub_category_icon.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 
 class ConfirmationScreen extends StatefulWidget {
@@ -231,10 +231,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       data["address"] = widget.request.address;
 
       final imagesTaskFuture = widget.request.images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = widget.request.images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 

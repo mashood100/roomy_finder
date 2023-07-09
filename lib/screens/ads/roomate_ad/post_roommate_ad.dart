@@ -9,15 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_placeholder.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/functions/city_location.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
@@ -25,7 +26,7 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
@@ -55,8 +56,6 @@ class _PostRoommateAdController extends LoadingController {
 
   final amenities = <String>[].obs;
 
-  PhoneNumber agentPhoneNumber = PhoneNumber();
-
   final information = <String, Object?>{
     "type": "Studio",
     "rentType": "Monthly",
@@ -66,21 +65,18 @@ class _PostRoommateAdController extends LoadingController {
   final aboutYou = <String, Object?>{
     // "nationality": "Arab",
     // "astrologicalSign": "ARIES",
-    "gender": AppController.me.gender,
+    // "gender": AppController.me.gender,
     // "age": "",
     // "occupation": "Professional",
     // "lifeStyle": "Early Bird",
   }.obs;
 
-  final address = <String, String>{
-    // "city": "",
-    // "location": "",
+  final address = <String, String?>{
     "countryCode": AppController.instance.country.value.code,
   }.obs;
 
-  final socialPreferences = {
+  final socialPreferences = <String, Object?>{
     "grouping": "Single",
-    "gender": "Male",
     "nationality": "Arab",
     "smoking": false,
     "cooking": false,
@@ -226,10 +222,9 @@ class _PostRoommateAdController extends LoadingController {
       };
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -241,10 +236,9 @@ class _PostRoommateAdController extends LoadingController {
       imagesUrls = await Future.wait(imagesTaskFuture);
 
       final videoTaskFuture = videos.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('videos')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -265,6 +259,8 @@ class _PostRoommateAdController extends LoadingController {
         final res =
             await ApiService.getDio.post("/ads/roommate-ad", data: data);
 
+        _log(res.statusCode);
+
         if (res.statusCode != 200) {
           deleteManyFilesFromUrl(imagesUrls);
           deleteManyFilesFromUrl(videosUrls);
@@ -284,6 +280,7 @@ class _PostRoommateAdController extends LoadingController {
             showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
             break;
           default:
+            showToast("Something went wrong. Please trye again");
         }
       } else {
         final res = await ApiService.getDio
@@ -293,6 +290,8 @@ class _PostRoommateAdController extends LoadingController {
           deleteManyFilesFromUrl(imagesUrls);
           deleteManyFilesFromUrl(videosUrls);
         }
+
+        _log(res.statusCode);
 
         switch (res.statusCode) {
           case 200:
@@ -317,8 +316,9 @@ class _PostRoommateAdController extends LoadingController {
             showToast("someThingWentWrong".tr);
         }
       }
-    } catch (e) {
-      Get.log("$e");
+    } catch (e, trace) {
+      _log(e);
+      _log(trace);
       deleteManyFilesFromUrl(imagesUrls);
       deleteManyFilesFromUrl(videosUrls);
     } finally {
@@ -336,7 +336,7 @@ class _PostRoommateAdController extends LoadingController {
             shrinkWrap: true,
             crossAxisCount: 2,
             childAspectRatio: 2.5,
-            children: allLanguages
+            children: ALL_LANGUAGUES
                 .where((e) => !languages.contains(e))
                 .map(
                   (e) => GestureDetector(
@@ -440,7 +440,7 @@ class PostRoommateAdScreen extends StatelessWidget {
               childAspectRatio: 1.5,
               children: [
                 {
-                  "value": "Early Brird",
+                  "value": "Early Bird",
                   "asset": "assets/icons/bird.png",
                 },
                 {
@@ -584,8 +584,9 @@ class PostRoommateAdScreen extends StatelessWidget {
                                         fit: BoxFit.cover,
                                       );
                                     }
-                                    return CachedNetworkImage(
-                                      imageUrl: "${e["imageUrl"]}",
+                                    return LoadingProgressImage(
+                                      image: CachedNetworkImageProvider(
+                                          "${e["imageUrl"]}"),
                                       fit: BoxFit.cover,
                                     );
                                   }),
@@ -803,7 +804,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    ...["Studio", "Appartment", "House"].map((e) {
+                    ...["Studio", "Apartment", "House"].map((e) {
                       return Container(
                         margin: const EdgeInsets.only(left: 10),
                         padding: const EdgeInsets.all(8.0),
@@ -829,7 +830,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'rentType'.tr,
                   value: controller.information["rentType"] as String?,
-                  items: const ["Monthly", "Weekly", "Daily"],
+                  items: RENT_TYPES,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -902,7 +903,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 // Area
                 InlineDropdown<String>(
                   labelText: 'Area',
-                  hintText: "Select for area",
+                  hintText: "Select the location",
                   value: controller.address["location"]?.isEmpty == true
                       ? null
                       : controller.address["location"],
@@ -953,7 +954,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                children: allAmenities
+                children: ALL_AMENITIES
                     .map(
                       (e) => GestureDetector(
                         onTap: () {
@@ -1020,7 +1021,7 @@ class PostRoommateAdScreen extends StatelessWidget {
               InlineDropdown<String>(
                 labelText: 'gender'.tr,
                 value: controller.socialPreferences["gender"] as String?,
-                items: const ["Male", "Female", "Mix"],
+                items: ALL_GENDERS_WITH_MIX,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1034,7 +1035,7 @@ class PostRoommateAdScreen extends StatelessWidget {
               InlineDropdown<String>(
                 labelText: 'nationality'.tr,
                 value: controller.socialPreferences["nationality"] as String?,
-                items: allNationalities,
+                items: ALL_NATIONALITIES,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1049,7 +1050,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 labelText: 'Lifestyle'.tr,
                 hintText: 'Select lifestyle',
                 value: controller.socialPreferences["lifeStyle"] as String?,
-                items: const ["Early Brird", "Night Owl"],
+                items: ALL_LIFE_STYLES,
                 onChanged: controller.isLoading.isTrue
                     ? null
                     : (val) {
@@ -1079,7 +1080,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                   mainAxisSpacing: 20,
                   crossAxisSpacing: 20,
                   childAspectRatio: 1.5,
-                  children: allSocialPreferences.map((e) {
+                  children: ALL_SOCIAL_PREFERENCES.map((e) {
                     return GestureDetector(
                       onTap: () {
                         if (controller.socialPreferences[e["value"]] == true) {
@@ -1144,7 +1145,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'gender'.tr,
                   value: controller.aboutYou["gender"] as String?,
-                  items: const ["Male", "Female"],
+                  items: ALL_GENDERS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1185,7 +1186,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'occupation'.tr,
                   value: controller.aboutYou["occupation"] as String?,
-                  items: const ["Professional", "Student", "Other"],
+                  items: ALL_OCCUPATIONS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1199,7 +1200,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'nationality'.tr,
                   value: controller.aboutYou["nationality"] as String?,
-                  items: allNationalities,
+                  items: ALL_NATIONALITIES,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1213,7 +1214,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 InlineDropdown<String>(
                   labelText: 'astrologicalSign'.tr,
                   value: controller.aboutYou["astrologicalSign"] as String?,
-                  items: astrologicalSigns,
+                  items: ASTROLOGICAL_SIGNS,
                   onChanged: controller.isLoading.isTrue
                       ? null
                       : (val) {
@@ -1263,7 +1264,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                         onPressed: () async {
                           FocusScope.of(context).unfocus();
                           final result = await filterListData(
-                            allLanguages,
+                            ALL_LANGUAGUES,
                             excluded: controller.languages,
                           );
                           controller.languages.addAll(result);
@@ -1330,7 +1331,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 20,
                 mainAxisSpacing: 20,
-                children: roommateInterests
+                children: ROOMMATE_INTERESTS
                     .map(
                       (e) => GestureDetector(
                         onTap: () {
@@ -1411,25 +1412,25 @@ class PostRoommateAdScreen extends StatelessWidget {
                   validator: (value) {
                     return null;
                   },
-                  minLines: 5,
-                  maxLines: 10,
+                  minLines: 7,
+                  maxLines: 15,
                 ),
               ),
 
-              const Divider(height: 30),
-              if (controller.information["action"] == "NEED ROOM")
-                TextButton(
-                  onPressed: () {
-                    controller.saveAd();
-                  },
-                  child: const Text(
-                    "Skip",
-                    style: TextStyle(
-                      color: ROOMY_PURPLE,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
+              // const Divider(height: 30),
+              // if (controller.information["action"] == "NEED ROOM")
+              //   TextButton(
+              //     onPressed: () {
+              //       controller.saveAd();
+              //     },
+              //     child: const Text(
+              //       "Skip",
+              //       style: TextStyle(
+              //         color: ROOMY_PURPLE,
+              //         fontWeight: FontWeight.bold,
+              //       ),
+              //     ),
+              //   )
             ],
           ),
         );
@@ -1533,8 +1534,7 @@ class PostRoommateAdScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (controller.isLoading.isTrue)
-                  const LinearProgressIndicator(),
+                if (controller.isLoading.isTrue) const LoadingPlaceholder(),
               ],
             ),
           ),
@@ -1657,3 +1657,6 @@ class PostRoommateAdScreen extends StatelessWidget {
     );
   }
 }
+
+// void _log(data) => print("[ POST_ROOMMATE ] : $data");
+void _log(_) {}

@@ -1,12 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/components/inputs.dart';
 
 Future<String?> promptUserPassword(BuildContext context) async {
   var hidePassword = true;
+  var passwordString = "";
   final password = await showModalBottomSheet<String?>(
     context: context,
     builder: (context) {
-      var passwordString = "";
       return Padding(
         padding: EdgeInsets.only(
           top: 10,
@@ -28,25 +30,20 @@ Future<String?> promptUserPassword(BuildContext context) async {
               ),
               const SizedBox(height: 10),
               StatefulBuilder(builder: (context, setState) {
-                return TextField(
+                return InlineTextField(
                   textInputAction: TextInputAction.done,
-                  onSubmitted: (value) => Get.back(result: value),
-                  onChanged: (value) => passwordString = value,
+                  hintText: "Enter your password",
                   obscureText: hidePassword,
-                  decoration: InputDecoration(
-                    border: const UnderlineInputBorder(),
-                    labelText: "enterYourPassword".tr,
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        hidePassword = !hidePassword;
-                        setState(() {});
-                      },
-                      icon: hidePassword
-                          ? const Icon(Icons.visibility)
-                          : const Icon(Icons.visibility_off),
-                    ),
-                  ),
+                  onChanged: (value) => passwordString = value,
                   autofocus: true,
+                  suffixIcon: IconButton(
+                    onPressed: () =>
+                        setState(() => hidePassword = !hidePassword),
+                    icon: hidePassword
+                        ? const Icon(CupertinoIcons.eye)
+                        : const Icon(CupertinoIcons.eye_slash),
+                  ),
+                  onSubmit: (val) => Get.back(result: val),
                 );
               }),
               const SizedBox(height: 10),

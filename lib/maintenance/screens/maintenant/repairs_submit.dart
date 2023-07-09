@@ -8,11 +8,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/image_grid.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
-import 'package:uuid/uuid.dart';
 
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/request/add_note_and_picture.dart';
 
 class RepairsSubmitsScreen extends StatefulWidget {
@@ -217,10 +217,9 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
       if (description.trim().isNotEmpty) data["landlordNote"] = description;
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -274,10 +273,9 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
       if (description.trim().isNotEmpty) data["maintenantNote"] = description;
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 

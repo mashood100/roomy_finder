@@ -46,6 +46,37 @@ Future<bool?> showConfirmDialog(
   return response == true;
 }
 
+Future<String?> showAnsweringDialog(
+  String message, {
+  String? title,
+  required List<Map<String, dynamic>> answers,
+  bool barrierDismissible = true,
+  String? resultKey,
+  String? labelKey,
+}) async {
+  final context = Get.context;
+  if (context == null) return null;
+
+  final result = await showCupertinoDialog<String>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (context) {
+      return CupertinoAlertDialog(
+        title: title != null ? Text(title) : null,
+        content: Text(message),
+        actions: answers.map((e) {
+          return CupertinoDialogAction(
+            onPressed: () => Get.back(result: e[resultKey ?? 'value']),
+            child: Text((e[labelKey ?? 'label']).toString()),
+          );
+        }).toList(),
+      );
+    },
+  );
+
+  return result;
+}
+
 Future<bool?> showSuccessDialog(
   String message, {
   String? title,

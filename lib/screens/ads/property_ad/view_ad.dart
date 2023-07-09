@@ -1,20 +1,23 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/data/static.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/share_ad.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -24,6 +27,7 @@ import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
+// import 'package:url_launcher/url_launcher.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class _VewPropertyController extends LoadingController {
@@ -40,6 +44,8 @@ class _VewPropertyController extends LoadingController {
   final CarouselController carouselController = CarouselController();
   int _currentCarousselIndex = 0;
 
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+
   @override
   onInit() {
     rentType = ad.preferedRentType.obs;
@@ -53,6 +59,24 @@ class _VewPropertyController extends LoadingController {
     _resetDates();
 
     super.onInit();
+
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        final newAd = await ApiService.fetchPropertyAd(ad.id);
+
+        if (newAd != null) {
+          ad.updateFrom(newAd);
+
+          update();
+        }
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    _fGBGNotifierSubScription.cancel();
   }
 
   String get checkDifference {
@@ -172,11 +196,11 @@ class _VewPropertyController extends LoadingController {
     }
   }
 
-  Future<void> editAd(PropertyAd ad) async {
+  Future<void> editAd() async {
     Get.to(() => PostPropertyAdScreen(oldData: ad));
   }
 
-  Future<void> deleteAd(PropertyAd ad) async {
+  Future<void> deleteAd() async {
     final shouldContinue = await showConfirmDialog(
       "Please confirm",
     );
@@ -187,11 +211,9 @@ class _VewPropertyController extends LoadingController {
 
       if (res.statusCode == 204) {
         isLoading(false);
-        await showConfirmDialog(
-          "Ad deleted successfully. You will never"
-          " see it again after you leave this screen",
-          isAlert: true,
-        );
+
+        await showConfirmDialog("Ad deleted successfully.", isAlert: true);
+        Get.back(result: {"deletedId": ad.id});
         deleteManyFilesFromUrl(ad.images);
         deleteManyFilesFromUrl(ad.videos);
       } else if (res.statusCode == 404) {
@@ -210,14 +232,14 @@ class _VewPropertyController extends LoadingController {
 
         await showConfirmDialog(message, isAlert: true);
       } else {
-        showGetSnackbar(
+        showToast(
           "Failed to book ad. Please try again",
           severity: Severity.error,
         );
       }
     } catch (e) {
       Get.log("$e");
-      showGetSnackbar(
+      showToast(
         "Failed to book ad. Please try again",
         severity: Severity.error,
       );
@@ -226,11 +248,16 @@ class _VewPropertyController extends LoadingController {
     }
   }
 
-  Future<void> bookProperty(PropertyAd ad) async {
+  Future<void> bookProperty() async {
     if (AppController.me.isGuest) {
       Get.offAllNamed("/login");
       return;
     }
+
+    final shouldContinue = await showConfirmDialog(
+      "Please confirm",
+    );
+    if (shouldContinue != true) return;
     try {
       isLoading(true);
 
@@ -276,14 +303,14 @@ class _VewPropertyController extends LoadingController {
           isAlert: true,
         );
       } else {
-        showGetSnackbar(
+        showToast(
           "Failed to book ad. Please try again",
           severity: Severity.error,
         );
       }
     } catch (e) {
       Get.log("$e");
-      showGetSnackbar(
+      showToast(
         "Failed to book ad. Please try again",
         severity: Severity.error,
       );
@@ -292,7 +319,7 @@ class _VewPropertyController extends LoadingController {
     }
   }
 
-  Future<void> cancelBooking(PropertyAd ad) async {
+  Future<void> cancelBooking() async {
     final shouldContinue = await showConfirmDialog(
       "Please confirm",
     );
@@ -315,19 +342,150 @@ class _VewPropertyController extends LoadingController {
           isAlert: true,
         );
       } else {
-        showGetSnackbar(
+        showToast(
           "Failed to cancel booking. Please try again",
           severity: Severity.error,
         );
       }
     } catch (e) {
       Get.log("$e");
-      showGetSnackbar(
+      showToast(
         "Failed to cancel booking. Please try again",
         severity: Severity.error,
       );
     } finally {
       isLoading(false);
+    }
+  }
+
+  // Future<void> enableAutoBookingApproval() async {
+  //   final paymentMethod = await showDialog(
+  //     context: Get.context!,
+  //     builder: (context) {
+  //       return CupertinoAlertDialog(
+  //         title: const Text("Auto Approval"),
+  //         content: const Text.rich(
+  //           TextSpan(children: [
+  //             TextSpan(
+  //               text: "Auto Approval with permit your property bookings to be"
+  //                   " automaticaly approved. You need to pay ",
+  //             ),
+  //             TextSpan(
+  //               text: "250 AED",
+  //               style: TextStyle(fontWeight: FontWeight.bold),
+  //             ),
+  //             TextSpan(text: " for a "),
+  //             TextSpan(
+  //               text: "One Month Activation",
+  //               style: TextStyle(fontWeight: FontWeight.bold),
+  //             ),
+  //             TextSpan(text: ". Please select a payment method."),
+  //           ]),
+  //         ),
+  //         actions: [
+  //           CupertinoDialogAction(
+  //             child: const Text("STRIPE"),
+  //             onPressed: () => Get.back(result: "STRIPE"),
+  //           ),
+  //           CupertinoDialogAction(
+  //             child: const Text("PAYPAL"),
+  //             onPressed: () => Get.back(result: "PAYPAL"),
+  //           ),
+  //           CupertinoDialogAction(
+  //             child: const Text("CANCEL"),
+  //             onPressed: () => Get.back(),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+
+  //   if (paymentMethod == null) return;
+
+  //   try {
+  //     isLoading(true);
+
+  //     final res = await ApiService.getDio.post(
+  //       "/ads/property-ad/${ad.id}/pay-auto-approval",
+  //       data: {'months': 1, "paymentMethod": paymentMethod},
+  //     );
+
+  //     if (res.statusCode == 503) {
+  //       showToast("$paymentMethod service temporally unavailable");
+  //       return;
+  //     } else if (res.statusCode == 200) {
+  //       showToast("Payment initiated. Redirecting....");
+
+  //       final uri = Uri.parse(res.data["paymentUrl"]);
+
+  //       if (await canLaunchUrl(uri)) {
+  //         launchUrl(uri, mode: LaunchMode.externalApplication);
+  //       } else {
+  //         showToast("Failed to open payment link. Please install a browser");
+  //       }
+  //     } else {
+  //       showToast(
+  //         "Operation. Please try again",
+  //         severity: Severity.error,
+  //       );
+  //     }
+  //   } catch (e) {
+  //     Get.log("$e");
+  //     showToast(
+  //       "Operation failed. Please try again",
+  //       severity: Severity.error,
+  //     );
+  //   } finally {
+  //     isLoading(false);
+  //   }
+  // }
+
+  Future<void> toggleAutoApproval() async {
+    String message;
+    final iso = ad.autoApproval!["expireAt"].toString();
+
+    if (ad.autoApprovalIsEnabled) {
+      message = "Auto approval is enabled and it expires on "
+          "${Jiffy.parse(iso).yMMMEd}. Do you want to disable?";
+    } else {
+      message = "Auto approval is disabled and it expires on "
+          "${Jiffy.parse(iso).yMMMEd}. Do you want to enable?";
+    }
+    try {
+      final confirm = await showConfirmDialog(message, title: "Auto Approval");
+
+      if (confirm != true) return;
+
+      isLoading(true);
+
+      final res = await ApiService.getDio.post(
+        "/ads/property-ad/${ad.id}/toggle-auto-approval",
+      );
+
+      if (res.statusCode == 200) {
+        String status;
+
+        if (res.data["enabled"] == true) {
+          status = "enabled";
+        } else {
+          status = "disabled";
+        }
+
+        if (res.data != null) {
+          ad.autoApproval = Map<String, Object>.from(res.data);
+        }
+
+        showToast("Auto approval $status successfully");
+      } else {
+        showToast("Operation failed. please try again");
+      }
+    } catch (e) {
+      Get.log("$e");
+      showToast("Operation failed. please try again");
+    } finally {
+      isLoading(false);
+
+      update(["auto-approval"]);
     }
   }
 }
@@ -391,28 +549,11 @@ class ViewPropertyAd extends StatelessWidget {
                             transition: Transition.zoom,
                           );
                         },
-                        child: CachedNetworkImage(
-                          imageUrl: e,
+                        child: LoadingProgressImage(
+                          image: CachedNetworkImageProvider(e),
                           height: 250,
                           width: Get.width,
                           fit: BoxFit.cover,
-                          errorWidget: (ctx, e, trace) {
-                            return const SizedBox(
-                              child: CupertinoActivityIndicator(
-                                radius: 30,
-                                animating: false,
-                              ),
-                            );
-                          },
-                          progressIndicatorBuilder:
-                              (context, url, downloadProgress) {
-                            return Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: CircularProgressIndicator(
-                                value: downloadProgress.progress,
-                              ),
-                            );
-                          },
                         ),
                       ),
                     ),
@@ -455,7 +596,7 @@ class ViewPropertyAd extends StatelessWidget {
                     ),
                   ],
                   options: CarouselOptions(
-                    autoPlayInterval: const Duration(seconds: 10),
+                    autoPlayInterval: const Duration(seconds: 20),
                     pageSnapping: true,
                     autoPlay: true,
                     viewportFraction: 1,
@@ -475,15 +616,18 @@ class ViewPropertyAd extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
-                          ad.images.length + ad.videos.length,
-                          (ind) => Icon(
-                            controller._currentCarousselIndex == ind
-                                ? Icons.circle
-                                : Icons.circle_outlined,
-                            size: 8,
-                            color: Colors.white,
-                          ),
-                        ),
+                            ad.images.length + ad.videos.length, (ind) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Icon(
+                              controller._currentCarousselIndex == ind
+                                  ? Icons.circle
+                                  : Icons.circle_outlined,
+                              size: 8,
+                              color: Colors.white,
+                            ),
+                          );
+                        }),
                       ),
                     );
                   },
@@ -519,6 +663,53 @@ class ViewPropertyAd extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          // GetBuilder<_VewPropertyController>(
+                          //   id: "auto-approval",
+                          //   builder: (contoller) {
+                          //     if (ad.autoApprovalIsActivated) {
+                          //       return IconButton(
+                          //         style: IconButton.styleFrom(
+                          //           backgroundColor:
+                          //               Colors.grey.withOpacity(0.7),
+                          //           shape: RoundedRectangleBorder(
+                          //             borderRadius: BorderRadius.circular(50),
+                          //           ),
+                          //         ),
+                          //         onPressed: controller.isLoading.isTrue
+                          //             ? null
+                          //             : controller.toggleAutoApproval,
+                          //         icon: Icon(
+                          //           Icons.auto_mode,
+                          //           color: ad.autoApprovalIsEnabled
+                          //               ? ROOMY_ORANGE
+                          //               : Colors.grey,
+                          //         ),
+                          //       );
+                          //     } else {
+                          //       return ElevatedButton.icon(
+                          //         style: ElevatedButton.styleFrom(
+                          //           backgroundColor:
+                          //               Colors.grey.withOpacity(0.7),
+                          //           shape: RoundedRectangleBorder(
+                          //             borderRadius: BorderRadius.circular(50),
+                          //           ),
+                          //         ),
+                          //         onPressed: controller.isLoading.isTrue
+                          //             ? null
+                          //             : controller.enableAutoBookingApproval,
+                          //         label: const Text(
+                          //           "Enable",
+                          //           style: TextStyle(color: Colors.white),
+                          //         ),
+                          //         icon: const Icon(
+                          //           Icons.auto_mode,
+                          //           color: Colors.white,
+                          //         ),
+                          //       );
+                          //     }
+                          //   },
+                          // ),
+
                           IconButton(
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.grey.withOpacity(0.7),
@@ -528,7 +719,7 @@ class ViewPropertyAd extends StatelessWidget {
                             ),
                             onPressed: controller.isLoading.isTrue
                                 ? null
-                                : () => controller.editAd(ad),
+                                : controller.editAd,
                             icon: const Icon(
                               Icons.edit,
                               color: Colors.white,
@@ -543,9 +734,7 @@ class ViewPropertyAd extends StatelessWidget {
                             ),
                             onPressed: controller.isLoading.isTrue
                                 ? null
-                                : () {
-                                    controller.deleteAd(ad);
-                                  },
+                                : controller.deleteAd,
                             icon: const Icon(
                               Icons.delete,
                               color: Colors.white,
@@ -745,7 +934,7 @@ class ViewPropertyAd extends StatelessWidget {
                       childAspectRatio: 2,
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
-                      children: allAmenities
+                      children: ALL_AMENITIES
                           .where((e) => ad.amenities.contains(e["value"]))
                           .map((e) {
                         return AdOverViewItem(
@@ -985,9 +1174,9 @@ class ViewPropertyAd extends StatelessWidget {
                               ? null
                               : () {
                                   if (controller.bookingId != null) {
-                                    controller.cancelBooking(ad);
+                                    controller.cancelBooking();
                                   } else {
-                                    controller.bookProperty(ad);
+                                    controller.bookProperty();
                                   }
                                 },
                           child: Text(

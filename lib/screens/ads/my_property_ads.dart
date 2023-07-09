@@ -83,19 +83,11 @@ class MyPropertyAdsScreen extends StatelessWidget {
               ),
             );
           }
+
           if (controller.ads.isEmpty) {
-            return Center(
-              child: Column(
-                children: [
-                  const Text("No data."),
-                  OutlinedButton(
-                    onPressed: controller._fetchData,
-                    child: const Text("Refresh"),
-                  ),
-                ],
-              ),
-            );
+            return const Center(child: Text("No data"));
           }
+
           return ListView.builder(
             itemBuilder: (context, index) {
               if (index == controller.ads.length) {
@@ -113,7 +105,16 @@ class MyPropertyAdsScreen extends StatelessWidget {
               final ad = controller.ads[index];
               return PropertyAdWidget(
                 ad: ad,
-                onTap: () => Get.to(() => ViewPropertyAd(ad: ad)),
+                onTap: () async {
+                  final res = await Get.to(() => ViewPropertyAd(ad: ad));
+
+                  if (res is Map) {
+                    if (res["deletedId"] == ad.id) {
+                      controller.ads.remove(ad);
+                      controller.update();
+                    }
+                  }
+                },
               );
             },
             itemCount: controller.ads.length + 1,

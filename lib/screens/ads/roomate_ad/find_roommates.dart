@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/components/advertising.dart';
 import 'package:roomy_finder/components/get_more_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
@@ -170,9 +171,9 @@ class _FindRoommatesController extends LoadingController {
                         // Roommate type
                         InlineDropdown<String>(
                           labelText: 'Type'.tr,
-                          hintText: 'Appartment type'.tr,
+                          hintText: 'Apartment type'.tr,
                           value: filter["type"],
-                          items: const ["All", "Studio", "Appartment", "House"],
+                          items: const ["All", "Studio", "Apartment", "House"],
                           onChanged: (val) {
                             if (val != null) filter["type"] = val;
                             if (val == "All") filter.remove("type");
@@ -210,7 +211,7 @@ class _FindRoommatesController extends LoadingController {
                         const SizedBox(height: 20),
                         InlineDropdown<String>(
                           labelText: 'Area',
-                          hintText: "Select for area",
+                          hintText: "Select the location",
                           value: filter["location"],
                           items: getLocationsFromCity(
                             filter["city"].toString(),
@@ -228,7 +229,7 @@ class _FindRoommatesController extends LoadingController {
                           labelText: 'Gender',
                           hintText: "Select gender",
                           value: filter["gender"],
-                          items: const ["Female", "Male", "Any"],
+                          items: const ["Female", "Male", "Mix"],
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -523,13 +524,22 @@ class FindRoommatesScreen extends StatelessWidget {
                     children: controller.ads.map((ad) {
                       return _AdItem(
                         ad: ad,
-                        onTap: () {
+                        onTap: () async {
                           if (AppController.me.isGuest) {
                             showToast("Please register to see ad details");
                             return;
                           }
                           if (AppController.me.isPremium) {
-                            Get.to(() => ViewRoommateAdScreen(ad: ad));
+                            final result = await Get.to(
+                                () => ViewRoommateAdScreen(ad: ad));
+
+                            if (result is Map<String, dynamic>) {
+                              final deletedId = result["deletedId"];
+                              if (deletedId != null) {
+                                controller.ads
+                                    .removeWhere((e) => e.id == deletedId);
+                              }
+                            }
                           } else {
                             controller.upgradeToSeeDetails(ad);
                           }
@@ -591,21 +601,11 @@ class _AdItem extends StatelessWidget {
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               )
-                            : CachedNetworkImage(
-                                imageUrl: ad.images.first,
+                            : LoadingProgressImage(
+                                image:
+                                    CachedNetworkImageProvider(ad.images.first),
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorWidget: (ctx, url, e) {
-                                  return const SizedBox(
-                                    width: 150,
-                                    height: 150,
-                                    child: CupertinoActivityIndicator(
-                                      radius: 30,
-                                      color: Colors.grey,
-                                      animating: false,
-                                    ),
-                                  );
-                                },
                               ),
                       ),
                       InkWell(

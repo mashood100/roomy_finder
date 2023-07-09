@@ -1,16 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/app_locale.dart';
-import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/app_version.dart';
 import 'package:roomy_finder/models/country.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:roomy_finder/models/user.dart';
 
 class AppController extends GetxController {
@@ -33,8 +33,6 @@ class AppController extends GetxController {
 
   String? userPassword;
 
-  final RxBool haveNewMessage = false.obs;
-  final RxInt unreadNotificationCount = 0.obs;
   final country = Country.UAE.obs;
 
   static AppVersion? updateVersion;
@@ -47,7 +45,7 @@ class AppController extends GetxController {
       user = savedUser.obs;
       AppController.setupFCMTokenHandler();
 
-      userPassword = await getUserPassword();
+      userPassword = await getSavedUserPassword();
 
       if (savedUser.isMaintenant) {
         initialRoute = "/maintenance";
@@ -55,6 +53,9 @@ class AppController extends GetxController {
       } else {
         initialRoute = "/home";
       }
+
+      // Update profile
+      ApiService.updateUserProfile();
     } else {
       final isFirstLaunch = await getIsFirstLaunch();
       initialRoute = isFirstLaunch ? "/onboarding" : "/welcome";
@@ -126,26 +127,25 @@ class AppController extends GetxController {
   }
 
 // App User
-  Future<void> saveUser() async {
+  static Future<void> saveUser(User user) async {
     final pref = await SharedPreferences.getInstance();
-    pref.setString("user", user.value.toJson());
+    pref.setString("user", user.toJson());
   }
 
-  Future<User?> getSaveUser() async {
+  static Future<User?> getSaveUser() async {
     try {
       final pref = await SharedPreferences.getInstance();
       final jsonUser = pref.getString("user");
 
       if (jsonUser == null) return null;
       final user = User.fromJson(jsonUser);
-      AppNotication.currentUser = user;
       return user;
     } on Exception catch (_) {
       return null;
     }
   }
 
-  Future<void> removeSaveUser() async {
+  static Future<void> removeSaveUser() async {
     final pref = await SharedPreferences.getInstance();
     pref.remove("user");
   }
@@ -250,17 +250,18 @@ class AppController extends GetxController {
   }
 
   // password
-  Future<void> saveUserPassword(String password) async {
+  static Future<void> saveUserPassword(String password) async {
     final pref = await SharedPreferences.getInstance();
     pref.setString("userPassword", password);
   }
 
-  Future<void> removeUserPassword() async {
+  static Future<void> removeUserPassword() async {
     final pref = await SharedPreferences.getInstance();
     pref.remove("userPassword");
   }
 
-  Future<String?> getUserPassword() async {
+  @pragma("vm:entry-point")
+  static Future<String?> getSavedUserPassword() async {
     final pref = await SharedPreferences.getInstance();
     return pref.getString("userPassword");
   }
@@ -273,10 +274,12 @@ class AppController extends GetxController {
       await removeUserPassword();
       dynamicInitialLink = null;
       user(User.GUEST_USER);
+
+      await FirebaseAuth.instance.signOut();
+      // await FacebookAuth.instance.logOut();
     } catch (e, trace) {
       log(e);
       log(trace);
-      FirebaseAuth.instance.signOut();
     }
   }
 

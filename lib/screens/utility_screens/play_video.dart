@@ -28,7 +28,7 @@ class _PlayVideoScreenState extends State<PlayVideoScreen> {
           }),
         );
     } else {
-      _controller = VideoPlayerController.network(widget.source)
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.source))
         ..initialize().then(
           (_) => setState(() {
             _controller.play();

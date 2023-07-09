@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/inputs.dart';
+import 'package:roomy_finder/components/loading_placeholder.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
@@ -17,14 +19,14 @@ import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/city_location.dart';
-import 'package:roomy_finder/functions/delete_file_from_url.dart';
+import 'package:roomy_finder/functions/create_datetime_filename.dart';
+import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:uuid/uuid.dart';
 import "package:path/path.dart" as path;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -68,7 +70,7 @@ class _PostPropertyAdController extends LoadingController {
     "description": "",
   }.obs;
 
-  final address = <String, String>{
+  final address = <String, String?>{
     "city": "",
     "location": "",
     "buildingName": "",
@@ -76,7 +78,7 @@ class _PostPropertyAdController extends LoadingController {
     "countryCode": AppController.instance.country.value.code,
   }.obs;
 
-  final socialPreferences = {
+  final socialPreferences = <String, Object?>{
     "numberOfPeople": "1 to 5",
     "grouping": "Single",
     "gender": "Mix",
@@ -124,12 +126,6 @@ class _PostPropertyAdController extends LoadingController {
       address["appartmentNumber"] =
           oldData!.address["appartmentNumber"].toString();
       amenties.value = oldData!.amenities;
-
-      if (oldData!.agentInfo != null) {
-        agentBrokerInformation(oldData!.agentInfo!);
-      }
-
-      socialPreferences(oldData!.socialPreferences);
     }
     super.onInit();
   }
@@ -227,10 +223,9 @@ class _PostPropertyAdController extends LoadingController {
       if (data["deposit"] != true) data.remove("depositPrice");
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -242,10 +237,9 @@ class _PostPropertyAdController extends LoadingController {
       imagesUrls = await Future.wait(imagesTaskFuture);
 
       final videoTaskFuture = videos.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('videos')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -314,10 +308,9 @@ class _PostPropertyAdController extends LoadingController {
       if (data["deposit"] != true) data.remove("depositPrice");
 
       final imagesTaskFuture = images.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('images')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('images').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -329,10 +322,9 @@ class _PostPropertyAdController extends LoadingController {
       imagesUrls = await Future.wait(imagesTaskFuture);
 
       final videoTaskFuture = videos.map((e) async {
-        final imgRef = FirebaseStorage.instance
-            .ref()
-            .child('videos')
-            .child('/${const Uuid().v4()}${path.extension(e.path)}');
+        final index = images.indexOf(e);
+        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
+            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
 
         final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
 
@@ -477,7 +469,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               // Area
                               InlineDropdown<String>(
                                 labelText: 'Area',
-                                hintText: "Select for area",
+                                hintText: "Choose location",
                                 value: controller.address["location"]!.isEmpty
                                     ? null
                                     : controller.address["location"],
@@ -521,9 +513,9 @@ class PostPropertyAdScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 20),
 
-                              // Appartment number
+                              // Apartment number
                               InlineTextField(
-                                labelText: "Appartment number",
+                                labelText: "Apartment number",
                                 enabled: controller.isLoading.isFalse,
                                 initialValue:
                                     controller.address["appartmentNumber"],
@@ -1122,13 +1114,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               value:
                                   controller.socialPreferences["numberOfPeople"]
                                       as String,
-                              items: const [
-                                "1 to 5",
-                                "5 to 10",
-                                "10 to 15",
-                                "15 to 20",
-                                "+20",
-                              ],
+                              items: PROPERTY_ADS_NUMBERS_OF_PEOPLES,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1144,7 +1130,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               labelText: 'gender'.tr,
                               value: controller.socialPreferences["gender"]
                                   as String,
-                              items: const ["Male", "Female", "Mix"],
+                              items: ALL_GENDERS_WITH_MIX,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1160,7 +1146,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               labelText: 'nationality'.tr,
                               value: controller.socialPreferences["nationality"]
                                   as String,
-                              items: allNationalities,
+                              items: ALL_NATIONALITIES,
                               onChanged: controller.isLoading.isTrue
                                   ? null
                                   : (val) {
@@ -1278,7 +1264,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                               physics: const NeverScrollableScrollPhysics(),
                               crossAxisSpacing: 10,
                               mainAxisSpacing: 10,
-                              children: allAmenities
+                              children: ALL_AMENITIES
                                   .map(
                                     (e) => GestureDetector(
                                       onTap: () {
@@ -1431,9 +1417,10 @@ class PostPropertyAdScreen extends StatelessWidget {
                                                       fit: BoxFit.cover,
                                                     );
                                                   }
-                                                  return CachedNetworkImage(
-                                                    imageUrl:
-                                                        "${e["imageUrl"]}",
+                                                  return LoadingProgressImage(
+                                                    image:
+                                                        CachedNetworkImageProvider(
+                                                            "${e["imageUrl"]}"),
                                                     fit: BoxFit.cover,
                                                   );
                                                 }),
@@ -1696,8 +1683,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (controller.isLoading.isTrue)
-                  const LinearProgressIndicator(),
+                if (controller.isLoading.isTrue) const LoadingPlaceholder(),
               ],
             ),
           ),

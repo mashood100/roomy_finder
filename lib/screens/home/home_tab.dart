@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
+
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/ads.dart';
 import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
@@ -20,8 +24,6 @@ import 'package:roomy_finder/screens/ads/roomate_ad/find_roommates.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/user/upgrade_plan.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class _HomeTabController extends LoadingController {
   final _targetAds = "Room".obs;
@@ -33,31 +35,25 @@ class _HomeTabController extends LoadingController {
 
   final canSeeDetails = AppController.me.isPremium.obs;
 
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+
   @override
   void onInit() {
     super.onInit();
 
     _fetchHommeAds();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
-      final data = event.data;
-
-      switch (data["event"]) {
-        case "plan-upgraded-successfully":
-          AppController.instance.user.update((val) {
-            if (val == null) return;
-            val.isPremium = true;
-          });
-          final pref = await SharedPreferences.getInstance();
-          if (pref.get("user") != null) {
-            AppController.instance.saveUser();
-          }
-          showToast("Plan upgraded successfully");
-
-          break;
-        default:
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        _fetchHommeAds();
       }
     });
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    _fGBGNotifierSubScription.cancel();
   }
 
   Future<void> _fetchHommeAds() async {
@@ -66,7 +62,7 @@ class _HomeTabController extends LoadingController {
       _failedToLoadHomeAds(false);
 
       final res = await Dio().get(
-        "$API_URL/ads/recomended",
+        "$API_URL/ads/recommended",
         queryParameters: {
           "countryCode": AppController.instance.country.value.code,
         },
@@ -116,6 +112,7 @@ class _HomeTabController extends LoadingController {
   }
 
   List<PropertyAd> get _firstRowPropertyAds {
+    // final half = _homePropertyAds.length ~/ 2;
     if (_homePropertyAds.length <= 6) {
       return _homePropertyAds;
     } else {
@@ -384,12 +381,28 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: List.generate(6, (index) {
-                          return const Card(
+                          return Card(
                             child: SizedBox(
                               width: 150,
                               height: 200,
-                              child: CupertinoActivityIndicator(
-                                radius: 30,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.grey.withOpacity(0.5),
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  Text(
+                                    "...",
+                                    style: TextStyle(
+                                      color: Colors.grey.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -668,4 +681,26 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
 
   @override
   void onIndexSelected(int index) {}
+
+  Future<void> onNewAd(String adType, String adId) async {
+    final controller = Get.put(_HomeTabController());
+
+    if (adType == "new-property-ad") {
+      final ad = await ApiService.fetchPropertyAd(adId);
+
+      if (ad != null) {
+        controller._homePropertyAds.insert(0, ad);
+        showToast("New property posted");
+        controller.update();
+      }
+    } else if (adType == "new-roommate-ad") {
+      final ad = await ApiService.fetchRoommateAd(adId);
+
+      if (ad != null) {
+        controller._homeRoommateAds.insert(0, ad);
+        controller.update();
+        showToast("New roommate posted");
+      }
+    }
+  }
 }

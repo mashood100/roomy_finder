@@ -1,5 +1,8 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:get/get.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/user.dart';
 
@@ -17,6 +20,9 @@ class PropertyBooking {
   DateTime createdAt;
   String? paymentService;
   String? transactionId;
+  bool isViewedByLandlord;
+
+  static final unViewBookingsCount = 0.obs;
 
   PropertyBooking({
     required this.id,
@@ -32,11 +38,14 @@ class PropertyBooking {
     required this.createdAt,
     this.paymentService,
     this.transactionId,
+    this.isViewedByLandlord = true,
   });
 
   bool get isMine => poster.isMe;
   bool get isOffered => status == 'offered';
   bool get isPending => status == 'pending';
+  bool get isCancelled => status == 'cancelled';
+  bool get isDeclined => status == 'declined';
 
   /// The price of the ad with to the renttype choosen
   num get adPricePerRentype {
@@ -84,7 +93,7 @@ class PropertyBooking {
   }
 
   /// VAT (5% of commission fee [commissionFee])
-  num get vatFee => commissionFee * 0.05;
+  num get vatFee => commissionFee * ((AppController.me.VAT ?? 5) / 100);
 
   /// The sum of the rent fee and the commission fee
   num get displayPrice => rentFee + commissionFee;
@@ -156,6 +165,7 @@ class PropertyBooking {
       'createdAt': createdAt.toIso8601String(),
       'paymentService': paymentService,
       'transactionId': transactionId,
+      'isViewedByLandlord': isViewedByLandlord,
     };
   }
 
@@ -177,6 +187,7 @@ class PropertyBooking {
           : null,
       transactionId:
           map['transactionId'] != null ? map['transactionId'] as String : null,
+      isViewedByLandlord: map["isViewedByLandlord"] == true,
     );
   }
 
@@ -195,5 +206,21 @@ class PropertyBooking {
   @override
   int get hashCode {
     return id.hashCode;
+  }
+
+  void updateFrom(PropertyBooking other) {
+    // id= other.id;
+    ad = other.ad;
+    poster = other.poster;
+    client = other.client;
+    quantity = other.quantity;
+    status = other.status;
+    checkIn = other.checkIn;
+    checkOut = other.checkOut;
+    rentType = other.rentType;
+    isPayed = other.isPayed;
+    createdAt = other.createdAt;
+    paymentService = other.paymentService;
+    transactionId = other.transactionId;
   }
 }

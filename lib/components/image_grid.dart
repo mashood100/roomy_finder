@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 
 class ImageGrid extends StatelessWidget {
@@ -42,8 +43,8 @@ class ImageGrid extends StatelessWidget {
             margin: const EdgeInsets.all(5),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: CachedNetworkImage(
-                imageUrl: e,
+              child: LoadingProgressImage(
+                image: CachedNetworkImageProvider(e),
                 fit: BoxFit.cover,
               ),
             ),

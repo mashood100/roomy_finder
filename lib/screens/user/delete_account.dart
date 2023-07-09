@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
@@ -16,6 +15,35 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   String _password = '';
   bool _showPassword = false;
   bool _isLoading = false;
+
+  Future<void> _handleDeleteAccountPressed(String password) async {
+    if (password != AppController.me.password) {
+      showToast("Incorrect password");
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+
+      final res = await ApiService.getDio.post(
+        "/profile/delete-account",
+        data: {"password": password, "email": AppController.me.email},
+      );
+
+      if (res.statusCode == 200) {
+        showToast(res.data["message"]);
+        await AppController.instance.logout();
+        Get.offAllNamed('/login');
+      } else {
+        showToast(res.data["message"]);
+      }
+    } catch (e) {
+      Get.log("$e");
+      showToast("Something went wrong. Please try again later");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,41 +132,19 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ],
                 ),
               ),
-              if (_isLoading) const LinearProgressIndicator(),
+              if (_isLoading)
+                Container(
+                  alignment: Alignment.center,
+                  color: Colors.grey.withOpacity(0.3),
+                  child: CircularProgressIndicator(
+                    color: Colors.grey.withOpacity(0.8),
+                    strokeWidth: 2,
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _handleDeleteAccountPressed(String password) async {
-    if (password != AppController.me.password) {
-      showToast("Incorrect password");
-      return;
-    }
-
-    try {
-      setState(() => _isLoading = true);
-
-      final res = await ApiService.getDio.post(
-        "/profile/delete-account",
-        data: {"password": password, "email": AppController.me.email},
-      );
-
-      if (res.statusCode == 200) {
-        showToast(res.data["message"]);
-        AppController.instance.logout();
-        FirebaseAuth.instance.signOut();
-        Get.offAllNamed('/login');
-      } else {
-        showToast(res.data["message"]);
-      }
-    } catch (e) {
-      Get.log("$e");
-      showToast("Something went wrong. Please try again later");
-    } finally {
-      setState(() => _isLoading = false);
-    }
   }
 }

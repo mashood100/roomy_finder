@@ -1,27 +1,27 @@
 import 'dart:async';
 
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/chat_conversation.dart';
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/notification_controller.dart';
+import 'package:roomy_finder/controllers/local_notifications.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/loadinding_controller.dart';
 import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/functions/share_app.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/models/chat_conversation_v2.dart';
+import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
 import 'package:roomy_finder/screens/blog_post/all_posts.dart';
 import 'package:roomy_finder/screens/home/account_tab.dart';
 import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
-import 'package:roomy_finder/screens/home/chat_tab.dart';
+import 'package:roomy_finder/screens/home/conversations_tab.dart';
 import 'package:roomy_finder/screens/home/post_ad_tab.dart';
 import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
@@ -31,27 +31,26 @@ import 'package:roomy_finder/utilities/data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController extends LoadingController {
-  late final StreamSubscription<FGBGType> fGBGNotifierSubScription;
+  late final StreamSubscription<RemoteMessage> fcmStream;
+
   final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
+
+  late final HomeTab _homeTabRef;
   final List<HomeScreenSupportable> tabs = [
     const AccountTab(),
     const HomeTab(),
     const PostAdTab(),
-    const MessagesTab(),
+    const ChatConversationsTab(),
     const FavoriteTab(),
   ];
 
   @override
   void onInit() {
-    fGBGNotifierSubScription = FGBGEvents.stream.listen((event) {
-      if (event == FGBGType.foreground) {
-        if (ChatConversation.homeTabIsChat = true) {
-          AwesomeNotifications().cancelAll();
-        }
-      }
-    });
+    currentTabIndex.value = 1;
+
+    _homeTabRef = tabs[1] as HomeTab;
 
     AppController.instance.setIsFirstLaunchToFalse(false);
 
@@ -62,16 +61,13 @@ class HomeController extends LoadingController {
     Future(_runStartFutures);
     Future(_handleInitialMessage);
 
-    if (NotificationController.initialAction != null) {
-      NotificationController.onActionReceivedMethod(
-        NotificationController.initialAction!,
-      );
-      NotificationController.initialAction = null;
-    }
-
     super.onInit();
 
-    FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+    FirebaseMessaging.instance.subscribeToTopic("new-property-ad");
+    FirebaseMessaging.instance.subscribeToTopic("new-roommate-ad");
+
+    fcmStream =
+        FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
       // AppController.instance.haveNewMessage(false);
       switch (data["event"]) {
@@ -84,41 +80,57 @@ class HomeController extends LoadingController {
           showToast("Plan successfully upgraded to premium");
 
           break;
-        case "new-message":
-          if (currentTabIndex.value == 3) {
-            // AwesomeNotifications().cancelAll();
-          } else {
-            AppController.instance.haveNewMessage(true);
-          }
+
+        case "new-property-ad":
+        case "new-roommate-ad":
+          _homeTabRef.onNewAd(data["event"], data["adId"]);
+          break;
+        case "account-updated":
+          ApiService.updateUserProfile();
 
           break;
+
         default:
       }
     });
+
+    ApiService.setUnreadBookingCount();
   }
 
   @override
   void onClose() {
     if (_popTimer != null) _popTimer!.cancel();
-    fGBGNotifierSubScription.cancel();
     super.onClose();
+    fcmStream.cancel();
+    PropertyBooking.unViewBookingsCount.value = 0;
   }
 
   // Initial Remote message handler
   Future<void> _handleInitialMessage() async {
-    final message = await FirebaseMessaging.instance.getInitialMessage();
-    if (message != null) {
-      if (AppController.me.isGuest) return;
-      if (AppController.haveOpenInitialMessage) return;
-      NotificationController.onFCMMessageOpenedAppHandler(message);
+    if (AppController.me.isGuest) return;
+    if (AppController.haveOpenInitialMessage) return;
+
+// FCM initial message
+    final fcmMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (fcmMessage != null) {
+      LocalNotificationController.handleFCMMessageOpenedAppMessage(fcmMessage);
     }
-    await NotificationController.requestNotificationPermission(Get.context);
+
+// Local notification initial message
+    final launchNot = await LocalNotificationController.plugin
+        .getNotificationAppLaunchDetails();
+
+    if (launchNot != null && launchNot.didNotificationLaunchApp) {
+      LocalNotificationController.handleInitialMessage(
+          launchNot.notificationResponse!);
+    }
+
     AppController.haveOpenInitialMessage = true;
   }
 
   Future<void> _runStartFutures() async {
     await _promptUpdate();
-    await NotificationController.requestNotificationPermission(Get.context);
+    await LocalNotificationController.requestNotificationPermission();
     await FirebaseMessaging.instance.requestPermission();
   }
 
@@ -164,7 +176,8 @@ class HomeController extends LoadingController {
           );
         });
     if (shouldLogout == true) {
-      AppController.instance.logout();
+      await AppController.instance.logout();
+      currentTabIndex(1);
       Get.offAllNamed('/login');
     }
   }
@@ -193,10 +206,10 @@ class Home extends GetView<HomeController> {
               : BottomNavigationBar(
                   currentIndex: controller.currentTabIndex.value,
                   onTap: (index) {
-                    if (controller.tabs[index] is MessagesTab) {
-                      ChatConversation.homeTabIsChat = true;
+                    if (controller.tabs[index] is ChatConversationsTab) {
+                      ChatConversationV2.homeTabIsChat = true;
                     } else {
-                      ChatConversation.homeTabIsChat = false;
+                      ChatConversationV2.homeTabIsChat = false;
                     }
 
                     controller.tabs[index].onIndexSelected(index);
@@ -481,6 +494,7 @@ class HomeDrawer extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Get.back();
+
                   controller._logout(Get.context!);
                 },
               ),

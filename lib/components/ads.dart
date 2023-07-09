@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/property_ad.dart';
@@ -42,18 +42,11 @@ class PropertyAdWidget extends StatelessWidget {
                       height: 150,
                       fit: BoxFit.cover,
                     )
-                  : CachedNetworkImage(
-                      imageUrl: ad.images[0],
+                  : LoadingProgressImage(
+                      image: CachedNetworkImageProvider(ad.images[0]),
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
-                      errorWidget: (ctx, url, e) {
-                        return const SizedBox(
-                          width: 150,
-                          height: 150,
-                          child: CupertinoActivityIndicator(radius: 30),
-                        );
-                      },
                     ),
             ),
             const SizedBox(height: 5),
@@ -218,14 +211,11 @@ class PropertyAdMiniWidget extends StatelessWidget {
                   fit: BoxFit.fill,
                 )
               else
-                CachedNetworkImage(
-                  imageUrl: ad.images[0],
+                LoadingProgressImage(
+                  image: CachedNetworkImageProvider(ad.images[0]),
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
-                  errorWidget: (ctx, url, e) {
-                    return const SizedBox();
-                  },
                 ),
               DefaultTextStyle.merge(
                 style: const TextStyle(
@@ -303,17 +293,11 @@ class RoommateAdWidget extends StatelessWidget {
                       height: 150,
                       fit: BoxFit.cover,
                     )
-                  : CachedNetworkImage(
-                      imageUrl: ad.images[0],
+                  : LoadingProgressImage(
+                      image: CachedNetworkImageProvider(ad.images[0]),
                       width: double.infinity,
                       height: 150,
                       fit: BoxFit.cover,
-                      errorWidget: (ctx, url, e) {
-                        return const SizedBox(
-                          width: double.infinity,
-                          height: 150,
-                        );
-                      },
                     ),
             ),
             const SizedBox(height: 5),
@@ -439,14 +423,11 @@ class RoommateAdMiniWidget extends StatelessWidget {
                   fit: BoxFit.cover,
                 )
               else
-                CachedNetworkImage(
-                  imageUrl: ad.images[0],
+                LoadingProgressImage(
+                  image: CachedNetworkImageProvider(ad.images[0]),
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
-                  errorWidget: (ctx, url, e) {
-                    return const SizedBox();
-                  },
                 ),
               DefaultTextStyle.merge(
                 style: const TextStyle(

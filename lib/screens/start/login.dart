@@ -1,11 +1,10 @@
-// import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -26,6 +25,12 @@ class _LoginController extends LoadingController {
   final showPassword = false.obs;
   final savePassword = false.obs;
 
+  @override
+  void onClose() {
+    _passwordController.dispose();
+    super.onClose();
+  }
+
   Future<void> _login() async {
     if (!formkey.currentState!.validate()) return;
 
@@ -43,15 +48,7 @@ class _LoginController extends LoadingController {
 
       switch (res.statusCode) {
         case 200:
-          try {
-            // await FirebaseAuth.instance.signInWithEmailAndPassword(
-            //   email: _emailController.text,
-            //   password: _passwordController.text,
-            // );
-            // await FirebaseAuth.instance.signInAnonymously();
-          } catch (e) {
-            Get.log("e");
-          }
+          await FirebaseAuth.instance.signInAnonymously();
 
           final user = User.fromMap(res.data);
 
@@ -59,18 +56,13 @@ class _LoginController extends LoadingController {
           AppController.instance.userPassword = _passwordController.text;
           AppController.setupFCMTokenHandler();
 
-          AppNotication.currentUser = user;
-
-          await AppController.instance.saveUser();
-          await AppController.instance
-              .saveUserPassword(_passwordController.text);
+          await AppController.saveUser(user);
+          await AppController.saveUserPassword(_passwordController.text);
 
           AppController.instance.setIsFirstStart(false);
 
           if (user.isMaintenant) {
-            Get.offAllNamed("/maintenance");
-            FirebaseMessaging.instance
-                .subscribeToTopic("maintenance-broadcast");
+            showToast("Maintenance accounts are temporally unavailable");
           } else {
             Get.offAllNamed("/home");
           }
@@ -82,6 +74,12 @@ class _LoginController extends LoadingController {
               "Account disabled. Please contactact the support team".tr,
               severity: Severity.error,
             );
+          } else if (res.data["code"] == "use-third-party") {
+            showGetSnackbar(
+              res.data["message"] ??
+                  "You signed up with a provider. Please login with this provider",
+              severity: Severity.info,
+            );
           } else {
             showGetSnackbar(
               "Incorrect credentials".tr,
@@ -92,7 +90,7 @@ class _LoginController extends LoadingController {
           break;
         case 404:
           showGetSnackbar(
-            "incorrectCredentials".tr,
+            "Account not found. Please sign up",
             severity: Severity.error,
           );
 
@@ -110,19 +108,12 @@ class _LoginController extends LoadingController {
       Get.log("$e");
       Get.log("$trace");
       showGetSnackbar(
-        ("Failed to login. Please check your internet connection and try again"
-            .tr),
+        ("Failed to login. Please check your internet connection and try again"),
         severity: Severity.error,
       );
     } finally {
       isLoading(false);
     }
-  }
-
-  @override
-  void onClose() {
-    _passwordController.dispose();
-    super.onClose();
   }
 }
 
@@ -149,9 +140,12 @@ class LoginScreen extends StatelessWidget {
                     if (MediaQuery.of(context).viewInsets.bottom < 20)
                       Expanded(
                         flex: 3,
-                        child: Image.asset("assets/images/logo.png"),
+                        child: Hero(
+                          tag: "logo",
+                          child: Image.asset("assets/images/logo.png"),
+                        ),
                       ),
-                    const Spacer(flex: 2),
+                    const Spacer(flex: 1),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       decoration: const BoxDecoration(
@@ -175,14 +169,14 @@ class LoginScreen extends StatelessWidget {
                                 child: Text(
                                   "Login",
                                   style: TextStyle(
-                                    fontSize: 30,
+                                    fontSize: 20,
                                     color: Colors.white,
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              const Text("Email"),
-                              const SizedBox(height: 5),
+                              // const Text("Email"),
+                              // const SizedBox(height: 5),
                               InlineTextField(
                                 hintText: "emailAddress".tr,
                                 controller: controller._emailController,
@@ -198,9 +192,9 @@ class LoginScreen extends StatelessWidget {
                                 },
                                 keyboardType: TextInputType.emailAddress,
                               ),
-                              const SizedBox(height: 10),
-                              const Text("Password"),
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 20),
+                              // const Text("Password"),
+                              // const SizedBox(height: 5),
                               InlineTextField(
                                 hintText: "enterYourPassword".tr,
                                 obscureText: controller.showPassword.isFalse,
@@ -245,6 +239,7 @@ class LoginScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
+
                               Row(
                                 children: [
                                   SizedBox(
@@ -321,9 +316,14 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               if (controller.isLoading.isTrue)
-                const LinearProgressIndicator(
-                  color: Color.fromRGBO(96, 15, 116, 1),
-                ),
+                Container(
+                  alignment: Alignment.center,
+                  color: Colors.grey.withOpacity(0.3),
+                  child: CircularProgressIndicator(
+                    color: Colors.grey.withOpacity(0.8),
+                    strokeWidth: 2,
+                  ),
+                )
             ],
           ),
         ),

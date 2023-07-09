@@ -63,7 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '274087124726',
     projectId: 'roomy-finder',
     storageBucket: 'roomy-finder.appspot.com',
-    iosClientId: '274087124726-nbjs3qdtqt77janq9tt8ai0pd1jfnk5c.apps.googleusercontent.com',
+    androidClientId: '274087124726-aj9nq0de07rvf0a6egmt499opk7m84gl.apps.googleusercontent.com',
+    iosClientId: '274087124726-ik0g181v0na0b1j7190bp1bocv1309fg.apps.googleusercontent.com',
     iosBundleId: 'com.gsccapitalgroup.roomyFinder',
   );
 }

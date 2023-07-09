@@ -14,18 +14,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 String relativeTimeText(DateTime dateTime, {bool fromNow = true}) {
   if (dateTime.add(const Duration(minutes: 59)).isAfter(DateTime.now())) {
     if (fromNow) return Jiffy.parseFromDateTime(dateTime).fromNow();
-    return Jiffy.parseFromDateTime(dateTime).Hm;
+    return Jiffy.parseFromDateTime(dateTime.toLocal()).Hm;
   }
 
   if (dateTime.add(const Duration(hours: 23)).isAfter(DateTime.now())) {
-    return Jiffy.parseFromDateTime(dateTime).Hm;
+    return Jiffy.parseFromDateTime(dateTime.toLocal()).Hm;
   }
 
   if (dateTime.add(const Duration(days: 3)).isAfter(DateTime.now())) {
-    return Jiffy.parseFromDateTime(dateTime).Hm;
+    return Jiffy.parseFromDateTime(dateTime.toLocal()).Hm;
   }
 
-  return Jiffy.parseFromDateTime(dateTime).yMMMEd;
+  return Jiffy.parseFromDateTime(dateTime.toLocal()).yMMMEd;
 }
 
 Future<bool> changeAppCountry(BuildContext context) async {

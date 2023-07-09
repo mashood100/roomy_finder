@@ -19,6 +19,7 @@ class ViewImages extends StatefulWidget {
 class _ViewImagesState extends State<ViewImages> {
   late final PageController _pageController;
   static const duration = Duration(milliseconds: 300);
+  bool showDescription = true;
 
   @override
   void initState() {
@@ -36,62 +37,103 @@ class _ViewImagesState extends State<ViewImages> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title ?? "View images"),
+        title: Text(widget.title ?? "Image Viewer"),
+        toolbarHeight: showDescription ? kToolbarHeight : 0,
       ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          PhotoViewGallery.builder(
-            itemCount: widget.images.length,
-            builder: (context, index) {
-              final img = widget.images[index];
-              return PhotoViewGalleryPageOptions(
-                imageProvider: img,
-              );
-            },
-            loadingBuilder: (context, event) {
-              return const Padding(
-                padding: EdgeInsets.all(50.0),
-                child: SizedBox(
-                  height: 40,
-                  width: 40,
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            },
-            pageController: _pageController,
-          ),
-          if (widget.images.length > 1)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    _pageController.previousPage(
-                      duration: duration,
-                      curve: Curves.decelerate,
+      body: GestureDetector(
+        onTap: () => setState(() => showDescription = !showDescription),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            PhotoViewGallery.builder(
+              wantKeepAlive: true,
+              itemCount: widget.images.length,
+              builder: (context, index) {
+                final img = widget.images[index];
+                return PhotoViewGalleryPageOptions(
+                  imageProvider: img,
+                  minScale: 0.05,
+                  errorBuilder: (ctx, e, trace) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "Failed to load image!",
+                          style: TextStyle(
+                            color: Colors.grey.withOpacity(0.5),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.chevron_left,
-                    color: Colors.white,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    _pageController.nextPage(
-                      duration: duration,
-                      curve: Curves.decelerate,
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.chevron_right,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+                );
+              },
+              loadingBuilder: (context, chuck) {
+                double? progress;
+
+                if (chuck != null) {
+                  if (chuck.expectedTotalBytes != null) {
+                    progress =
+                        chuck.cumulativeBytesLoaded / chuck.expectedTotalBytes!;
+                  }
+                }
+
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      height: 60,
+                      width: 60,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        color: Colors.grey.withOpacity(0.5),
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    Text(
+                      "${((progress ?? 0) * 100).toInt()}%",
+                      style: TextStyle(
+                        color: Colors.grey.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              pageController: _pageController,
             ),
-        ],
+            if (widget.images.length > 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: duration,
+                        curve: Curves.decelerate,
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: Colors.white,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: duration,
+                        curve: Curves.decelerate,
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.chevron_right,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

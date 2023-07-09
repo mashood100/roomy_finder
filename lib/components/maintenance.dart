@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/components/loading_progress_image.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 
 class MaintenanceListItem extends StatelessWidget {
   const MaintenanceListItem({
@@ -32,18 +32,11 @@ class MaintenanceListItem extends StatelessWidget {
         child: Row(
           children: [
             if (maintenance.images.isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: maintenance.images[0],
+              LoadingProgressImage(
+                image: CachedNetworkImageProvider(maintenance.images[0]),
                 width: 100,
                 height: 100,
                 fit: BoxFit.cover,
-                errorWidget: (ctx, url, e) {
-                  return const SizedBox(
-                    width: 100,
-                    height: 100,
-                    child: CupertinoActivityIndicator(radius: 30),
-                  );
-                },
               )
             else
               Image.asset(

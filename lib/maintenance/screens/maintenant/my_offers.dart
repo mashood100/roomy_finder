@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/maintenance.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/maintenance/helpers/maintenance.dart';
+import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/maintenance/screens/maintenant/repairs_submit.dart';
 import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
 
