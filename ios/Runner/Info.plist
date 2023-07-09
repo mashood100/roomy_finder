@@ -85,7 +85,7 @@
 		<string>Can I have location always?</string> -->
 
 		<!-- Google Sign-in Section -->	
-		<key>CFBundleURLTypes</key>
+		<!-- <key>CFBundleURLTypes</key>
 		<array>
 			<dict>
 				<key>CFBundleTypeRole</key>
@@ -95,7 +95,7 @@
 					<string>com.googleusercontent.apps.274087124726-nbjs3qdtqt77janq9tt8ai0pd1jfnk5c</string>
 				</array>
 			</dict>
-		</array>
+		</array> -->
 		<!-- End of the Google Sign-in Section -->
 
 		<!-- Facebook app -->
