@@ -32,6 +32,8 @@ class _ConversationsController extends LoadingController {
   late final StreamSubscription<RemoteMessage> fcmStream;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
 
+  bool _isForeground = true;
+
   RxList<ChatConversationV2> get conversations =>
       ChatConversationV2.conversations;
 
@@ -73,6 +75,7 @@ class _ConversationsController extends LoadingController {
       showToast("Unstable connection. Reconnecting...");
     });
 
+// New message
     socket.on("new-message-v2", _newMessageHandler);
 
     // Message recieved
@@ -98,7 +101,10 @@ class _ConversationsController extends LoadingController {
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
         _fetchConversations(true);
-      } else {}
+        _isForeground = true;
+      } else {
+        _isForeground = false;
+      }
     });
   }
 
@@ -155,14 +161,6 @@ class _ConversationsController extends LoadingController {
             conversations[index].updateMessages(conv.messages);
           }
           conv.saveToStorage(conv.me.id);
-        }
-
-        var initialNot = ChatConversationV2.initialMessage;
-        if (initialNot != null) {
-          LocalNotificationController.defaultNotificationTapHandler(
-              initialNot, true);
-
-          ChatConversationV2.initialMessage = null;
         }
       } else {
         hasFetchError(true);
@@ -334,19 +332,19 @@ class _ConversationsController extends LoadingController {
       conv.messages.add(msg);
 
       await conv.saveToStorage(msg.recieverId);
+      conv.markMyMessagesAsRecieved();
 
       socket.emitWithAck(
         "message-recieved",
         {"messageId": msg.id, "key": key},
-        ack: (data) {
-          conv.markMyMessagesAsRecieved();
-          update();
-        },
+        ack: (data) {},
       );
 
       if (ChatConversationV2.onChatEventCallback != null) {
+        conv.markOthersMessagesAsRead();
         ChatConversationV2.onChatEventCallback!("new-message-v2", data, key);
-      } else {
+      }
+      if (!_isForeground || ChatConversationV2.onChatEventCallback == null) {
         try {
           final id = await LocalNotificationController.showNotification(
             conv.other.fullName,
@@ -451,7 +449,6 @@ class ChatConversationsTab extends StatelessWidget
 
                       controller._sortConversations();
                       conv.markOthersMessagesAsRead();
-                      conv.unReadMessageCount;
                       controller.update();
                     },
                     leading: conv.other.ppWidget(size: 22),

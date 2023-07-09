@@ -501,11 +501,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 Get.offAllNamed("/login");
                                 return;
                               }
-                              if (AppController.me.isPremium) {
-                                Get.to(() => ViewRoommateAdScreen(ad: ad));
-                              } else {
-                                controller.upgradeToSeeDetails(ad);
-                              }
+                              Get.to(() => ViewRoommateAdScreen(ad: ad));
+                              // if (AppController.me.isPremium) {
+                              // } else {
+                              //   controller.upgradeToSeeDetails(ad);
+                              // }
                             },
                           ),
                         );
@@ -561,11 +561,11 @@ class HomeTab extends StatelessWidget implements HomeScreenSupportable {
                                 Get.offAllNamed("/login");
                                 return;
                               }
-                              if (AppController.me.isPremium) {
-                                Get.to(() => ViewRoommateAdScreen(ad: ad));
-                              } else {
-                                controller.upgradeToSeeDetails(ad);
-                              }
+                              Get.to(() => ViewRoommateAdScreen(ad: ad));
+                              // if (AppController.me.isPremium) {
+                              // } else {
+                              //   controller.upgradeToSeeDetails(ad);
+                              // }
                             },
                           ),
                         );

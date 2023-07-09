@@ -12,6 +12,7 @@ final priceRegex = RegExp(r'(^\d*\.?\d{0,2})');
 const DYNAMIC_LINK_URL = "https://roomyfinder.page.link";
 
 const PRIVACY_POLICY_LINK = "$SERVER_URL/public/privacy-policy";
+
 const TERMS_AND_CONDITIONS_LINK = "$SERVER_URL/public/terms-and-conditions";
 
 const FEED_BACK_LINK = "$SERVER_URL/public/feedback";

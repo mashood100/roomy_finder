@@ -529,19 +529,15 @@ class FindRoommatesScreen extends StatelessWidget {
                             showToast("Please register to see ad details");
                             return;
                           }
-                          if (AppController.me.isPremium) {
-                            final result = await Get.to(
-                                () => ViewRoommateAdScreen(ad: ad));
+                          final result =
+                              await Get.to(() => ViewRoommateAdScreen(ad: ad));
 
-                            if (result is Map<String, dynamic>) {
-                              final deletedId = result["deletedId"];
-                              if (deletedId != null) {
-                                controller.ads
-                                    .removeWhere((e) => e.id == deletedId);
-                              }
+                          if (result is Map<String, dynamic>) {
+                            final deletedId = result["deletedId"];
+                            if (deletedId != null) {
+                              controller.ads
+                                  .removeWhere((e) => e.id == deletedId);
                             }
-                          } else {
-                            controller.upgradeToSeeDetails(ad);
                           }
                         },
                       );
