@@ -62,6 +62,8 @@ class _ChatRoomController extends LoadingController {
 
     _clearChatNotifications();
 
+    _createAudioSession();
+
     _scrollController = ItemScrollController();
     _newMessageController = TextEditingController();
 
@@ -168,6 +170,8 @@ class _ChatRoomController extends LoadingController {
     }
 
     conversation.markOthersMessagesAsRead();
+
+    _endAudioSession();
   }
 
 // Clear notifications
@@ -254,6 +258,49 @@ class _ChatRoomController extends LoadingController {
     return null;
   }
 
+// Audio session
+
+  Future<void> _endAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+
+      await session.setActive(true);
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+    }
+  }
+
+  Future<void> _createAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(
+        AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.allowBluetooth |
+                  AVAudioSessionCategoryOptions.defaultToSpeaker,
+          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+          androidAudioAttributes: const AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.speech,
+            flags: AndroidAudioFlags.none,
+            usage: AndroidAudioUsage.voiceCommunication,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+          androidWillPauseWhenDucked: true,
+        ),
+      );
+
+      await session.setActive(true);
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+    }
+  }
+
   Future<void> _startVoiceRecord() async {
     try {
       var canRecord = await Permission.microphone.isGranted ||
@@ -276,7 +323,10 @@ class _ChatRoomController extends LoadingController {
       final toFile = "${DateTime.now().toIso8601String()}"
           "-${Random().nextInt(1000) + 100}.m4a";
 
-      await _voiceRecoder.startRecorder(toFile: toFile, codec: codec);
+      await _voiceRecoder.startRecorder(
+        toFile: toFile,
+        codec: codec,
+      );
 
       update(["bottom-widget"]);
     } catch (e, trace) {
