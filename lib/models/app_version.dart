@@ -1,7 +1,9 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 class AppVersion {
   final String version;
+  final int buildNumber;
   final String url;
   final String platform;
   final String releaseType;
@@ -9,6 +11,7 @@ class AppVersion {
 
   const AppVersion({
     required this.version,
+    required this.buildNumber,
     required this.url,
     required this.platform,
     required this.releaseType,
@@ -18,6 +21,7 @@ class AppVersion {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'version': version,
+      'buildNumber': buildNumber,
       'url': url,
       'platform': platform,
       'releaseType': releaseType,
@@ -28,6 +32,7 @@ class AppVersion {
   factory AppVersion.fromMap(Map<String, dynamic> map) {
     return AppVersion(
       version: map['version'] as String,
+      buildNumber: map['buildNumber'] as int,
       url: map['url'] as String,
       platform: map['platform'] as String,
       releaseType: map['releaseType'] as String,
@@ -57,8 +62,16 @@ class AppVersion {
         other.releaseDate == releaseDate;
   }
 
-  bool operator >(covariant AppVersion other) =>
-      other.version.compareTo(other.version) == 1;
+  bool operator <(covariant AppVersion other) {
+    var compareTo = version.compareTo(other.version);
+
+    if (compareTo < 0) return true;
+    if (compareTo > 0) return false;
+
+    if (buildNumber < other.buildNumber) return true;
+
+    return false;
+  }
 
   @override
   int get hashCode {

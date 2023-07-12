@@ -10,12 +10,18 @@ import 'package:url_launcher/url_launcher.dart';
 Future<bool> checkForAppUpdate() async {
   try {
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+    final currentVersion = packageInfo.version;
+    final buildNumber = int.parse(packageInfo.buildNumber.toString());
+
     final platform = Platform.isAndroid ? "ANDROID" : "IOS";
 
     final res = await Dio().get(
       "$API_URL/utils/app-update",
-      queryParameters: {"currentVersion": currentVersion, "platform": platform},
+      queryParameters: {
+        "currentVersion": currentVersion,
+        "platform": platform,
+        "buildNumber": buildNumber,
+      },
       options: Options(
         sendTimeout: const Duration(seconds: 1000 * 5),
         receiveTimeout: const Duration(seconds: 1000 * 5),
