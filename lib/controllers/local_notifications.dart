@@ -261,9 +261,9 @@ class LocalNotificationController {
     }
 
     var shouldSaveNotification = ![
-      "new-message-v2",
-      "pay-cash-survey-landlord",
-      "pay-cash-survey-tenant",
+      // "new-message-v2",
+      // "pay-cash-survey-landlord",
+      // "pay-cash-survey-tenant",
       "message-reply-succeded"
     ].contains(event);
 
@@ -277,12 +277,73 @@ class LocalNotificationController {
 
     if (isForeground) {
       if (notification != null) {
-        await showNotification(
-          notification.title,
-          notification.body,
-          payload: msg.data,
-          category: category,
-        );
+        switch (event) {
+          case "pay-cash-survey-landlord":
+            final survey = jsonDecode(data["payload"]);
+            category = AppNotificationCategory.bookingSurveyLandlord;
+
+            showNotification(
+              "Booking Survey",
+              survey["message"],
+              payload: msg.data,
+              category: category,
+            );
+            break;
+
+          case "pay-cash-survey-tenant":
+            final survey = jsonDecode(data["payload"]);
+            category = AppNotificationCategory.bookingSurveyTenant;
+            showNotification(
+              "Booking Survey",
+              survey["message"],
+              payload: msg.data,
+              category: category,
+            );
+            break;
+
+          case "new-message-v2":
+            var title = data["notificationTitle"].toString();
+            category = AppNotificationCategory.messaging;
+            final msg = ChatMessageV2.fromJson(data["message"]);
+
+            final id = await showNotification(
+              notification.title ?? title,
+              msg.content ?? msg.typedMessage,
+              payload: msg.createLocalNotificationPayload(data["key"]),
+              category: category,
+            );
+
+            final key =
+                ChatConversationV2.createKey(msg.recieverId, msg.senderId);
+
+            var conv =
+                await ChatFileSystem.getConversation(msg.recieverId, key);
+
+            if (conv == null) {
+              final sender = await ApiService.fetchUser(msg.senderId);
+
+              final reciever = await ApiService.fetchUser(msg.recieverId);
+
+              conv = ChatConversationV2(
+                key: key,
+                first: sender!,
+                second: reciever!,
+                messages: [msg],
+                blocks: [],
+              );
+            }
+            conv.localNotificationsIds.add(id);
+            await conv.saveToStorage(msg.recieverId);
+
+            break;
+          default:
+            await showNotification(
+              notification.title,
+              notification.body,
+              payload: msg.data,
+              category: category,
+            );
+        }
 
         switch (event) {
           case "new-booking":
@@ -291,81 +352,6 @@ class LocalNotificationController {
             break;
           default:
         }
-      }
-    } else {
-      var title = data["notificationTitle"].toString();
-      switch (event) {
-        case "pay-cash-survey-landlord":
-          final survey = jsonDecode(data["payload"]);
-          category = AppNotificationCategory.bookingSurveyLandlord;
-
-          showNotification(
-            "Booking Survey",
-            survey["message"],
-            payload: msg.data,
-            category: category,
-          );
-          break;
-        case "pay-cash-survey-tenant":
-          final survey = jsonDecode(data["payload"]);
-          category = AppNotificationCategory.bookingSurveyTenant;
-          showNotification(
-            "Booking Survey",
-            survey["message"],
-            payload: msg.data,
-            category: category,
-          );
-          break;
-        case "new-message-v2":
-          category = AppNotificationCategory.messaging;
-          final msg = ChatMessageV2.fromJson(data["message"]);
-
-          final id = await showNotification(
-            title,
-            msg.content ?? msg.typedMessage,
-            payload: msg.createLocalNotificationPayload(data["key"]),
-            category: category,
-          );
-
-          final key =
-              ChatConversationV2.createKey(msg.recieverId, msg.senderId);
-
-          var conv = await ChatFileSystem.getConversation(msg.recieverId, key);
-
-          if (conv == null) {
-            final sender = User(
-              id: msg.senderId,
-              type: "landlord",
-              email: "guest@email.com",
-              firstName: title,
-              lastName: "",
-              isPremium: false,
-              createdAt: DateTime.now(),
-            );
-
-            final reciever = User(
-              id: msg.recieverId,
-              type: "landlord",
-              email: "guest@email.com",
-              firstName: "Guest",
-              lastName: "",
-              isPremium: false,
-              createdAt: DateTime.now(),
-            );
-
-            conv = ChatConversationV2(
-              key: key,
-              first: sender,
-              second: reciever,
-              messages: [msg],
-              blocks: [],
-            );
-          }
-          conv.localNotificationsIds.add(id);
-          await conv.saveToStorage(msg.recieverId);
-
-          break;
-        default:
       }
     }
   }

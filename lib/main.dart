@@ -29,7 +29,6 @@ import 'package:roomy_finder/screens/start/welcome.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

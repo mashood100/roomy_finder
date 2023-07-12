@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:badges/badges.dart';
 import 'package:dio/dio.dart';
@@ -138,9 +137,9 @@ class _ConversationsController extends LoadingController {
             final conv = ChatConversationV2.fromMap(e);
 
             return conv;
-          } catch (e, trace) {
-            Get.log("$e");
-            Get.log("$trace");
+          } catch (e, _) {
+            // Get.log("$e");
+            // Get.log("$trace");
 
             return null;
           }
@@ -372,8 +371,8 @@ class _ConversationsController extends LoadingController {
 
   void _fcmHandler(Map<String, dynamic> data) {
     switch (data["event"]) {
-      case "new-message-v2":
-        _newMessageHandler({...data, "message": jsonDecode(data["message"])});
+      // case "new-message-v2":
+      //   _newMessageHandler({...data, "message": jsonDecode(data["message"])});
 
       case "message-read":
         _messageReadHandler(data);

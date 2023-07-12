@@ -176,6 +176,7 @@ class ApiService {
     }
   }
 
+  @pragma("vm:entry-point")
   static Future<User?> fetchUser(String userId) async {
     try {
       final res = await getDio.get("/profile/profile-info?userId=$userId");
