@@ -165,10 +165,6 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 @pragma("vm:entry-point")
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-<<<<<<< Updated upstream
-  await NotificationController.firebaseMessagingHandler(message, false);
-=======
   
   await LocalNotificationController.firebaseMessagingHandler(message, false);
->>>>>>> Stashed changes
 }
