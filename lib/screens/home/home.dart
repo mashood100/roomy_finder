@@ -121,8 +121,21 @@ class _HomeController extends LoadingController {
 
   Future<void> _runStartFutures() async {
     await _promptUpdate();
+<<<<<<< Updated upstream
     await NotificationController.requestNotificationPermission();
     await FirebaseMessaging.instance.requestPermission();
+=======
+    await LocalNotificationController.requestNotificationPermission();
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+>>>>>>> Stashed changes
   }
 
   Future<bool> _onWillPop() async {

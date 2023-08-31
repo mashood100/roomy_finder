@@ -9,7 +9,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:roomy_finder/classes/file_helprer.dart';
 import 'package:roomy_finder/classes/theme_helper.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
@@ -66,6 +65,7 @@ void main() async {
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: false,
     sound: false,
+
     badge: false,
   );
 
@@ -165,5 +165,10 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 @pragma("vm:entry-point")
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+<<<<<<< Updated upstream
   await NotificationController.firebaseMessagingHandler(message, false);
+=======
+  
+  await LocalNotificationController.firebaseMessagingHandler(message, false);
+>>>>>>> Stashed changes
 }

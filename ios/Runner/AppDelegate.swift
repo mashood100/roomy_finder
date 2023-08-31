@@ -1,7 +1,8 @@
 import UIKit
 import Flutter
-import GoogleMaps
+//import GoogleMaps
 import Firebase
+import flutter_local_notifications
 import FirebaseAuth
 import FirebaseMessaging
 @UIApplicationMain
@@ -21,7 +22,7 @@ import FirebaseMessaging
     }
 
 
-    GMSServices.provideAPIKey("AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8")
+//    GMSServices.provideAPIKey("AIzaSyC47GU5pZodzRzVZHC6Q1iw9LwFDQpixQ8")
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
