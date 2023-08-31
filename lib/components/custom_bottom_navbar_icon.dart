@@ -3,11 +3,14 @@ import 'package:roomy_finder/utilities/data.dart';
 
 class CustomBottomNavbarIcon extends StatelessWidget {
   final bool isCurrent;
-  final Widget icon;
+  final String assetIcon;
+  final int? badge;
+
   const CustomBottomNavbarIcon({
     super.key,
-    required this.icon,
+    required this.assetIcon,
     required this.isCurrent,
+    this.badge,
   });
 
   @override
@@ -27,7 +30,16 @@ class CustomBottomNavbarIcon extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        icon,
+        Badge(
+          isLabelVisible: badge != null && badge! > 0,
+          label: Text(badge.toString()),
+          child: Image.asset(
+            assetIcon,
+            height: 30,
+            width: 30,
+            color: ROOMY_PURPLE,
+          ),
+        ),
       ],
     );
   }

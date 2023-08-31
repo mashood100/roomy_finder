@@ -1,16 +1,14 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:get/get.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/user.dart';
 
 class PropertyBooking {
   String id;
-  PropertyAd ad;
   User poster;
   User client;
+  PropertyAd ad;
   int quantity;
   String status;
   DateTime checkIn;
@@ -21,14 +19,18 @@ class PropertyBooking {
   String? paymentService;
   String? transactionId;
   bool isViewedByLandlord;
-
-  static final unViewBookingsCount = 0.obs;
+  bool isViewedByClient;
+  String? cancelMessage;
+  final num rentFee;
+  final num commissionFee;
+  final num vatPercentage;
+  final num? depositFee;
 
   PropertyBooking({
     required this.id,
-    required this.ad,
     required this.poster,
     required this.client,
+    required this.ad,
     required this.quantity,
     required this.status,
     required this.checkIn,
@@ -39,6 +41,12 @@ class PropertyBooking {
     this.paymentService,
     this.transactionId,
     this.isViewedByLandlord = true,
+    this.isViewedByClient = true,
+    this.cancelMessage,
+    required this.rentFee,
+    required this.commissionFee,
+    required this.vatPercentage,
+    this.depositFee,
   });
 
   bool get isMine => poster.isMe;
@@ -46,60 +54,13 @@ class PropertyBooking {
   bool get isPending => status == 'pending';
   bool get isCancelled => status == 'cancelled';
   bool get isDeclined => status == 'declined';
-
-  /// The price of the ad with to the renttype choosen
-  num get adPricePerRentype {
-    switch (rentType) {
-      case "Monthly":
-        return ad.monthlyPrice;
-      case "Weekly":
-        return ad.weeklyPrice;
-      default:
-        return ad.dailyPrice;
-    }
-  }
-
-  /// The total renting fee of the booking (depends on the quantity
-  /// booked and rent duration)
-  num get rentFee {
-    final num fee;
-    switch (rentType) {
-      case "Monthly":
-        fee = ad.monthlyPrice * quantity * rentPeriod;
-        break;
-      case "Weekly":
-        fee = ad.weeklyPrice * quantity * rentPeriod;
-        break;
-      default:
-        fee = ad.dailyPrice * quantity * rentPeriod;
-    }
-    return fee;
-  }
-
-  /// Commission fee (10% of rent fee[rentFee])
-  num get commissionFee {
-    final num fee;
-    switch (rentType) {
-      case "Monthly":
-        fee = ad.monthlyCommission * quantity * rentPeriod;
-        break;
-      case "Weekly":
-        fee = ad.weeklyCommission * quantity * rentPeriod;
-        break;
-      default:
-        fee = ad.dailyCommission * quantity * rentPeriod;
-    }
-    return fee;
-  }
-
-  /// VAT (5% of commission fee [commissionFee])
-  num get vatFee => commissionFee * ((AppController.me.VAT ?? 5) / 100);
+  bool get isActive => status == 'active';
 
   /// The sum of the rent fee and the commission fee
   num get displayPrice => rentFee + commissionFee;
 
   num calculateFee(num percentage) {
-    return (rentFee + commissionFee + vatFee) * percentage;
+    return (rentFee + commissionFee + vatPercentage) * percentage;
   }
 
   /// The number of periods(days,weeks,monyhs) the rent will last
@@ -147,15 +108,18 @@ class PropertyBooking {
     return rentPeriodUnit;
   }
 
+  /// VAT (5% of commission fee [commissionFee])
+  num get vatFee => commissionFee * (vatPercentage / 100);
+
   String get capitaliezedStatus =>
       status.replaceFirst(status[0], status[0].toUpperCase());
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
-      'ad': ad.toMap(),
       'poster': poster.toMap(),
       'client': client.toMap(),
+      'ad': ad.toMap(),
       'quantity': quantity,
       'status': status,
       'checkIn': checkIn.toIso8601String(),
@@ -166,15 +130,28 @@ class PropertyBooking {
       'paymentService': paymentService,
       'transactionId': transactionId,
       'isViewedByLandlord': isViewedByLandlord,
+      'isViewedByClient': isViewedByClient,
+      'cancelMessage': cancelMessage,
+      'rentFee': rentFee,
+      'commissionFee': commissionFee,
+      'vatFee': vatPercentage,
+      'depositFee': depositFee,
     };
   }
 
   factory PropertyBooking.fromMap(Map<String, dynamic> map) {
+    if (map["rentFee"] == null) map["rentFee"] = map["virtualRentFee"];
+    if (map["commissionFee"] == null) {
+      map["commissionFee"] = map["virtualCommissionFee"];
+    }
+    if (map["vatFee"] == null) map["vatFee"] = map["virtualVatPercentage"];
+    if (map["depositFee"] == null) map["depositFee"] = map["virtualDepositFee"];
+
     return PropertyBooking(
       id: map['id'] as String,
-      ad: PropertyAd.fromMap(map['ad'] as Map<String, dynamic>),
       poster: User.fromMap(map['poster'] as Map<String, dynamic>),
       client: User.fromMap(map['client'] as Map<String, dynamic>),
+      ad: PropertyAd.fromMap(map['ad'] as Map<String, dynamic>),
       quantity: map['quantity'] as int,
       status: map['status'] as String,
       checkIn: DateTime.parse(map['checkIn'] as String),
@@ -187,7 +164,14 @@ class PropertyBooking {
           : null,
       transactionId:
           map['transactionId'] != null ? map['transactionId'] as String : null,
-      isViewedByLandlord: map["isViewedByLandlord"] == true,
+      isViewedByLandlord: map['isViewedByLandlord'] as bool,
+      isViewedByClient: map['isViewedByClient'] as bool,
+      cancelMessage:
+          map['cancelMessage'] != null ? map['cancelMessage'] as String : null,
+      rentFee: map['rentFee'] as num,
+      commissionFee: map['commissionFee'] as num,
+      vatPercentage: map['vatFee'] as num,
+      depositFee: map['depositFee'] != null ? map['depositFee'] as num : null,
     );
   }
 
@@ -222,5 +206,11 @@ class PropertyBooking {
     createdAt = other.createdAt;
     paymentService = other.paymentService;
     transactionId = other.transactionId;
+    isViewedByClient = other.isViewedByClient;
+    isViewedByLandlord = other.isViewedByLandlord;
+  }
+
+  bool get isOverDue {
+    return checkIn.isBefore(DateTime.now().subtract(const Duration(days: 3)));
   }
 }

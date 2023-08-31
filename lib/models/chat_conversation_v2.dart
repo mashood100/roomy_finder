@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:get/get.dart';
+import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/chat_file_system.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/chat_message_v2.dart';
@@ -209,5 +210,12 @@ class ChatConversationV2 {
         break;
       }
     }
+  }
+
+  Future<void> upUserProfiles() async {
+    try {
+      final other2 = await ApiService.fetchUser(other.id);
+      if (other2 != null) other.updateFrom(other2);
+    } catch (_) {}
   }
 }

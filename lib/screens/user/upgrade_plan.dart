@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -66,7 +66,7 @@ class _UpgradePlanController extends LoadingController {
           Get.back(result: "SKIP");
           if (skipCallback != null) skipCallback!();
           break;
-        case "PAY_CASH":
+        case "PAY CASH":
           final result = await showConfirmDialog(
             "Please confirm that you want to pay cash to the landlord",
           );

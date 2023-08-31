@@ -92,8 +92,9 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
                         else
                           Text(e["maintenantNote"]),
                         ImageGrid(
-                          images: List<String>.from(e["maintenantImages"]),
                           title: "Repair submit images",
+                          items: List<String>.from(e["maintenantImages"]),
+                          getImage: (item) => NetworkImage(item),
                         ),
                         // Landlord
 
@@ -129,8 +130,9 @@ class _RepairsSubmitsScreenState extends State<RepairsSubmitsScreen> {
                           else
                             Text(e["landlordNote"]),
                           ImageGrid(
-                            images: List<String>.from(e["landlordImages"]),
                             title: "Repair submit images (landlord)",
+                            items: List<String>.from(e["landlordImages"]),
+                            getImage: (item) => NetworkImage(item),
                           ),
                         ],
 

@@ -18,8 +18,8 @@ import 'package:roomy_finder/classes/file_helprer.dart';
 import 'package:roomy_finder/components/color_animated_text.dart';
 import 'package:roomy_finder/components/message.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/controllers/local_notifications.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
@@ -30,6 +30,7 @@ import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/chat/chat_room_helper.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
+import 'package:roomy_finder/screens/user/public_profile.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:socket_io_client/socket_io_client.dart';
@@ -38,12 +39,12 @@ part './chat_room_controller.dart';
 
 class _ChatRoomScreen extends StatelessWidget {
   const _ChatRoomScreen({
-    required this.conversation,
+    required this.conv,
     this.initialRoommateAd,
     this.initialBooking,
   });
 
-  final ChatConversationV2 conversation;
+  final ChatConversationV2 conv;
   final RoommateAd? initialRoommateAd;
   final PropertyBooking? initialBooking;
 
@@ -51,15 +52,15 @@ class _ChatRoomScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.put(
       _ChatRoomController(
-        conversation,
+        conv,
         initialRoommateAd: initialRoommateAd,
         initialBooking: initialBooking,
       ),
-      tag: conversation.key,
+      tag: conv.key,
     );
 
     return GetBuilder<_ChatRoomController>(
-      tag: conversation.key,
+      tag: conv.key,
       builder: (controller) {
         return Scaffold(
           // backgroundColor: Colors.white70,
@@ -76,17 +77,28 @@ class _ChatRoomScreen extends StatelessWidget {
             ),
             leadingWidth: 40,
             title: controller.isSelectMode.isFalse
-                ? Row(
-                    children: [
-                      conversation.other.ppWidget(size: 20, borderColor: false),
-                      const SizedBox(width: 10),
-                      GetBuilder<_ChatRoomController>(
-                        tag: conversation.key,
-                        builder: (controller) {
-                          return Text(controller.conversation.other.fullName);
-                        },
-                      )
-                    ],
+                ? GestureDetector(
+                    onTap: () {
+                      Get.to(() => UserPublicProfile(user: conv.other));
+                    },
+                    child: Row(
+                      children: [
+                        Hero(
+                          tag: "${conv.other.id}profile-picture",
+                          child: conv.other.ppWidget(
+                            size: 20,
+                            borderColor: false,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        GetBuilder<_ChatRoomController>(
+                          tag: conv.key,
+                          builder: (controller) {
+                            return Text(controller.conversation.other.fullName);
+                          },
+                        )
+                      ],
+                    ),
                   )
                 : Text("${controller.selectedMessages.length}"),
             actions: controller.isSelectMode.isTrue
@@ -273,7 +285,7 @@ class _ChatRoomScreen extends StatelessWidget {
                     color: Get.theme.appBarTheme.backgroundColor,
                     child: GetBuilder<_ChatRoomController>(
                       id: 'upload-tasks',
-                      tag: conversation.key,
+                      tag: conv.key,
                       builder: (controller) {
                         final max = controller.uploadTasks.length > 1
                             ? 1
@@ -333,7 +345,7 @@ class _ChatRoomScreen extends StatelessWidget {
           ),
           bottomSheet: GetBuilder<_ChatRoomController>(
             id: "bottom-widget",
-            tag: conversation.key,
+            tag: conv.key,
             builder: (controller) {
               if (controller.conversation.iAmBlocked ||
                   controller.conversation.iHaveBlocked) {
@@ -503,6 +515,8 @@ class _BottomInputWidget extends StatelessWidget {
                             ),
                             child: TextField(
                               decoration: const InputDecoration(
+                                fillColor: Colors.white,
+                                filled: true,
                                 hintText: "New message",
                                 contentPadding: EdgeInsets.symmetric(
                                   vertical: 7,
@@ -632,6 +646,13 @@ Future<void> moveToChatRoom(
   PropertyBooking? booking,
 }) async {
   try {
+    if (first.isTerminatedUser ||
+        second.isTerminatedUser ||
+        first.isGuest ||
+        second.isGuest) {
+      showToast("Cannot chat with this user");
+      return;
+    }
     final key = ChatConversationV2.createKey(first.id, second.id);
 
     var conv =
@@ -648,7 +669,7 @@ Future<void> moveToChatRoom(
     if (Get.currentRoute == "/_ChatRoomScreen") {
       await Get.off(
         () => _ChatRoomScreen(
-          conversation: conv!,
+          conv: conv!,
           initialRoommateAd: roommateAd,
           initialBooking: booking,
         ),
@@ -657,7 +678,7 @@ Future<void> moveToChatRoom(
       );
     } else {
       await Get.to(() => _ChatRoomScreen(
-            conversation: conv!,
+            conv: conv!,
             initialRoommateAd: roommateAd,
             initialBooking: booking,
           ));

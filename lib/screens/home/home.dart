@@ -1,57 +1,44 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/local_notifications.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
-import 'package:roomy_finder/functions/share_app.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
+import 'package:roomy_finder/helpers/roomy_notification.dart';
 import 'package:roomy_finder/models/chat_conversation_v2.dart';
-import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
-import 'package:roomy_finder/screens/ads/roomate_ad/post_roommate_ad.dart';
-import 'package:roomy_finder/screens/blog_post/all_posts.dart';
+import 'package:roomy_finder/screens/ads/roomate_ad/post_ad_first_screen.dart';
+import 'package:roomy_finder/screens/booking/my_bookings.dart';
 import 'package:roomy_finder/screens/home/account_tab.dart';
-import 'package:roomy_finder/screens/home/favorites_tab.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/home/conversations_tab.dart';
+import 'package:roomy_finder/screens/home/landlord_dashboard.dart';
 import 'package:roomy_finder/screens/home/post_ad_tab.dart';
-import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
-import 'package:roomy_finder/screens/user/update_profile.dart';
-import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
-import 'package:roomy_finder/utilities/data.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:roomy_finder/screens/utility_screens/view_notifications.dart';
 
-class HomeController extends LoadingController {
+class _HomeController extends LoadingController {
   late final StreamSubscription<RemoteMessage> fcmStream;
+  late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
 
-  final currentTabIndex = 1.obs;
   Timer? _popTimer;
   int _popClickCounts = 0;
 
-  late final HomeTab _homeTabRef;
-  final List<HomeScreenSupportable> tabs = [
-    const AccountTab(),
-    const HomeTab(),
-    const PostAdTab(),
-    const ChatConversationsTab(),
-    const FavoriteTab(),
-  ];
-
   @override
   void onInit() {
-    currentTabIndex.value = 1;
-
-    _homeTabRef = tabs[1] as HomeTab;
-
+    Future(() => Home.currentIndex(1));
+    ApiService.setUnreadBookingCount();
+    ApiService.setLanlordIsBlocked();
     AppController.instance.setIsFirstLaunchToFalse(false);
 
     if (AppController.dynamicInitialLink != null) {
@@ -67,25 +54,29 @@ class HomeController extends LoadingController {
     FirebaseMessaging.instance.subscribeToTopic("new-property-ad");
     FirebaseMessaging.instance.subscribeToTopic("new-roommate-ad");
 
+    _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
+      if (event == FGBGType.foreground) {
+        ApiService.setUnreadBookingCount();
+      }
+    });
+
     fcmStream =
         FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
       // AppController.instance.haveNewMessage(false);
+
+      if (data["event"]?.toString().contains("booking") == true) {
+        ApiService.setUnreadBookingCount();
+      }
       switch (data["event"]) {
         case "plan-upgraded-successfully":
           AppController.instance.user.update((val) {
-            if (val != null) {
-              val.isPremium = true;
-            }
+            if (val != null) val.isPremium = true;
           });
           showToast("Plan successfully upgraded to premium");
 
           break;
 
-        case "new-property-ad":
-        case "new-roommate-ad":
-          _homeTabRef.onNewAd(data["event"], data["adId"]);
-          break;
         case "account-updated":
           ApiService.updateUserProfile();
 
@@ -94,8 +85,6 @@ class HomeController extends LoadingController {
         default:
       }
     });
-
-    ApiService.setUnreadBookingCount();
   }
 
   @override
@@ -103,7 +92,8 @@ class HomeController extends LoadingController {
     if (_popTimer != null) _popTimer!.cancel();
     super.onClose();
     fcmStream.cancel();
-    PropertyBooking.unViewBookingsCount.value = 0;
+    _fGBGNotifierSubScription.cancel();
+    Home.unViewBookingsCount.value = 0;
   }
 
   // Initial Remote message handler
@@ -114,15 +104,15 @@ class HomeController extends LoadingController {
 // FCM initial message
     final fcmMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (fcmMessage != null) {
-      LocalNotificationController.handleFCMMessageOpenedAppMessage(fcmMessage);
+      NotificationController.handleFCMMessageOpenedAppMessage(fcmMessage);
     }
 
 // Local notification initial message
-    final launchNot = await LocalNotificationController.plugin
-        .getNotificationAppLaunchDetails();
+    final launchNot =
+        await NotificationController.plugin.getNotificationAppLaunchDetails();
 
     if (launchNot != null && launchNot.didNotificationLaunchApp) {
-      LocalNotificationController.handleInitialMessage(
+      NotificationController.handleInitialMessage(
           launchNot.notificationResponse!);
     }
 
@@ -131,7 +121,7 @@ class HomeController extends LoadingController {
 
   Future<void> _runStartFutures() async {
     await _promptUpdate();
-    await LocalNotificationController.requestNotificationPermission();
+    await NotificationController.requestNotificationPermission();
     await FirebaseMessaging.instance.requestPermission();
   }
 
@@ -156,400 +146,134 @@ class HomeController extends LoadingController {
       Get.offAll(() => const UpdateAppScreen());
     }
   }
-
-  Future<void> _logout(BuildContext context) async {
-    final shouldLogout = await showCupertinoDialog(
-        context: context,
-        builder: (context) {
-          return CupertinoAlertDialog(
-            title: const Text('Roomy Finder'),
-            content: const Text("Are you sure yo want to logout?"),
-            actions: [
-              CupertinoDialogAction(
-                child: Text("no".tr),
-                onPressed: () => Get.back(result: false),
-              ),
-              CupertinoDialogAction(
-                child: Text("yes".tr),
-                onPressed: () => Get.back(result: true),
-              ),
-            ],
-          );
-        });
-    if (shouldLogout == true) {
-      await AppController.instance.logout();
-      currentTabIndex(1);
-      Get.offAllNamed('/login');
-    }
-  }
 }
 
-class Home extends GetView<HomeController> {
+class Home extends StatelessWidget {
+  static final currentIndex = 1.obs;
+  static final RxInt unViewBookingsCount = 0.obs;
+  static final RxInt unreadMessagesCount = 0.obs;
+  static final RxInt unReadNotificationsCount = 0.obs;
+
+  static List<({String assetIcon, RxInt badge, String label})> get _tabs => [
+        (
+          label: 'Account',
+          assetIcon: AssetIcons.personPNG,
+          badge: 0.obs,
+        ),
+        (
+          label: 'Home',
+          assetIcon: AssetIcons.homePNG,
+          badge: 0.obs,
+        ),
+        if (AppController.me.isRoommate)
+          (
+            label: 'Post Ad',
+            assetIcon: AssetIcons.addSquarePNG,
+            badge: 0.obs,
+          ),
+        (
+          label: 'Chat',
+          assetIcon: AssetIcons.chatPNG,
+          badge: unreadMessagesCount,
+        ),
+        if (AppController.me.isRoommate)
+          (
+            label: 'My Bookings',
+            assetIcon: AssetIcons.squareCheckedPNG,
+            badge: unViewBookingsCount,
+          ),
+        if (AppController.me.isLandlord)
+          (
+            label: 'Notifications',
+            assetIcon: AssetIcons.notification2PNG,
+            badge: unReadNotificationsCount,
+          ),
+      ];
+
+  static List<HomeScreenSupportable> get _screens => [
+        const AccountTab(),
+        if (AppController.me.isRoommate)
+          const HomeTab()
+        else
+          const LandlordHomeTab(),
+        if (AppController.me.isRoommate) const PostAdTab(),
+        const ChatConversationsTab(),
+        if (AppController.me.isRoommate)
+          const MyBookingsCreen(showNavBar: true),
+        if (AppController.me.isLandlord)
+          const NotificationsScreen(showNavBar: true)
+      ];
+
+  static void _onBottomTabItemSelected(int index) {
+    if (AppController.dashboardIsBlocked &&
+        AppController.me.isLandlord &&
+        (index == 2 || index == 3)) {
+      RoomyNotificationHelper.showDashBoardIsBlocked();
+      return;
+    }
+    if (_tabs[index] is ChatConversationsTab) {
+      ChatConversationV2.homeTabIsChat = true;
+    } else {
+      ChatConversationV2.homeTabIsChat = false;
+    }
+
+    _screens[index].onTabIndexSelected(index);
+
+    if (_screens[index] is PostAdTab) {
+      if (AppController.me.isGuest) {
+        Get.offAllNamed('/login');
+      } else if (AppController.me.isLandlord) {
+        Get.to(() => const PostPropertyAdScreen());
+      } else if (AppController.me.isRoommate) {
+        Get.to(() => const PostRoommateAdFirstScreen());
+      }
+      // showToast("Comming soon");
+      return;
+    }
+    currentIndex(index);
+  }
+
   const Home({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(HomeController(), permanent: true);
+    final controller = Get.put(_HomeController(), permanent: true);
     return WillPopScope(
       onWillPop: controller._onWillPop,
-      child: Obx(() {
-        return Scaffold(
-          appBar: controller.tabs[controller.currentTabIndex.value].appBar,
-          drawer: SafeArea(
-            child: HomeDrawer(controller: controller),
-          ),
-          body: IndexedStack(
-            index: controller.currentTabIndex.value,
-            children: controller.tabs,
-          ),
-          bottomNavigationBar: AppController.me.isGuest
-              ? null
-              : BottomNavigationBar(
-                  currentIndex: controller.currentTabIndex.value,
-                  onTap: (index) {
-                    if (controller.tabs[index] is ChatConversationsTab) {
-                      ChatConversationV2.homeTabIsChat = true;
-                    } else {
-                      ChatConversationV2.homeTabIsChat = false;
-                    }
-
-                    controller.tabs[index].onIndexSelected(index);
-                    if (controller.tabs[index] is PostAdTab) {
-                      if (AppController.me.isGuest) {
-                        Get.offAllNamed('/login');
-                      } else if (AppController.me.isLandlord) {
-                        Get.to(() => const PostPropertyAdScreen());
-                      } else if (AppController.me.isRoommate) {
-                        Get.to(() => const PostRoommateAdScreen());
-                      }
-                      // showToast("Comming soon");
-                      return;
-                    }
-
-                    controller.currentTabIndex(index);
-                  },
-                  items: controller.tabs.map((e) {
-                    return e.navigationBarItem(
-                        controller.currentTabIndex.value ==
-                            controller.tabs.indexOf(e));
-                  }).toList(),
-                ),
-          floatingActionButton: controller
-              .tabs[controller.currentTabIndex.value].floatingActionButton,
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-        );
-      }),
+      child: Obx(() => IndexedStack(
+            index: Home.currentIndex.value,
+            children: Home._screens,
+          )),
     );
   }
 }
 
-class HomeDrawer extends StatelessWidget {
-  const HomeDrawer({
-    super.key,
-    required this.controller,
-  });
-
-  final HomeController controller;
+class HomeBottomNavigationBar extends StatelessWidget {
+  const HomeBottomNavigationBar({super.key, this.onTap});
+  final void Function(int)? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            if (!AppController.me.isGuest)
-              AppController.me.ppWidget(borderColor: false),
-            if (!AppController.me.isGuest)
-              Text(
-                AppController.me.fullName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            if (!AppController.me.isGuest)
-              Builder(builder: (context) {
-                final type = AppController.me.type;
-                if (type.isEmpty) return const SizedBox();
-                return Text(
-                  type.replaceFirst(type[0], type[0].toUpperCase()),
-                  style: const TextStyle(),
-                );
-              }),
-            if (!AppController.me.isGuest)
-              ListTile(
-                leading: const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.green,
-                  child: Icon(Icons.edit, color: Colors.white),
-                ),
-                title: const Text("Edit Profile"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Get.back();
-                  Get.to(() => const UpdateUserProfile());
-                },
-              ),
-            if (AppController.me.isGuest)
-              ListTile(
-                leading: const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: ROOMY_ORANGE,
-                  child: Icon(Icons.login, color: Colors.white),
-                ),
-                title: const Text("Login"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Get.offAllNamed("/login");
-                },
-              ),
-            if (AppController.me.isGuest)
-              ListTile(
-                leading: const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: ROOMY_PURPLE,
-                  child: Icon(Icons.person_add, color: Colors.white),
-                ),
-                title: const Text("Register"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Get.offAllNamed("/login");
-                },
-              ),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(left: 16),
-                child: Text(
-                  "General Settings",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: ROOMY_PURPLE,
-                child: Icon(Icons.home, color: Colors.white),
-              ),
-              title: const Text("Home"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                controller.currentTabIndex(1);
-                Get.back();
-              },
-            ),
-            if (!AppController.me.isGuest)
-              ListTile(
-                leading: const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: ROOMY_ORANGE,
-                  child: Icon(Icons.person, color: Colors.white),
-                ),
-                title: const Text("My Account"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  controller.currentTabIndex(0);
-                  Get.back();
-                },
-              ),
-            ListTile(
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.blue,
-                child: Icon(Icons.add_box, color: Colors.white),
-              ),
-              title: const Text("Post Ad"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                if (AppController.me.isGuest) {
-                  Get.offAllNamed('/login');
-                } else if (AppController.me.isLandlord) {
-                  Get.to(() => const PostPropertyAdScreen());
-                } else if (AppController.me.isRoommate) {
-                  Get.to(() {
-                    return const PostRoommateAdScreen();
-                  });
-                }
-              },
-            ),
-            ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/contact_us.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.pink,
-                child: Icon(Icons.support_agent, color: Colors.white),
-              ),
-              title: const Text("Contact Us"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                Get.to(() => const ContactUsScreen());
-              },
-            ),
-            ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/edit_article.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: ROOMY_ORANGE,
-                child: Icon(Icons.article, color: Colors.white),
-              ),
-              title: const Text("Blog"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                Get.to(() => const AllBlogPostsScreen());
-              },
-            ),
-            ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/info.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.green,
-                child: Icon(Icons.info_outline, color: Colors.white),
-              ),
-              title: const Text("Terms & Conditions"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                Get.to(() {
-                  return const ViewPdfScreen(
-                    title: "Terms and conditions",
-                    asset: "assets/pdf/terms-and-conditions.pdf",
-                  );
-                });
-              },
-            ),
-            ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/lock.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.red,
-                child: Icon(Icons.privacy_tip, color: Colors.white),
-              ),
-              title: const Text("Privacy Policy"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                Get.to(() {
-                  return const ViewPdfScreen(
-                    title: "Privacy policy",
-                    asset: "assets/pdf/privacy-policy.pdf",
-                  );
-                });
-              },
-            ),
-            ListTile(
-              // leading: Image.asset(
-              //   "assets/icons/drawer/share.png",
-              //   width: 40,
-              //   height: 40,
-              //   fit: BoxFit.cover,
-              // ),
-              leading: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.purpleAccent,
-                child: Icon(Icons.share, color: Colors.white),
-              ),
-              title: const Text("Share This App"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Get.back();
-                shareApp();
-              },
-            ),
-            if (!AppController.me.isGuest)
-              ListTile(
-                leading: const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.red,
-                  child: Icon(Icons.logout, color: Colors.white),
-                ),
-                title: const Text("Logout"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Get.back();
+    return Obx(() {
+      return BottomNavigationBar(
+        currentIndex: Home.currentIndex.value,
+        onTap: (index) {
+          Home._onBottomTabItemSelected(index);
 
-                  controller._logout(Get.context!);
-                },
-              ),
-            const Divider(height: 10),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                {
-                  "url":
-                      "https://www.tiktok.com/@roomyfinder?_t=8bNtaBqPwQr&_r=1",
-                  "assetImage": "assets/images/social/tiktok.png",
-                  "label": "Tiktok",
-                },
-                {
-                  "url": "https://www.facebook.com/roomyfinder?mibextid=LQQJ4d",
-                  "assetImage": "assets/images/social/facebook.png",
-                  "label": "Facebook",
-                },
-                {
-                  "url":
-                      "https://instagram.com/roomyfinder?igshid=YjNmNGQ3MDY=",
-                  "assetImage": "assets/images/social/instagram.png",
-                  "label": "Instagram",
-                },
-                {
-                  "assetImage": "assets/images/social/twitter.png",
-                  "label": "Twitter",
-                },
-                {
-                  "assetImage": "assets/images/social/snapchat.png",
-                  "label": "Snapchat",
-                },
-              ].map((e) {
-                return GestureDetector(
-                  onTap: () async {
-                    Get.back();
-                    if (e["url"] == null) {
-                      showToast("Comming soon...");
-                      return;
-                    }
-                    var url = Uri.parse(e["url"]!);
-                    if (await canLaunchUrl(url)) {
-                      launchUrl(url, mode: LaunchMode.externalApplication);
-                    }
-                  },
-                  child: Image.asset(e["assetImage"]!, width: 40, height: 40),
-                );
-              }).toList(),
+          if (onTap != null) onTap!(index);
+        },
+        items: Home._tabs.map((e) {
+          final isCurrent = Home.currentIndex.value == Home._tabs.indexOf(e);
+          return BottomNavigationBarItem(
+            icon: CustomBottomNavbarIcon(
+              assetIcon: e.assetIcon,
+              isCurrent: isCurrent,
+              badge: e.badge.value,
             ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
+            label: e.label,
+          );
+        }).toList(),
+      );
+    });
   }
 }

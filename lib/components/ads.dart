@@ -1,12 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:jiffy/jiffy.dart';
+import 'package:roomy_finder/components/custom_button.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
+import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class PropertyAdWidget extends StatelessWidget {
@@ -15,169 +17,137 @@ class PropertyAdWidget extends StatelessWidget {
     required this.ad,
     this.onTap,
     this.onFavoriteTap,
+    this.isMiniView = false,
   });
 
   final PropertyAd ad;
   final void Function()? onTap;
   final void Function()? onFavoriteTap;
+  final bool isMiniView;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // onTap: onTap,
+      onTap: onTap,
       child: Card(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 2,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(10),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(10),
+                ),
+                child: (ad.images.isEmpty)
+                    ? Image.asset(
+                        AssetImages.defaultRoomPNG,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      )
+                    : LoadingProgressImage(
+                        image: CachedNetworkImageProvider(ad.images[0]),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
-              child: ad.images.isEmpty
-                  ? Image.asset(
-                      "assets/images/default_room.png",
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    )
-                  : LoadingProgressImage(
-                      image: CachedNetworkImageProvider(ad.images[0]),
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
             ),
             const SizedBox(height: 5),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        ad.type,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.room, color: ROOMY_ORANGE),
-                          const SizedBox(width: 5),
-                          Text(
-                            "${ad.address["location"]}",
-                            style: const TextStyle(fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          ad.type,
+                          style: TextStyle(
+                            fontSize: isMiniView ? 9 : 12,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Obx(() {
-                    return Text(
-                      formatMoney(
-                        ad.prefferedRentDisplayPrice *
-                            AppController
-                                .instance.country.value.aedCurrencyConvertRate,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-            const Divider(),
-            Container(
-              padding: const EdgeInsets.only(right: 5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Builder(builder: (context) {
-                    final String asset;
-                    switch (ad.type) {
-                      case "Bed":
-                        asset = "assets/icons/bed.png";
-                        break;
-                      case "Partition":
-                        asset = "assets/icons/partition.png";
-                        break;
-                      case "Room":
-                        asset = "assets/icons/regular_room.png";
-                        break;
-                      default:
-                        asset = "assets/icons/master_room.png";
-                    }
-                    return Image.asset(asset, height: 30);
-                  }),
-                  Text(
-                    "Available ${ad.quantity - ad.quantityTaken}",
-                    style: const TextStyle(
-                      color: Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "Taken ${ad.quantityTaken}",
-                    style: const TextStyle(
-                      color: ROOMY_ORANGE,
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    height: 30,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: ROOMY_ORANGE,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
                         ),
-                        side: const BorderSide(color: ROOMY_ORANGE),
-                      ),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(text: "Budget: "),
+                              TextSpan(
+                                text:
+                                    "${formatMoney(ad.prefferedRentDisplayPrice * AppController.convertionRate)}/${ad.preferedRentType}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            style: TextStyle(
+                              fontSize: isMiniView ? 9 : 12,
+                            ),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isMiniView)
+                    CustomButton(
+                      "View details",
                       onPressed: onTap,
-                      child: const Text(
-                        "View Details",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      height: 30,
+                      boldLabel: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 0,
                       ),
-                    ),
-                  ),
-                  // SizedBox(
-                  //   height: 30,
-                  //   child: IconButton(
-                  //     onPressed: onFavoriteTap ??
-                  //         () {
-                  //           _addAdToFavorite(
-                  //             ad.toJson(),
-                  //             "favorites-property-ads",
-                  //           ).then((value) {
-                  //             if (value) {
-                  //               showToast("Ad added to favorites");
-                  //             }
-                  //           });
-                  //         },
-                  //     icon: onFavoriteTap != null
-                  //         ? const Icon(Icons.delete, color: Colors.red)
-                  //         : const Icon(Icons.favorite),
-                  //   ),
-                  // )
+                    )
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            if (!isMiniView && ad.description != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  ad.description!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w300,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 10,
+                bottom: 10,
+                right: 10,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    CupertinoIcons.location_solid,
+                    color: ROOMY_PURPLE,
+                    size: isMiniView ? 12 : 15,
+                  ),
+                  Expanded(
+                    child: Text(
+                      "${ad.address["city"]}, ${ad.address["location"]}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isMiniView ? 9 : 12,
+                        fontWeight: FontWeight.w300,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -185,79 +155,79 @@ class PropertyAdWidget extends StatelessWidget {
   }
 }
 
-class PropertyAdMiniWidget extends StatelessWidget {
-  const PropertyAdMiniWidget({super.key, required this.ad, this.onTap});
+// class PropertyAdMiniWidget extends StatelessWidget {
+//   const PropertyAdMiniWidget({super.key, required this.ad, this.onTap});
 
-  final PropertyAd ad;
-  final void Function()? onTap;
+//   final PropertyAd ad;
+//   final void Function()? onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(10),
-          ),
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              if (ad.images.isEmpty)
-                Image.asset(
-                  "assets/images/default_room.png",
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.fill,
-                )
-              else
-                LoadingProgressImage(
-                  image: CachedNetworkImageProvider(ad.images[0]),
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              DefaultTextStyle.merge(
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                ),
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(8.0),
-                  width: double.infinity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        ad.type,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "${ad.address["location"]},"
-                        " ${ad.address["city"]}",
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        formatMoney(
-                          ad.prefferedRentDisplayPrice *
-                              AppController.convertionRate,
-                        ),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       child: Card(
+//         child: ClipRRect(
+//           borderRadius: const BorderRadius.all(
+//             Radius.circular(10),
+//           ),
+//           child: Stack(
+//             alignment: Alignment.bottomCenter,
+//             children: [
+//               if (ad.images.isEmpty)
+//                 Image.asset(
+//                   "assets/images/default_room.png",
+//                   width: double.infinity,
+//                   height: double.infinity,
+//                   fit: BoxFit.fill,
+//                 )
+//               else
+//                 LoadingProgressImage(
+//                   image: CachedNetworkImageProvider(ad.images[0]),
+//                   width: double.infinity,
+//                   height: double.infinity,
+//                   fit: BoxFit.cover,
+//                 ),
+//               DefaultTextStyle.merge(
+//                 style: const TextStyle(
+//                   color: Colors.black,
+//                   fontSize: 10,
+//                 ),
+//                 child: Container(
+//                   color: Colors.white,
+//                   padding: const EdgeInsets.all(8.0),
+//                   width: double.infinity,
+//                   child: Column(
+//                     mainAxisSize: MainAxisSize.min,
+//                     // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text(
+//                         ad.type,
+//                         style: const TextStyle(fontWeight: FontWeight.bold),
+//                       ),
+//                       Text(
+//                         "${ad.address["location"]},"
+//                         " ${ad.address["city"]}",
+//                       ),
+//                       const SizedBox(height: 5),
+//                       Text(
+//                         formatMoney(
+//                           ad.prefferedRentDisplayPrice *
+//                               AppController.convertionRate,
+//                         ),
+//                         style: const TextStyle(fontWeight: FontWeight.bold),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class RoommateAdWidget extends StatelessWidget {
   const RoommateAdWidget({
@@ -265,127 +235,135 @@ class RoommateAdWidget extends StatelessWidget {
     required this.ad,
     this.onTap,
     this.seeInformationLabel = "View Ad",
+    this.isMiniView = false,
+    this.onChat,
   });
 
   final RoommateAd ad;
   final void Function()? onTap;
   final String seeInformationLabel;
+  final bool isMiniView;
+  final void Function()? onChat;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(10),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(10),
+                ),
+                child: (ad.images.isEmpty)
+                    ? Image.asset(
+                        AssetImages.defaultRoomPNG,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      )
+                    : LoadingProgressImage(
+                        image: CachedNetworkImageProvider(ad.images[0]),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
-              child: (ad.images.isEmpty)
-                  ? Image.asset(
-                      "assets/images/default_room.png",
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    )
-                  : LoadingProgressImage(
-                      image: CachedNetworkImageProvider(ad.images[0]),
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
             ),
             const SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        ad.action,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "${ad.poster.firstName}, ${ad.aboutYou["age"] ?? "N/A"}",
+                          style: TextStyle(
+                            fontSize: isMiniView ? 9 : 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text("${ad.aboutYou["occupation"] ?? ""}"
-                          " Age(${ad.aboutYou["age"] ?? "N/A"})"),
-                    ],
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    height: 35,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ROOMY_ORANGE,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(text: "Budget: "),
+                              TextSpan(
+                                text:
+                                    "${formatMoney(ad.budget * AppController.convertionRate)}/${ad.rentType}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            style: TextStyle(
+                              fontSize: isMiniView ? 9 : 12,
+                            ),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        side: const BorderSide(color: ROOMY_ORANGE),
-                      ),
-                      onPressed: onTap,
-                      child: Text(
-                        seeInformationLabel,
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                      ],
                     ),
-                  )
+                  ),
+                  if (!isMiniView && !ad.isMine)
+                    CustomButton(
+                      "   Chat   ",
+                      onPressed: onChat,
+                      height: 30,
+                      boldLabel: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 0,
+                      ),
+                    )
                 ],
               ),
             ),
-            const Divider(height: 20),
+            if (!isMiniView && ad.description != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  ad.description!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w300,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(
-                left: 5,
+                left: 10,
                 bottom: 10,
                 right: 10,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Budget",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        formatMoney(ad.budget * AppController.convertionRate),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  Icon(
+                    CupertinoIcons.location_solid,
+                    color: ROOMY_PURPLE,
+                    size: isMiniView ? 12 : 15,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Moving date",
-                        style: TextStyle(fontSize: 14),
+                  Expanded(
+                    child: Text(
+                      "${ad.address["city"]}, ${ad.address["location"]}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isMiniView ? 9 : 12,
+                        fontWeight: FontWeight.w300,
+                        color: Colors.black54,
                       ),
-                      Text(
-                        ad.movingDate != null
-                            ? Jiffy.parseFromDateTime(ad.movingDate!).yMEd
-                            : "N/A",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -397,138 +375,111 @@ class RoommateAdWidget extends StatelessWidget {
   }
 }
 
-class RoommateAdMiniWidget extends StatelessWidget {
-  const RoommateAdMiniWidget({super.key, required this.ad, this.onTap});
+class RoommateUser extends StatelessWidget {
+  const RoommateUser({
+    super.key,
+    required this.user,
+    this.onTap,
+    this.isMiniView = false,
+    this.onChat,
+  });
 
-  final RoommateAd ad;
+  final User user;
   final void Function()? onTap;
+  final bool isMiniView;
+  final void Function()? onChat;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(10),
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
+        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Stack(
-            alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (ad.images.isEmpty)
-                Image.asset(
-                  "assets/images/default_room.png",
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                )
-              else
-                LoadingProgressImage(
-                  image: CachedNetworkImageProvider(ad.images[0]),
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              DefaultTextStyle.merge(
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                ),
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(8.0),
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ad.poster.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            "${ad.address["location"]},"
-                            " ${ad.address["city"]}",
-                          ),
-                          const SizedBox(height: 5),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                const TextSpan(
-                                  text: "Budget ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: formatMoney(
-                                      ad.budget * AppController.convertionRate),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+              Expanded(
+                child: Builder(builder: (context) {
+                  if (user.profilePicture == null) {
+                    final name = user.gender == null
+                        ? AssetImages.defaultRoomPNG
+                        : user.gender == "Male"
+                            ? AssetImages.defaultMalePNG
+                            : AssetImages.defaultFemalePNG;
+
+                    return LoadingProgressImage(
+                      fit: BoxFit.cover,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(9),
                       ),
-                    ],
-                  ),
+                      image: AssetImage(name),
+                    );
+                  }
+                  return LoadingProgressImage(
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(9),
+                    ),
+                    image: CachedNetworkImageProvider(user.profilePicture!),
+                  );
+                }),
+              ),
+              // const Divider(color: ROOMY_ORANGE, height: 1),
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user.fullName),
+                        if (user.country != null)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                CupertinoIcons.location_solid,
+                                color: ROOMY_PURPLE,
+                                size: isMiniView ? 12 : 15,
+                              ),
+                              Text(
+                                user.country!,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    if (!isMiniView && !user.isMe)
+                      CustomButton(
+                        "   Chat   ",
+                        onPressed: onChat,
+                        height: 30,
+                        boldLabel: false,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 0,
+                        ),
+                      )
+                  ],
                 ),
-              )
+              ),
+              const SizedBox(height: 10),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-/// To be to use to display information like amenities, preferences,
-/// about me ...
-
-class AdOverViewItem extends StatelessWidget {
-  const AdOverViewItem({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subTitle,
-    this.subTitleColor,
-    this.rowCrossAxisAlignment,
-  });
-  final Widget icon;
-  final Widget title;
-  final Widget? subTitle;
-  final Color? subTitleColor;
-  final CrossAxisAlignment? rowCrossAxisAlignment;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: rowCrossAxisAlignment ?? CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        icon,
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              title,
-              if (subTitle != null)
-                DefaultTextStyle.merge(
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: subTitleColor,
-                  ),
-                  child: subTitle!,
-                ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

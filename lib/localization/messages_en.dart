@@ -21,7 +21,7 @@ const Map<String, String> enMessages = {
   "email": "Email",
   "emailAddress": "Email address",
   "enterYourPassword": "Enter you password",
-  "enterYourPhoneNumber": "Enter your phone numberr",
+  "enterYourPhoneNumber": "Enter your phone number",
   "deposit": "Deposit",
   "depositFee": "Deposit fee",
   "description": "Description",

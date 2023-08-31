@@ -7,6 +7,7 @@ import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/screens/home/home.dart';
 
 const _validStatus = [200, 201, 204, 400, 403, 409, 404, 406, 500, 502, 503];
 
@@ -85,6 +86,13 @@ class ApiService {
   static Future<bool> checkIfUserExist(String email) async {
     final dio = ApiService.getDio;
     final res = await dio.get('$API_URL/auth/user-exist?email=$email');
+    return res.data["exist"] as bool;
+  }
+
+  static Future<bool> checkIfPhoneIsUsed(String phone) async {
+    final dio = ApiService.getDio;
+    final res = await dio
+        .get('$API_URL/auth/phone-is-used?', queryParameters: {"phone": phone});
     return res.data["exist"] as bool;
   }
 
@@ -211,7 +219,7 @@ class ApiService {
       );
 
       if (res.statusCode == 200) {
-        PropertyBooking.unViewBookingsCount(res.data);
+        Home.unViewBookingsCount(res.data);
         return res.data;
       }
       return null;
@@ -221,20 +229,18 @@ class ApiService {
     }
   }
 
-  static Future<(Map<String, dynamic>?, int code)> getBookingFee(
-      String bookingId) async {
+  static Future<bool?> setLanlordIsBlocked() async {
     try {
-      final res = await ApiService.getDio.get(
-        "/bookings/property-ad/$bookingId/payment-fee",
-      );
+      final res = await ApiService.getDio.get("/profile/dashboard-is-blocked");
 
       if (res.statusCode == 200) {
-        return (Map<String, dynamic>.from(res.data), 200);
+        AppController.dashboardIsBlocked = res.data["isBlocked"];
+        return AppController.dashboardIsBlocked;
       }
-      return (null, res.statusCode ?? 0);
+      return null;
     } catch (e) {
       Get.log("$e");
-      return (null, 0);
+      return null;
     }
   }
 
@@ -252,22 +258,37 @@ class ApiService {
     }
   }
 
-  // static Future<bool> logoutUser(String fcmToken) async {
-  //   try {
-  //     final res =
-  //         await Dio().post("$API_URL/auth/logout", data: {"fcmToken": fcmToken});
+  static Future<bool> logoutUser(
+    String userId,
+    String fcmToken,
+  ) async {
+    try {
+      final res = await Dio().post(
+        "$API_URL/auth/logout",
+        data: {"fcmToken": fcmToken, "userId": userId},
+      );
 
-  //     if (res.statusCode == 200) {
-  //       return true;
-  //     }
-  //     Get.log("Api_Service logout status code : ${res.statusCode}");
-  //     return false;
-  //   } catch (e, trace) {
-  //     Get.log("$e");
-  //     Get.log("$trace");
-  //     return false;
-  //   }
-  // }
+      if (res.statusCode == 200) {
+        return true;
+      }
+      Get.log("Api_Service logout status code : ${res.statusCode}");
+      return false;
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+      return false;
+    }
+  }
+
+  static Future<List<RoommateAd>> getUserRoommateAds(String id) async {
+    final res = await getDio.get("/user/$id/roommate-ads");
+    return (res.data as List).map((e) => RoommateAd.fromMap(e)).toList();
+  }
+
+  static Future<List<PropertyAd>> getUserPropertyAds(String id) async {
+    final res = await getDio.get("/user/$id/property-ads");
+    return (res.data as List).map((e) => PropertyAd.fromMap(e)).toList();
+  }
 }
 
 // void _log(data) => print("[ API_SERVICE ] : $data");

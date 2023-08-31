@@ -60,6 +60,8 @@ class _ChatRoomController extends LoadingController {
   void onInit() {
     super.onInit();
 
+    conversation.upUserProfiles().then((value) => update());
+
     _clearChatNotifications();
 
     _createAudioSession();
@@ -80,7 +82,7 @@ class _ChatRoomController extends LoadingController {
     VoicePlayerHelper.player = FlutterSoundPlayer(logLevel: Level.warning);
     VoicePlayerHelper.player.openPlayer().then((_) {
       VoicePlayerHelper.player
-          .setSubscriptionDuration(const Duration(milliseconds: 100));
+          .setSubscriptionDuration(const Duration(milliseconds: 1));
     });
 
 // Voice recorder
@@ -177,7 +179,7 @@ class _ChatRoomController extends LoadingController {
 // Clear notifications
   void _clearChatNotifications() {
     for (var id in conversation.localNotificationsIds) {
-      LocalNotificationController.plugin.cancel(id);
+      NotificationController.plugin.cancel(id);
     }
 
     conversation.localNotificationsIds.clear();
@@ -211,7 +213,7 @@ class _ChatRoomController extends LoadingController {
           );
         } else {
           try {
-            LocalNotificationController.showNotification(
+            NotificationController.showNotification(
               conversation.other.fullName,
               msg.content ?? msg.typedMessage,
               payload: {"key": conversation.key, "messageId": msg.id},

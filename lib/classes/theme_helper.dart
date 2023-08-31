@@ -7,22 +7,39 @@ class ThemeHelper {
     primarySwatch: Colors.purple,
     useMaterial3: true,
     scaffoldBackgroundColor: Colors.white,
-    inputDecorationTheme: InputDecorationTheme(
+    inputDecorationTheme: const InputDecorationTheme(
       isDense: true,
-      hintStyle: const TextStyle(color: Colors.grey),
+      hintStyle: TextStyle(color: Colors.grey),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
-        borderSide: const BorderSide(width: 1, color: Colors.grey),
+        borderRadius: BorderRadius.all(Radius.circular(7)),
+        borderSide: BorderSide(width: 4, color: ROOMY_PURPLE),
       ),
       // fillColor: const Color.fromARGB(255, 228, 225, 225),
-      filled: true,
-      fillColor: Colors.white,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 10,
+      ),
       // prefixIconColor: Colors.grey,
       // constraints: const BoxConstraints(maxHeight: 65),
       // labelStyle: const TextStyle(color: Colors.grey),
       // hintStyle: const TextStyle(color: Colors.grey),
       helperMaxLines: 3,
       errorMaxLines: 3,
+    ),
+    dropdownMenuTheme: const DropdownMenuThemeData(
+      inputDecorationTheme: InputDecorationTheme(
+        isDense: true,
+        helperMaxLines: 3,
+        errorMaxLines: 3,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 10,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(7)),
+          borderSide: BorderSide(width: 4, color: ROOMY_PURPLE),
+        ),
+      ),
     ),
     fontFamily: "Avenir",
     fontFamilyFallback: const ["Avro", "Roboto"],
@@ -36,10 +53,11 @@ class ThemeHelper {
       // backgroundColor: Colors.white,
       unselectedIconTheme: IconThemeData(color: ROOMY_PURPLE),
       selectedIconTheme: IconThemeData(color: ROOMY_PURPLE),
-      showSelectedLabels: false,
-      showUnselectedLabels: false,
-      unselectedLabelStyle: TextStyle(fontSize: 5),
-      selectedLabelStyle: TextStyle(fontSize: 5),
+      showSelectedLabels: true,
+      showUnselectedLabels: true,
+      unselectedLabelStyle:
+          TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+      selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
       type: BottomNavigationBarType.fixed,
     ),
     bottomSheetTheme: const BottomSheetThemeData(
@@ -59,7 +77,8 @@ class ThemeHelper {
     tabBarTheme: const TabBarTheme(
       labelColor: Colors.black,
     ),
-    // cardColor: Colors.white,
+    cardColor: Colors.white,
+    cardTheme: const CardTheme(color: Colors.white),
   );
 
   static final darkTheme = ThemeData(
@@ -77,15 +96,13 @@ class ThemeHelper {
     // cardTheme: const CardTheme(color: Color.fromARGB(255, 1, 39, 70)),
     // iconTheme: const IconThemeData(color: Color.fromARGB(255, 0, 109, 4)),
     fontFamily: 'Roboto',
-    inputDecorationTheme: InputDecorationTheme(
+    inputDecorationTheme: const InputDecorationTheme(
       isDense: true,
-      hintStyle: const TextStyle(color: Colors.grey),
+      hintStyle: TextStyle(color: Colors.grey),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
-        borderSide: const BorderSide(width: 1),
+        borderRadius: BorderRadius.all(Radius.circular(7)),
+        borderSide: BorderSide(width: 1),
       ),
-      fillColor: Colors.grey.shade500,
-      filled: false,
       // prefixIconColor: Colors.grey,
       // constraints: const BoxConstraints(maxHeight: 65),
       // labelStyle: const TextStyle(color: Colors.grey),

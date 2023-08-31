@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 
 class ViewBlogPostScreen extends StatelessWidget {
@@ -27,9 +28,14 @@ class ViewBlogPostScreen extends StatelessWidget {
                     image: CachedNetworkImageProvider("${post.imageUrl}"),
                     width: MediaQuery.of(context).size.height,
                     fit: BoxFit.fitWidth,
-                    // errorWidget: (ctx, e, trace) {
-                    //   return const Center(child: Icon(Icons.info));
-                    // },
+                    errorBuilder: (ctx, e, trace) {
+                      return Image.asset(
+                        AssetImages.logoHousePNG,
+                        height: 100,
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                      );
+                    },
                   ),
                 ),
                 const BackButton(),
@@ -37,7 +43,7 @@ class ViewBlogPostScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

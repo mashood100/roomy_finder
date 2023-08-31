@@ -4,8 +4,9 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
-import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:socket_io_client/socket_io_client.dart';
+
+import 'package:roomy_finder/controllers/app_controller.dart';
 
 class User {
   String id;
@@ -22,6 +23,8 @@ class User {
   num? serviceFee;
   num? VAT;
 
+  AboutMe aboutMe;
+
   User({
     required this.id,
     required this.type,
@@ -36,6 +39,7 @@ class User {
     required this.createdAt,
     this.serviceFee,
     this.VAT,
+    required this.aboutMe,
   });
 
   String? get password => AppController.instance.userPassword;
@@ -45,6 +49,7 @@ class User {
   bool get isRoommate => type == "roommate";
   bool get isMaintenant => type == "maintainer";
   bool get isGuest => this == GUEST_USER;
+  bool get isTerminatedUser => id == "0" * 24;
 
   Future<String> get formattedPhoneNumber async {
     final phoneNumber = PhoneNumber(
@@ -70,13 +75,21 @@ class User {
       'gender': gender,
       'profilePicture': profilePicture,
       'isPremium': isPremium,
+      'createdAt': createdAt.toIso8601String(),
       'serviceFee': serviceFee,
       'VAT': VAT,
-      'createdAt': createdAt.toIso8601String(),
+      'aboutMe': aboutMe.toMap(),
     };
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
+    if (map["aboutMe"] == null) {
+      map["aboutMe"] = {
+        "country": map["country"],
+        "gender": map["gender"],
+      };
+    }
+
     return User(
       id: map['id'] as String,
       type: map['type'] as String,
@@ -91,6 +104,7 @@ class User {
       createdAt: DateTime.parse(map['createdAt'] as String),
       serviceFee: map['serviceFee'] as num?,
       VAT: map['VAT'] as num?,
+      aboutMe: AboutMe.fromMap(map['aboutMe'] as Map<String, dynamic>),
     );
   }
 
@@ -164,9 +178,95 @@ class User {
     id: "010101010101010101010101",
     type: "geust",
     email: "",
-    firstName: "",
-    lastName: "",
+    firstName: "Guest",
+    lastName: "User",
     isPremium: false,
     createdAt: DateTime(2023),
+    aboutMe: AboutMe(languages: []),
   );
+
+  void updateFrom(User other) {
+    type = other.type;
+    email = other.email;
+    phone = other.phone;
+    firstName = other.firstName;
+    lastName = other.lastName;
+    country = other.country;
+    gender = other.gender;
+    profilePicture = other.profilePicture;
+    isPremium = other.isPremium;
+    createdAt = other.createdAt;
+    serviceFee = other.serviceFee;
+    VAT = other.VAT;
+    aboutMe = other.aboutMe;
+  }
+}
+
+class AboutMe {
+  String? nationality;
+  String? astrologicalSign;
+  int? age;
+  String? occupation;
+  List<String>? languages;
+  String? lifeStyle;
+  String? description;
+
+  double get percentageCompleted {
+    var values2 = toMap().values;
+    var delta = 100 / values2.length;
+
+    var percantageDone = 0.0;
+    for (var val in values2) {
+      if (val != null) percantageDone += delta;
+    }
+
+    return percantageDone;
+  }
+
+  AboutMe({
+    this.nationality,
+    this.astrologicalSign,
+    this.age,
+    this.occupation,
+    this.languages,
+    this.lifeStyle,
+    this.description,
+  });
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'nationality': nationality,
+      'astrologicalSign': astrologicalSign,
+      'age': age,
+      'occupation': occupation,
+      'languages': languages,
+      'lifeStyle': lifeStyle,
+      'description': description,
+    };
+  }
+
+  factory AboutMe.fromMap(Map<String, dynamic> map) {
+    if (map["age"] != null) map["age"] = int.tryParse(map["age"].toString());
+    return AboutMe(
+      nationality:
+          map['nationality'] != null ? map['nationality'] as String : null,
+      astrologicalSign: map['astrologicalSign'] != null
+          ? map['astrologicalSign'] as String
+          : null,
+      age: map['age'] != null ? map['age'] as int : null,
+      occupation:
+          map['occupation'] != null ? map['occupation'] as String : null,
+      languages: map['languages'] != null
+          ? List<String>.from((map['languages'] as List))
+          : null,
+      lifeStyle: map['lifeStyle'] != null ? map['lifeStyle'] as String : null,
+      description:
+          map['description'] != null ? map['description'] as String : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory AboutMe.fromJson(String source) =>
+      AboutMe.fromMap(json.decode(source) as Map<String, dynamic>);
 }

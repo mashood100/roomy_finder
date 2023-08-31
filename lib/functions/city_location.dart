@@ -11,13 +11,13 @@ List<String> get CITIES_FROM_CURRENT_COUNTRY {
       "Ajman",
       "Dubai",
       "Fujairah",
-      "Ras alkhima",
+      "Ras Alkhima",
       "Sharjah",
-      "Umm al-Quwain",
+      "Umm Al-Quwain",
     ];
   } else if (AppController.instance.country.value.code ==
       Country.SAUDI_ARABIA.code) {
-    return ["Jeddah", "Mecca", "Riyadh"];
+    return ["Jeddah", "Mecca", "Riyadh", "Tabuk"];
   } else {
     return [];
   }
@@ -32,11 +32,13 @@ List<String> getLocationsFromCity(String city) {
         return ajmanCities;
       case "Dubai":
         return dubaiCities;
-      case "Ras alkhima":
+      case "Fujairah":
+        return fujairahCities;
+      case "Ras Alkhima":
         return rasAlkimaCities;
       case "Sharjah":
         return sharjahCities;
-      case "Umm al-Quwain":
+      case "Umm Al-Quwain":
         return ummAlQuwainCities;
     }
   } else if (AppController.instance.country.value.code ==
@@ -48,6 +50,8 @@ List<String> getLocationsFromCity(String city) {
         return meccaCities;
       case "Riyadh":
         return riyadhCities;
+      case "Tabuk":
+        return tabukCities;
     }
   }
 

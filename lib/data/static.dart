@@ -1,4 +1,6 @@
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+
+import 'package:roomy_finder/helpers/asset_helper.dart';
 
 const ALL_NATIONALITIES = [
   'Mix',
@@ -20,18 +22,26 @@ const ALL_NATIONALITIES = [
 ];
 
 const ASTROLOGICAL_SIGNS = [
-  'AQUARIUS',
-  'ARIES',
-  'CANCER',
-  'CAPRICORN',
-  'GEMINI',
-  'LEO',
-  'LIBRA',
-  'PISCES',
-  'SAGITTARIUS',
-  'SCORPIO',
-  'TAURUS',
-  'VIRGO'
+  (value: 'Aries', asset: AssetIcons.ariesSignPNG),
+  (value: 'Aquarius', asset: AssetIcons.aquariusSignPNG),
+  (value: 'Cancer', asset: AssetIcons.cancerSignPNG),
+  (value: 'Capricorn', asset: AssetIcons.capriconSignPNG),
+  (value: 'Gemini', asset: AssetIcons.geminiSignPNG),
+  (value: 'Leo', asset: AssetIcons.leoSignPNG),
+  (value: 'Libra', asset: AssetIcons.libraSignPNG),
+  (value: 'Pisces', asset: AssetIcons.piscesSignPNG),
+  (value: 'Sagittarius', asset: AssetIcons.singuttariusSignPNG),
+  (value: 'Scorpio', asset: AssetIcons.scorpioSignPNG),
+  (value: 'Taurus', asset: AssetIcons.taurisSignPNG),
+  (value: 'Virgo', asset: AssetIcons.virgoSignPNG),
+];
+const ALL_EMPLOYMENTS = [
+  (value: 'Working full-time', asset: AssetIcons.workBagPNG),
+  (value: 'Working part-time', asset: AssetIcons.trashCanPNG),
+  (value: 'Unemployed', asset: AssetIcons.workBagCirclePNG),
+  (value: 'Student', asset: AssetIcons.graduationHatPNG),
+  (value: 'Traveller', asset: AssetIcons.travailBagPNG),
+  (value: 'Freelancer', asset: AssetIcons.laptopPNG),
 ];
 
 const ALL_LANGUAGUES = [
@@ -44,114 +54,122 @@ const ALL_LANGUAGUES = [
   "Persian",
   "Russian",
   "Spanish",
-  "Tangalog",
+  "Tagalog",
   "Ukrainian",
   "Urdu",
 ];
 
 const ALL_AMENITIES = [
   {
+    "value": "Own bathroom",
+    "asset": AssetIcons.bathRoomPNG,
+  },
+  {
+    "value": "Close to bus station",
+    "asset": AssetIcons.busStationPNG,
+  },
+  {
+    "value": "Close to metro",
+    "asset": AssetIcons.metroPNG,
+  },
+  {
     "value": "WIFI",
-    "asset": "assets/icons/wifi.png",
+    "asset": AssetIcons.wifiPNG,
   },
   {
     "value": "TV",
-    "asset": "assets/icons/tv.png",
+    "asset": AssetIcons.tvPNG,
   },
   {
     "value": "AC",
-    "asset": "assets/icons/air_conditioner.png",
+    "asset": AssetIcons.airConditionerPNG,
   },
   {
     "value": "Balcony",
-    "asset": "assets/icons/balcony.png",
+    "asset": AssetIcons.balconyPNG,
   },
   {
     "value": "Gym",
-    "asset": "assets/icons/gym.png",
+    "asset": AssetIcons.gymPNG,
   },
   {
     "value": "Kitchen Appliances",
-    "asset": "assets/icons/kitchen_appliance.png",
+    "asset": AssetIcons.kitchenAppliancePNG,
   },
   {
     "value": "Swimming Pool",
-    "asset": "assets/icons/swimming.png",
+    "asset": AssetIcons.swimmingPNG,
   },
   {
     "value": "Parking Lot",
-    "asset": "assets/icons/parking.png",
+    "asset": AssetIcons.parkingPNG,
   },
   {
     "value": "Cleaning Included",
-    "asset": "assets/icons/cleaning.png",
+    "asset": AssetIcons.cleaningPNG,
   },
   {
     "value": "Washer",
-    "asset": "assets/icons/washer.png",
+    "asset": AssetIcons.washerPNG,
   },
   {
     "value": "Near Grocery",
-    "asset": "assets/icons/grocery.png",
+    "asset": AssetIcons.groceryPNG,
   },
   {
     "value": "Near Pharmacy",
-    "asset": "assets/icons/pharmacy.png",
-  },
-  {
-    "value": "Close to Metro",
-    "asset": "assets/icons/metro.png",
+    "asset": AssetIcons.pharmacyPNG,
   },
 ];
 
 const ROOMMATE_INTERESTS = [
   {
     "value": "Reading",
-    "asset": "assets/icons/book.png",
+    "asset": AssetIcons.bookPNG,
   },
   {
     "value": "Yoga",
-    "asset": "assets/icons/yoga.png",
+    "asset": AssetIcons.yogaPNG,
   },
   {
     "value": "Sports",
-    "asset": "assets/icons/sports.png",
+    "asset": AssetIcons.sportsPNG,
   },
   {
     "value": "Photography",
-    "asset": "assets/icons/camera.png",
+    "asset": AssetIcons.cameraPNG,
   },
   {
     "value": "Cooking",
-    "asset": "assets/icons/cooking.png",
+    "asset": AssetIcons.cookingPNG,
   },
   {
     "value": "Hiking",
-    "asset": "assets/icons/hiking.png",
+    "asset": AssetIcons.hikingPNG,
   },
   {
     "value": "Game",
-    "asset": "assets/icons/game.png",
+    "asset": AssetIcons.gamePNG,
   },
   {
     "value": "Music",
-    "asset": "assets/icons/music.png",
+    "asset": AssetIcons.musicPNG,
   },
   {
     "value": "Arts",
-    "asset": "assets/icons/art.png",
+    "asset": AssetIcons.artPNG,
   },
   {
     "value": "Dance",
-    "asset": "assets/icons/dancing.png",
+    "asset": AssetIcons.dancingPNG,
   },
   {
     "value": "Volunteering",
-    "asset": "assets/icons/volunteering.png",
+    "asset": AssetIcons.volunteeringPNG,
   },
   {
     "value": "Fishing",
-    "asset": "assets/icons/fish.png",
+    "asset": AssetIcons.fishPNG,
   },
 ];
 
@@ -159,26 +177,31 @@ const ALL_SOCIAL_PREFERENCES = [
   {
     "value": "smoking",
     "label": "Smoking",
-    "asset": "assets/icons/smoking.png",
+    "asset": AssetIcons.smokingPNG,
   },
   {
     "value": "drinking",
     "label": "Drinking",
-    "asset": "assets/icons/drink.png",
+    "asset": AssetIcons.drinkPNG,
   },
   {
     "value": "visitors",
     "label": "Visitors",
-    "asset": "assets/icons/people.png",
+    "asset": AssetIcons.peoplePNG,
   },
   {
     "value": "friendParty",
     "label": "Party",
-    "asset": "assets/icons/party.png",
+    "asset": AssetIcons.partyPNG,
   },
   {
     "value": "pet",
     "label": "Pets",
-    "asset": "assets/icons/pet.png",
+    "asset": AssetIcons.petPNG,
+  },
+  {
+    "value": "sharedMealAndCooking",
+    "label": "Shared meal & cooking",
+    "asset": AssetIcons.folkAndKnifePNG,
   },
 ];

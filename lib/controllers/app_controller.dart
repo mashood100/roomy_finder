@@ -24,8 +24,9 @@ class AppController extends GetxController {
   static AppController instance = Get.find<AppController>(tag: "appController");
   static User get me => instance.user.value;
   static AppLocale get locale => instance.appLocale.value;
-  static num get convertionRate =>
-      instance.country.value.aedCurrencyConvertRate;
+  static num get convertionRate => 1;
+
+  // TODO :  Add convertion rate
 
   Rx<User> user = User.GUEST_USER.obs;
   late final Rx<bool> allowPushNotifications;
@@ -36,6 +37,8 @@ class AppController extends GetxController {
   final country = Country.UAE.obs;
 
   static AppVersion? updateVersion;
+
+  static bool dashboardIsBlocked = false;
 
   Future<void> initRequired() async {
     // User
@@ -273,10 +276,14 @@ class AppController extends GetxController {
       await removeApiToken();
       await removeUserPassword();
       dynamicInitialLink = null;
-      user(User.GUEST_USER);
+
+      var userId = user.value.id;
 
       await FirebaseAuth.instance.signOut();
-      // await FacebookAuth.instance.logOut();
+      FirebaseMessaging.instance.getToken().then((value) {
+        if (value != null) ApiService.logoutUser(userId, value);
+      });
+      user(User.GUEST_USER);
     } catch (e, trace) {
       log(e);
       log(trace);

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import "package:path/path.dart" as path;
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -19,13 +20,16 @@ import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
+import 'package:roomy_finder/data/countries_list.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/country.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
+import 'package:roomy_finder/helpers/roomy_notification.dart';
 import 'package:roomy_finder/models/user.dart';
 import 'package:roomy_finder/screens/start/login.dart';
+import 'package:roomy_finder/screens/start/roommate_post_registration.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -43,8 +47,8 @@ class _RegistrationController extends LoadingController {
   final acceptLandlordPolicy = false.obs;
   PhoneNumber phoneNumber = PhoneNumber(dialCode: "971", isoCode: "AE");
 
-  bool get isLandlord => accountType.value == UserAccountType.landlord;
   bool get isRoommate => accountType.value == UserAccountType.roommate;
+  bool get isLandlord => accountType.value == UserAccountType.landlord;
   bool get isMaintenant => accountType.value == UserAccountType.maintainer;
 
   // Information
@@ -116,7 +120,7 @@ class _RegistrationController extends LoadingController {
       );
 
       if (res.statusCode == 200) {
-        _moveToPage(1);
+        _moveToPage(2);
         startSmsTimer();
       } else {
         showToast("Failed to get OTP code. Please try again.");
@@ -189,15 +193,19 @@ class _RegistrationController extends LoadingController {
         showToast(res.data["message"] ?? "Incorrect OTP code");
         return;
       } else if (res.statusCode == 409) {
-        showGetSnackbar(
-          "thisUserAlreadyExistPleaseLogin".tr,
-          title: "registration".tr,
-          severity: Severity.info,
-          action: SnackBarAction(
-            label: 'login'.tr,
-            onPressed: () => Get.offAndToNamed("/login"),
-          ),
-        );
+        if (res.data["code"] == "phone-is-used") {
+          showGetSnackbar(
+            "This phone number already have an account",
+            title: "Registration",
+            severity: Severity.info,
+          );
+        } else {
+          showGetSnackbar(
+            "thisUserAlreadyExistPleaseLogin".tr,
+            title: "registration".tr,
+            severity: Severity.info,
+          );
+        }
         return;
       } else if (res.statusCode == 500) {
         showGetSnackbar(
@@ -213,6 +221,9 @@ class _RegistrationController extends LoadingController {
         AppController.instance.userPassword = information["password"];
         AppController.setupFCMTokenHandler();
 
+        await AppController.saveUser(user);
+        await AppController.saveUserPassword(information["password"]!);
+
         if (FirebaseAuth.instance.currentUser != null) {
           await FirebaseAuth.instance
               .signInWithCustomToken(res.data["firebaseToken"]);
@@ -223,6 +234,20 @@ class _RegistrationController extends LoadingController {
           FirebaseMessaging.instance.subscribeToTopic("maintenance-broadcast");
         } else {
           Get.offAllNamed("/home");
+          if (user.isLandlord) {
+            RoomyNotificationHelper.showLandlordWelcome();
+
+            Future.delayed(const Duration(minutes: 2), () {
+              RoomyNotificationHelper.showLandlordStartMangingYourSpace();
+            });
+
+            Future.delayed(const Duration(minutes: 5), () {
+              RoomyNotificationHelper.showLandlordHaveNotYetPosted();
+            });
+          } else if (user.isRoommate) {
+            RoomyNotificationHelper.showRoommateWelcome();
+            Get.to(() => const RoommatePostRegistrationScreen());
+          }
         }
       } else {
         throw ApiServiceException(statusCode: res.statusCode);
@@ -278,11 +303,24 @@ class _RegistrationController extends LoadingController {
 
       isLoading(true);
 
-      final exist = await ApiService.checkIfUserExist(information["email"]!);
+      final emailIsUsed =
+          await ApiService.checkIfUserExist(information["email"]!);
 
-      if (exist) {
+      if (emailIsUsed) {
         showGetSnackbar(
           "This email address already have an account. Please login instead",
+          title: "Registration",
+          severity: Severity.info,
+        );
+        isLoading(false);
+        return false;
+      }
+      final phoneIsUsed =
+          await ApiService.checkIfPhoneIsUsed(phoneNumber.phoneNumber!);
+
+      if (phoneIsUsed) {
+        showGetSnackbar(
+          "An account already exsist with this phone number.",
           title: "Registration",
           severity: Severity.info,
         );
@@ -294,7 +332,7 @@ class _RegistrationController extends LoadingController {
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
-      showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
+      showGetSnackbar("Some thing went wrong".tr, severity: Severity.error);
       return false;
     } finally {
       isLoading(false);
@@ -357,6 +395,32 @@ class RegistrationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(_RegistrationController());
 
+    var accountTypes = [
+      (
+        value: UserAccountType.roommate,
+        label: "ROOMMATE",
+        asset: AssetIcons.homeSearchPNG,
+        description: "Find shared living options: rooms / bed spaces /"
+            " partitions & connect with potential roommates.",
+      ),
+      (
+        value: UserAccountType.landlord,
+        label: "LANDLORD",
+        asset: AssetIcons.homeKeyPNG,
+        description: "List & manage your rental properties, connect with"
+            " potential tenants, track rent payments & maintenance requests.",
+      ),
+      (
+        value: UserAccountType.maintainer,
+        label: "MAINTAINER",
+        asset: AssetIcons.homeRepairPNG,
+        description: "Offer your maintenance services to property"
+            " landlords & receive maintenance requests.",
+      ),
+    ];
+
+    const labeStyle = TextStyle(fontWeight: FontWeight.bold);
+
     return WillPopScope(
       onWillPop: () async {
         if (controller._pageIndex.value != 0) {
@@ -370,6 +434,7 @@ class RegistrationScreen extends StatelessWidget {
           appBar: AppBar(
             centerTitle: true,
             title: const Text("Registration"),
+            leading: const BackButton(),
           ),
           body: GestureDetector(
             onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
@@ -377,7 +442,7 @@ class RegistrationScreen extends StatelessWidget {
               children: [
                 Container(
                   height: 15,
-                  alignment: Alignment.center,
+                  alignment: Alignment.centerLeft,
                   decoration: BoxDecoration(
                     color: Get.theme.appBarTheme.backgroundColor,
                     borderRadius: const BorderRadius.vertical(
@@ -386,79 +451,107 @@ class RegistrationScreen extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(
-                      left: 10, top: 30, right: 10, bottom: 60),
+                  padding: const EdgeInsets.only(top: 15, bottom: 50),
                   child: PageView(
                     controller: controller._pageController,
                     onPageChanged: (index) => controller._pageIndex(index),
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
+                      // Account type
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Welcome!\nWhich role suits you best?",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                            ...accountTypes.map((e) {
+                              var isSelected =
+                                  e.value == controller.accountType.value;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  if (e.value == UserAccountType.maintainer) {
+                                    showToast(
+                                        "Coming soon. Maintenance isn't available on this version");
+                                    return;
+                                  }
+                                  controller.accountType(e.value);
+                                  controller.update();
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: isSelected
+                                        ? Border.all(
+                                            width: 2, color: ROOMY_PURPLE)
+                                        : Border.all(width: 1),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                    horizontal: 10,
+                                  ),
+                                  margin: const EdgeInsets.only(
+                                    bottom: 20,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Image.asset(
+                                        e.asset,
+                                        height: 50,
+                                        width: 50,
+                                        color: isSelected ? ROOMY_ORANGE : null,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              e.label,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            Text(
+                                              e.description,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w300,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList()
+                          ],
+                        ),
+                      ),
+
                       // Credentials
                       SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Form(
                           key: controller._formkeyCredentials,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  const Text("Account   "),
-                                  Expanded(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        (
-                                          label: "Roommate",
-                                          value: UserAccountType.roommate
-                                        ),
-                                        (
-                                          label: "Landlord",
-                                          value: UserAccountType.landlord
-                                        ),
-                                        // (
-                                        //   label: "Maintenant",
-                                        //   value: UserAccountType.maintainer
-                                        // ),
-                                      ].map((e) {
-                                        return GestureDetector(
-                                          onTap: controller.isLoading.isTrue
-                                              ? null
-                                              : () {
-                                                  controller
-                                                      .accountType(e.value);
-                                                },
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                controller.accountType.value ==
-                                                        e.value
-                                                    ? Icons
-                                                        .check_circle_outline_outlined
-                                                    : Icons.circle_outlined,
-                                                color: ROOMY_ORANGE,
-                                              ),
-                                              Text(
-                                                e.label,
-                                                style: const TextStyle(
-                                                  color: ROOMY_PURPLE,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              // const Divider(height: 50),
                               const SizedBox(height: 20),
-
+                              const Text("Email", style: labeStyle),
                               InlineTextField(
-                                labelText: 'email'.tr,
                                 hintText: "Enter your email address",
                                 initialValue: controller.information["email"],
                                 enabled: controller.isLoading.isFalse,
@@ -476,14 +569,16 @@ class RegistrationScreen extends StatelessWidget {
                                   }
                                   return null;
                                 },
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
                               ),
 
                               const SizedBox(height: 20),
+                              const Text("First name", style: labeStyle),
                               InlineTextField(
                                 initialValue:
                                     controller.information["firstName"],
                                 enabled: controller.isLoading.isFalse,
-                                labelText: 'firstName'.tr,
                                 hintText: "Enter your first name",
                                 onChanged: (value) =>
                                     controller.information["firstName"] = value,
@@ -493,12 +588,12 @@ class RegistrationScreen extends StatelessWidget {
                                   }
                                   return null;
                                 },
+                                textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 20),
-
+                              const Text("Last name", style: labeStyle),
                               InlineTextField(
-                                hintText: "Enter your lastname",
-                                labelText: 'lastName'.tr,
+                                hintText: "Enter your last name",
                                 initialValue:
                                     controller.information["lastName"],
                                 enabled: controller.isLoading.isFalse,
@@ -510,12 +605,12 @@ class RegistrationScreen extends StatelessWidget {
                                   }
                                   return null;
                                 },
+                                textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 20),
-
+                              const Text("Gender", style: labeStyle),
                               InlineDropdown<String>(
                                 hintText: "Select your gender",
-                                labelText: 'gender'.tr,
                                 value: controller.information["gender"],
                                 items: const ["Male", "Female"],
                                 onChanged: controller.isLoading.isTrue
@@ -529,8 +624,8 @@ class RegistrationScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 20),
 
+                              const Text("Password", style: labeStyle),
                               InlineTextField(
-                                labelText: 'password'.tr,
                                 hintText: "Enter a password",
                                 initialValue:
                                     controller.information["password"],
@@ -559,8 +654,8 @@ class RegistrationScreen extends StatelessWidget {
                               ),
 
                               const SizedBox(height: 20),
+                              const Text("Confirm", style: labeStyle),
                               InlineTextField(
-                                labelText: 'Confirm',
                                 hintText: "Confirm your password",
                                 initialValue:
                                     controller.information["confirmPassword"],
@@ -586,21 +681,22 @@ class RegistrationScreen extends StatelessWidget {
                                 },
                               ),
                               const SizedBox(height: 20),
-
+                              const Text("Phone", style: labeStyle),
                               InlinePhoneNumberInput(
+                                labelWidth: 0,
                                 initialValue: controller.phoneNumber,
-                                labelText: "Phone",
                                 onChange: (phoneNumber) {
                                   controller.phoneNumber = phoneNumber;
                                 },
                               ),
                               const SizedBox(height: 20),
 
+                              const Text("Nationality", style: labeStyle),
                               InlineDropdown<String>(
-                                labelText: 'country'.tr,
-                                hintText: "Select your country",
+                                hintText: "Select",
                                 value: controller.information["country"],
-                                items: allCountriesNames,
+                                items:
+                                    COUNTRIES_LIST.map((e) => e.name).toList(),
                                 onChanged: controller.isLoading.isTrue
                                     ? null
                                     : (val) {
@@ -610,6 +706,37 @@ class RegistrationScreen extends StatelessWidget {
                                         }
                                       },
                               ),
+                              const SizedBox(height: 20),
+
+                              const Text("Age", style: labeStyle),
+                              InlineTextField(
+                                hintText: "How old are you?",
+                                initialValue:
+                                    controller.information["aboutMe.age"],
+                                enabled: controller.isLoading.isFalse,
+                                onChanged: (value) => controller
+                                    .information["aboutMe.age"] = value,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
+                                  }
+
+                                  final age = int.tryParse(value);
+
+                                  if (age == null) return "Invalid age";
+
+                                  if (age < 18) {
+                                    return "You must be at least 18 years old to register";
+                                  }
+                                  return null;
+                                },
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*'))
+                                ],
+                              ),
+
                               const Divider(height: 30),
 
                               // Profile picture
@@ -905,9 +1032,6 @@ class RegistrationScreen extends StatelessWidget {
               ),
             ),
             child: Builder(builder: (context) {
-              if (controller._pageIndex.value == 1) {
-                return const SizedBox();
-              }
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -930,6 +1054,14 @@ class RegistrationScreen extends StatelessWidget {
                         : () async {
                             switch (controller._pageIndex.value) {
                               case 0:
+                                if (controller.accountType.value ==
+                                    UserAccountType.none) {
+                                  showToast("Please choose account type");
+                                  return;
+                                }
+                                controller._moveToPage(1);
+                                break;
+                              case 1:
                                 final isValid =
                                     await controller._validateCredentials();
                                 if (!isValid) return;

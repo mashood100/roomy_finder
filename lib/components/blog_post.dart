@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/blog_post.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -41,6 +42,14 @@ class BlogPostWidget extends StatelessWidget {
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  errorBuilder: (ctx, e, trace) {
+                    return Image.asset(
+                      AssetImages.logoHousePNG,
+                      height: 100,
+                      width: double.infinity,
+                      alignment: Alignment.center,
+                    );
+                  },
                 ),
               ),
               if (showTitle == true)

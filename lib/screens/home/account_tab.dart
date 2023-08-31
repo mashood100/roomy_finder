@@ -1,36 +1,41 @@
-import 'package:badges/badges.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
-import 'package:roomy_finder/components/custom_bottom_navbar_icon.dart';
+import 'package:roomy_finder/components/drawer.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
-import 'package:roomy_finder/models/maintenance.dart';
-import 'package:roomy_finder/models/property_booking.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
+import 'package:roomy_finder/helpers/roomy_notification.dart';
 import 'package:roomy_finder/screens/ads/my_property_ads.dart';
 import 'package:roomy_finder/screens/ads/my_roommate_ads.dart';
-import 'package:roomy_finder/screens/booking/my_bookings.dart';
+import 'package:roomy_finder/screens/home/home.dart';
+import 'package:roomy_finder/screens/user/favorites_ads.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/screens/utility_screens/view_notifications.dart';
-import 'package:roomy_finder/screens/user/balance.dart';
+import 'package:roomy_finder/screens/user/account_balance.dart/balance.dart';
 import 'package:roomy_finder/screens/utility_screens/about.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
 import 'package:roomy_finder/utilities/data.dart';
-
-class _AccountTabController extends LoadingController {}
 
 class AccountTab extends StatelessWidget implements HomeScreenSupportable {
   const AccountTab({super.key});
 
   @override
+  void onTabIndexSelected(int index) {}
+
+  @override
   Widget build(BuildContext context) {
     final me = AppController.me;
-    Get.put(_AccountTabController());
-    return Padding(
-      padding: const EdgeInsets.symmetric(),
-      child: SingleChildScrollView(
+    return Scaffold(
+      drawer: const HomeDrawer(),
+      appBar: AppBar(
+        backgroundColor: ROOMY_PURPLE,
+        title: const Text('My Account'),
+        centerTitle: false,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
           children: [
             const SizedBox(height: 10),
@@ -125,32 +130,38 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               );
             }),
             const Divider(height: 20),
-            Card(
-              child: ListTile(
-                onTap: () => Get.to(() => const NotificationsScreen()),
-                leading: Obx(() {
-                  var badge = AppNotification.unReadNotificationsCount.value;
-                  return Badge(
-                    badgeContent: Text(badge.toString()),
-                    showBadge: badge > 0,
-                    child: const CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      foregroundImage:
-                          AssetImage("assets/icons/notification.png"),
-                    ),
-                  );
-                }),
-                title: const Text('Notifications'),
-                trailing: const IconButton(
-                  onPressed: null,
-                  icon: Icon(Icons.chevron_right),
+            if (AppController.me.isRoommate)
+              Card(
+                surfaceTintColor: Colors.white,
+                child: ListTile(
+                  onTap: () => Get.to(() => const NotificationsScreen()),
+                  leading: Obx(() {
+                    var badge = Home.unReadNotificationsCount.value;
+                    return Badge.count(
+                      count: badge,
+                      isLabelVisible: badge > 0,
+                      child: const CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        foregroundImage: AssetImage(AssetIcons.notificationPNG),
+                      ),
+                    );
+                  }),
+                  title: const Text('Notifications'),
+                  trailing: const IconButton(
+                    onPressed: null,
+                    icon: Icon(Icons.chevron_right),
+                  ),
                 ),
               ),
-            ),
             Card(
+              surfaceTintColor: Colors.white,
               child: ListTile(
                 onTap: () {
                   if (AppController.me.isLandlord) {
+                    if (AppController.dashboardIsBlocked) {
+                      RoomyNotificationHelper.showDashBoardIsBlocked();
+                      return;
+                    }
                     Get.to(() => const MyPropertyAdsScreen());
                   } else if (AppController.me.isRoommate) {
                     Get.to(() => const MyRoommateAdsScreen());
@@ -158,7 +169,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
                 },
                 leading: const CircleAvatar(
                   backgroundColor: Colors.transparent,
-                  foregroundImage: AssetImage("assets/icons/ad.png"),
+                  foregroundImage: AssetImage(AssetIcons.adPNG),
                 ),
                 title: const Text('My Ads'),
                 trailing: const IconButton(
@@ -168,23 +179,14 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               ),
             ),
             Card(
+              surfaceTintColor: Colors.white,
               child: ListTile(
-                onTap: () => Get.to(() => const MyBookingsCreen()),
-                leading: Obx(() {
-                  var badge = PropertyBooking.unViewBookingsCount.value;
-                  return Badge(
-                    badgeContent: Text(
-                      badge.toString(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    showBadge: badge > 0,
-                    child: const CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      foregroundImage: AssetImage("assets/icons/booking.png"),
-                    ),
-                  );
-                }),
-                title: const Text('My Bookings'),
+                onTap: () => Get.to(() => const FavoriteScreen()),
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.transparent,
+                  foregroundImage: AssetImage(AssetIcons.favorite2PNG),
+                ),
+                title: const Text('My Favorites'),
                 trailing: const IconButton(
                   onPressed: null,
                   icon: Icon(Icons.chevron_right),
@@ -192,7 +194,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
               ),
             ),
             // if (AppController.me.isLandlord)
-            //   Card(
+            //   Card( surfaceTintColor: Colors.white,
             //     child: ListTile(
             //       onTap: () => Get.toNamed("/maintenance"),
             //       leading: Obx(() {
@@ -215,13 +217,14 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             //     ),
             //   ),
             Card(
+              surfaceTintColor: Colors.white,
               child: ListTile(
                 onTap: () {
                   Get.to(() => const AboutScreeen());
                 },
                 leading: const CircleAvatar(
                   backgroundColor: Colors.transparent,
-                  foregroundImage: AssetImage("assets/icons/info.png"),
+                  foregroundImage: AssetImage(AssetIcons.infoPNG),
                 ),
                 title: const Text('About'),
                 trailing: const IconButton(
@@ -232,6 +235,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
             ),
             if (AppController.me.isLandlord)
               Card(
+                surfaceTintColor: Colors.white,
                 child: ListTile(
                   title: const Text("Account Balance"),
                   trailing: const IconButton(
@@ -250,50 +254,7 @@ class AccountTab extends StatelessWidget implements HomeScreenSupportable {
           ],
         ),
       ),
+      bottomNavigationBar: const HomeBottomNavigationBar(),
     );
   }
-
-  @override
-  AppBar get appBar {
-    return AppBar(
-      backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
-      title: const Text('My Account'),
-      centerTitle: false,
-      elevation: 0,
-    );
-  }
-
-  @override
-  BottomNavigationBarItem navigationBarItem(isCurrent) {
-    return BottomNavigationBarItem(
-      icon: CustomBottomNavbarIcon(
-        icon: Obx(() {
-          var maintenancesBadge = Maintenance.notificationsCount.value;
-          var bookingsBadge = PropertyBooking.unViewBookingsCount.value;
-          var notificationsBadge =
-              AppNotification.unReadNotificationsCount.value;
-
-          var sum = maintenancesBadge + bookingsBadge + notificationsBadge;
-          return Badge(
-            badgeContent: Text("$sum"),
-            showBadge: sum > 0,
-            child: Image.asset(
-              "assets/icons/person.png",
-              height: 30,
-              width: 30,
-              color: ROOMY_PURPLE,
-            ),
-          );
-        }),
-        isCurrent: isCurrent,
-      ),
-      label: 'Account',
-    );
-  }
-
-  @override
-  FloatingActionButton? get floatingActionButton => null;
-
-  @override
-  void onIndexSelected(int index) {}
 }

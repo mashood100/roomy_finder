@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:roomy_finder/screens/home/home_tab.dart';
 
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
@@ -116,7 +117,7 @@ class WelcomeScreen extends StatelessWidget {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
-                      Get.offAllNamed("/home");
+                      Get.to(() => const HomeTab());
                     },
                     style: TextButton.styleFrom(
                       // backgroundColor: ROOMY_ORANGE,

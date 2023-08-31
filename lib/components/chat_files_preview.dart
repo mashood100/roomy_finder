@@ -183,7 +183,7 @@ class _ChatMessgeFilePreviewState extends State<ChatMessgeFilePreview> {
               fit: BoxFit.cover,
               height: double.infinity,
               width: double.infinity,
-              borderRadius: 5,
+              borderRadius: BorderRadius.circular(5),
             );
           }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/data/enums.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class Alert extends StatelessWidget {
   const Alert({
@@ -62,6 +64,51 @@ class Alert extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 10),
           child: icon,
+        ),
+      ],
+    );
+  }
+}
+
+class CustomTooltip extends StatelessWidget {
+  const CustomTooltip({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Image.asset(
+              AssetImages.toolTipPNG,
+              height: 25,
+            ),
+            const Text(
+              " TIP: ",
+              style: TextStyle(
+                color: ROOMY_ORANGE,
+                fontSize: 13,
+              ),
+            )
+          ],
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontWeight: FontWeight.w300,
+                color: Colors.grey,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ),
       ],
     );

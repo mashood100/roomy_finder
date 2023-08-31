@@ -71,6 +71,8 @@ class ChatFileSystem {
 
       final dir = Directory(path);
 
+      if (!dir.existsSync()) return [];
+
       final chatsStrings = dir.listSync();
 
       final chats = chatsStrings

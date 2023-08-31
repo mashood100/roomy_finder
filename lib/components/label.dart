@@ -5,47 +5,62 @@ class Label extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    this.boldValue,
-    this.boldLabel,
-    this.fontSize,
+    this.hr = false,
+    this.boldValue = true,
+    this.icon,
     this.valueColor,
+    this.fontSize,
+    this.boldLabel,
   });
+
   final String label;
-  final String value;
-  final bool? boldValue;
-  final bool? boldLabel;
-  final double? fontSize;
+  final Object value;
+  final bool? hr;
+  final bool boldValue;
+  final Widget? icon;
   final Color? valueColor;
+  final double? fontSize;
+  final bool? boldLabel;
 
   @override
   Widget build(BuildContext context) {
+    double labelWidth = MediaQuery.sizeOf(context).width * 0.4;
+
+    final maxLabelWidth = icon != null ? 150.0 : 100.0;
+
+    if (labelWidth > maxLabelWidth) labelWidth = maxLabelWidth;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight:
-                        boldLabel == true ? FontWeight.bold : FontWeight.normal,
-                    fontSize: fontSize,
-                  ),
+            SizedBox(
+              width: labelWidth,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[icon!, const SizedBox(width: 10)],
+                  Text(label),
+                ],
+              ),
             ),
-            Text(
-              value,
-              style: TextStyle(
-                fontWeight:
-                    boldValue == true ? FontWeight.bold : FontWeight.normal,
-                fontSize: fontSize ?? 14,
-                color: valueColor,
+            Expanded(
+              child: Text(
+                "$value",
+                style: const TextStyle().merge(
+                  TextStyle(
+                    fontWeight:
+                        boldValue == true ? FontWeight.bold : FontWeight.normal,
+                    color: valueColor,
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        if (hr == true) const Divider() else const SizedBox(height: 15)
       ],
     );
   }

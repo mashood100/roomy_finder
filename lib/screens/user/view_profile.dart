@@ -1,30 +1,24 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/custom_button.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
-import 'package:roomy_finder/functions/create_datetime_filename.dart';
-import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/prompt_user_password.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/functions/utility.dart';
-import 'dart:io';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:roomy_finder/screens/user/delete_account.dart';
 import 'package:roomy_finder/screens/user/update_profile.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import "package:path/path.dart" as path;
 
 class _ViewProfileController extends LoadingController {
   final _formKey = GlobalKey<FormState>();
@@ -35,108 +29,10 @@ class _ViewProfileController extends LoadingController {
 
   final isFectchingBalance = false.obs;
 
-  final _images = <CroppedFile>[].obs;
-
   @override
   void onInit() {
     super.onInit();
     _fetchBalance();
-  }
-
-  Future<void> _pickProfilePicture({bool gallery = true}) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image;
-
-      if (gallery) {
-        image = await picker.pickImage(source: ImageSource.gallery);
-      } else {
-        image = await picker.pickImage(source: ImageSource.camera);
-      }
-
-      if (image != null) {
-        CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          aspectRatioPresets: [CropAspectRatioPreset.square],
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'profilePicture'.tr,
-              toolbarColor: Colors.green,
-              toolbarWidgetColor: Get.theme.colorScheme.background,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: true,
-            ),
-            IOSUiSettings(
-              title: 'profilePicture'.tr,
-              aspectRatioLockEnabled: true,
-            ),
-          ],
-        );
-
-        if (croppedFile != null) {
-          _images.clear();
-          _images.add(croppedFile);
-          isLoading(true);
-          await _updateProfile();
-        }
-      }
-    } catch (e) {
-      Get.log("$e");
-      showGetSnackbar(
-        'errorPickingProfilePicture'.tr,
-        title: 'credentials'.tr,
-        severity: Severity.error,
-      );
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  Future<void> _updateProfile() async {
-    try {
-      isLoading(true);
-
-      final imgRef = FirebaseStorage.instance
-          .ref()
-          .child('images')
-          .child("profile-pictures")
-          .child(
-              '/${createDateTimeFileName()}${path.extension(_images[0].path)}');
-
-      final uploadTask =
-          imgRef.putData(await File(_images[0].path).readAsBytes());
-
-      String imageUrl = await (await uploadTask).ref.getDownloadURL();
-
-      final res = await ApiService.getDio.put(
-        '/profile/profile-picture',
-        data: {"profilePicture": imageUrl},
-      );
-
-      switch (res.statusCode) {
-        case 200:
-          if (Get.context != null) {
-            await precacheImage(NetworkImage(imageUrl), Get.context!);
-          }
-          showToast("Profile updated successfully".tr);
-          AppController.instance.user.update((val) {
-            if (val != null) {
-              val.profilePicture = imageUrl;
-            }
-          });
-          AppController.saveUser(AppController.me);
-          update();
-          break;
-        default:
-          deleteFileFromUrl(imageUrl);
-          break;
-      }
-    } catch (e) {
-      Get.log("$e");
-      showToast('someThingWentWrong'.tr);
-    } finally {
-      isLoading(false);
-    }
   }
 
   Future<void> _fetchBalance() async {
@@ -359,6 +255,7 @@ class ViewProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.put(_ViewProfileController());
     final me = AppController.instance.user.value;
+    final aboutMe = me.aboutMe;
 
     return Scaffold(
       body: GetBuilder<_ViewProfileController>(
@@ -372,15 +269,15 @@ class ViewProfileScreen extends StatelessWidget {
                     actions: [
                       IconButton(
                           onPressed: () async {
-                            await Get.to(() => const UpdateUserProfile());
+                            await Get.to(() => const UpdateUserProfileScreen());
                             controller.update();
                           },
                           icon: const Icon(Icons.edit))
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                       expandedTitleScale: 1.2,
-                      title: Text(me.fullName),
                       centerTitle: true,
+                      title: Text(me.fullName),
                       background: Hero(
                         tag: "profile-picture-hero",
                         child: Obx(() {
@@ -422,129 +319,134 @@ class ViewProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton.icon(
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : () => controller._pickProfilePicture(
-                                      gallery: false),
-                              icon: const Icon(Icons.camera),
-                              label: Text(
-                                "camera".tr,
-                                style: const TextStyle(),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(10.0),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          CustomButton('Update my profile',
+                              onPressed: () async {
+                            await Get.to(() => const UpdateUserProfileScreen());
+
+                            controller.update();
+                          }),
+                          const SizedBox(height: 10),
+                          Card(
+                            surfaceTintColor: Colors.white,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.only(left: 16),
+                              title: Text("password".tr,
+                                  style: textTheme.bodySmall!),
+                              subtitle: Text(
+                                controller._showPassword.isTrue
+                                    ? '${me.password}'
+                                    : "•" * 10,
                               ),
-                            ),
-                            TextButton.icon(
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : () => controller._pickProfilePicture(),
-                              icon: const Icon(Icons.image),
-                              label: Text(
-                                "pictures".tr,
-                                style: const TextStyle(),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Card(
-                          child: ListTile(
-                            title: Text(
-                              "Full name".tr,
-                              style: textTheme.bodySmall!,
-                            ),
-                            subtitle: Text(me.fullName),
-                          ),
-                        ),
-                        Card(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.only(left: 16),
-                            title: Text("password".tr,
-                                style: textTheme.bodySmall!),
-                            subtitle: Text(
-                              controller._showPassword.isTrue
-                                  ? '${me.password}'
-                                  : "•" * 10,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: controller._toggleShowPassword,
-                                  icon: controller._showPassword.isTrue
-                                      ? const Icon(Icons.visibility_off)
-                                      : const Icon(Icons.visibility),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    controller._changePassword(context);
-                                  },
-                                  icon: const Icon(Icons.settings),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Card(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 10,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Label(label: "Full name", value: me.fullName),
-                                Label(label: "Email", value: me.email),
-                                Label(label: "Phone", value: me.phone ?? "N/A"),
-                                Label(
-                                    label: "Gender", value: me.gender ?? "N/A"),
-                                Label(
-                                    label: "Country",
-                                    value: me.country ?? "N/A"),
-                                Label(
-                                  label: "Status",
-                                  value: me.type.replaceFirst(
-                                    me.type[0],
-                                    me.type[0].toUpperCase(),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: controller._toggleShowPassword,
+                                    icon: controller._showPassword.isTrue
+                                        ? const Icon(Icons.visibility_off)
+                                        : const Icon(Icons.visibility),
                                   ),
-                                ),
-                                Label(
-                                  label: "Premium",
-                                  value: me.isPremium ? "Yes" : "No",
-                                ),
-                                Label(
-                                  label: "Member since",
-                                  value: relativeTimeText(me.createdAt),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Card(
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              child: Icon(
-                                Icons.person_sharp,
-                                color: Colors.red,
+                                  IconButton(
+                                    onPressed: () {
+                                      controller._changePassword(context);
+                                    },
+                                    icon: const Icon(Icons.settings),
+                                  ),
+                                ],
                               ),
                             ),
-                            title: const Text(
-                              "Delete Account",
-                              style: TextStyle(color: Colors.red),
-                            ),
-                            subtitle: const Text(
-                              "Total removal of personal information, ads, withdrawal of funds",
-                            ),
-                            onTap: controller._handleDeleteAccountTapped,
-                            trailing: const Icon(Icons.chevron_right),
                           ),
-                        ),
-                      ],
+                          Card(
+                            surfaceTintColor: Colors.white,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  (label: "Full name", value: me.fullName),
+                                  (label: "Email", value: me.email),
+                                  (label: "Phone", value: me.phone ?? "N/A"),
+                                  (label: "Gender", value: me.gender ?? "N/A"),
+                                  (
+                                    label: "Nationality",
+                                    value: me.country ?? "N/A"
+                                  ),
+                                  (
+                                    label: "Status",
+                                    value: me.type.replaceFirst(
+                                      me.type[0],
+                                      me.type[0].toUpperCase(),
+                                    ),
+                                  ),
+                                  (
+                                    label: "Premium",
+                                    value: me.isPremium ? "Yes" : "No",
+                                  ),
+                                  (
+                                    label: "Member since ",
+                                    value: Jiffy.parseFromDateTime(me.createdAt)
+                                        .toLocal()
+                                        .yMMMEdjm,
+                                  ),
+                                  (
+                                    label: "Age:",
+                                    value: aboutMe.age ?? "N/A",
+                                  ),
+                                  (
+                                    label: "Occupation:",
+                                    value: aboutMe.occupation ?? "N/A",
+                                  ),
+                                  (
+                                    label: "Lifestyle:",
+                                    value: aboutMe.lifeStyle ?? "N/A",
+                                  ),
+                                  (
+                                    label: "Sign:",
+                                    value: aboutMe.astrologicalSign ?? "N/A",
+                                  ),
+                                  (
+                                    label: "Languages:",
+                                    value: aboutMe.languages?.isEmpty == true
+                                        ? "N/A"
+                                        : aboutMe.languages?.join(", ") ??
+                                            "N/A",
+                                  ),
+                                ].map((e) {
+                                  return Label(label: e.label, value: e.value);
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                          Card(
+                            surfaceTintColor: Colors.white,
+                            child: ListTile(
+                              leading: const CircleAvatar(
+                                child: Icon(
+                                  Icons.person_sharp,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              title: const Text(
+                                "Delete Account",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              subtitle: const Text(
+                                "Total removal of personal information, ads, withdrawal of funds",
+                              ),
+                              onTap: controller._handleDeleteAccountTapped,
+                              trailing: const Icon(Icons.chevron_right),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:get/get.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:uuid/uuid.dart';
 
 class AppNotification {
@@ -9,9 +9,7 @@ class AppNotification {
   final String event;
   final String? title;
   final DateTime createdAt;
-  final bool isRead;
-
-  static final unReadNotificationsCount = 0.obs;
+  bool isRead;
 
   AppNotification({
     required this.id,
@@ -71,5 +69,9 @@ class AppNotification {
   @override
   int get hashCode {
     return id.hashCode;
+  }
+
+  Future<bool> markAsRead(String userId) async {
+    return NotificationController.markNotificationAsRead(userId, this);
   }
 }
