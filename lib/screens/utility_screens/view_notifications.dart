@@ -2,26 +2,45 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:roomy_finder/classes/app_notification.dart';
+import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/loading_placeholder.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/local_notifications.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
-import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
-class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+class NotificationsScreen extends StatefulWidget
+    implements HomeScreenSupportable {
+  const NotificationsScreen({super.key, this.showNavBar});
+
+  final bool? showNavBar;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
+
+  @override
+  void onTabIndexSelected(int index) {}
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late final StreamSubscription<FileSystemEvent> subscription;
+
+  Future<void> _markNotificationAsRead() async {
+    final futures = <Future>[];
+    for (var n in notifications) {
+      if (!n.isRead) futures.add(n.markAsRead(AppController.me.id));
+    }
+
+    await Future.wait(futures);
+
+    setState(() {});
+  }
 
   List<AppNotification> notifications = [];
   bool _isLoading = false;
@@ -31,7 +50,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
     watchDir();
 
-    _getNotifications();
+    _getNotifications().then((value) => _markNotificationAsRead());
+
+    NotificationController.setUnreadNotificationsCount(AppController.me.id);
   }
 
   @override
@@ -39,14 +60,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     subscription.cancel();
     super.dispose();
 
-    AppNotification.unReadNotificationsCount(0);
+    // Home.unReadNotificationsCount(0);
   }
 
   Future<void> _getNotifications() async {
     setState(() => _isLoading = true);
-    notifications = await LocalNotificationController.getSaveNotifications(
-      AppController.me.id,
-    );
+    notifications =
+        await NotificationController.getSaveNotifications(AppController.me.id);
 
     setState(() => _isLoading = false);
   }
@@ -75,7 +95,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final shouldDelete = await showConfirmDialog("Please confirm");
     if (shouldDelete != true) return;
 
-    await LocalNotificationController.deleteNotification(
+    await NotificationController.deleteNotification(
       AppController.me.id,
       notification,
     );
@@ -91,7 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: const Text("Notifications"),
         actions: [
           IconButton(
-            onPressed: () => setState(() {}),
+            onPressed: _getNotifications,
             icon: const Icon(Icons.refresh),
           )
         ],
@@ -105,11 +125,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             // controller: controller.conversation.messagesListController,
             itemBuilder: (context, index) {
               final n = notifications[index];
 
               return Card(
+                surfaceTintColor: Colors.white,
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   child: Column(
@@ -127,10 +149,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           ),
                           Expanded(
-                            child: Text(
-                              relativeTimeText(n.createdAt),
-                              textAlign: TextAlign.right,
-                            ),
+                            child: Builder(builder: (context) {
+                              var local = Jiffy.parseFromDateTime(n.createdAt)
+                                  .toLocal();
+                              var text = local.yMMMdjm;
+                              if (local.add(months: 1).isAfter(Jiffy.now())) {
+                                text = "${local.MMMd}, ${local.Hm}";
+                              }
+                              if (local
+                                  .add(days: 1)
+                                  .isAfter(Jiffy.now(), unit: Unit.day)) {
+                                text = local.Hm;
+                              }
+
+                              if (local.add(hours: 12).isAfter(Jiffy.now())) {
+                                text = local.fromNow();
+                              }
+
+                              return Text(
+                                text,
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(fontSize: 10),
+                              );
+                            }),
                           ),
                         ],
                       ),
@@ -169,6 +210,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         },
       ),
+      bottomNavigationBar: widget.showNavBar == true
+          ? HomeBottomNavigationBar(
+              onTap: (index) {
+                if (AppController.me.isLandlord && index == 3) {
+                  _markNotificationAsRead();
+                  Home.unReadNotificationsCount(0);
+                }
+              },
+            )
+          : null,
     );
   }
 }

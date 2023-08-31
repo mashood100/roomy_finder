@@ -16,6 +16,7 @@ class ContactUsScreen extends StatelessWidget {
           child: Column(
             children: [
               const Card(
+                surfaceTintColor: Colors.white,
                 child: Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Column(
@@ -50,6 +51,7 @@ class ContactUsScreen extends StatelessWidget {
                 ),
               ),
               Card(
+                surfaceTintColor: Colors.white,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
@@ -88,6 +90,7 @@ class ContactUsScreen extends StatelessWidget {
                 ),
               ),
               Card(
+                surfaceTintColor: Colors.white,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ListTile(

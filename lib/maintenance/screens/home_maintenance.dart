@@ -4,15 +4,15 @@ import 'package:badges/badges.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/app_notification.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/maintenance/screens/find_maintenances.dart';
 import 'package:roomy_finder/maintenance/screens/maintenant/my_offers.dart';
 import 'package:roomy_finder/maintenance/screens/my_maintenances.dart';
 import 'package:roomy_finder/maintenance/screens/request/request_maintenance.dart';
+import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/utility_screens/view_notifications.dart';
-import 'package:roomy_finder/screens/user/balance.dart';
+import 'package:roomy_finder/screens/user/account_balance.dart/balance.dart';
 import 'package:roomy_finder/screens/user/view_profile.dart';
 
 class MaintenanceHome extends StatefulWidget {
@@ -179,8 +179,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
                   child: ListTile(
                     onTap: () => Get.to(() => const NotificationsScreen()),
                     leading: Obx(() {
-                      var badge =
-                          AppNotification.unReadNotificationsCount.value;
+                      var badge = Home.unReadNotificationsCount.value;
                       return Badge(
                         badgeContent: Text(badge.toString()),
                         showBadge: badge > 0,

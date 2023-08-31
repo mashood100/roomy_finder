@@ -8,13 +8,18 @@ class LoadingProgressImage extends StatelessWidget {
     this.width,
     this.fit,
     this.borderRadius,
+    this.alignment = Alignment.center,
+    this.errorBuilder,
   });
 
   final ImageProvider<Object> image;
   final double? height;
   final double? width;
   final BoxFit? fit;
-  final double? borderRadius;
+  final BorderRadius? borderRadius;
+  final Alignment alignment;
+  final Widget Function(BuildContext ctx, Object error, StackTrace? trace)?
+      errorBuilder;
 
   double get _loadingSize {
     double size = 100;
@@ -30,34 +35,35 @@ class LoadingProgressImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: borderRadius == null
-          ? BorderRadius.zero
-          : BorderRadius.circular(borderRadius!),
+      borderRadius: borderRadius ?? BorderRadius.zero,
       child: Image(
         image: image,
         fit: fit,
         height: height,
         width: width,
-        errorBuilder: (ctx, e, trace) {
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Text(
-              "Failed to load media!",
-              style: TextStyle(
-                fontSize: _loadingSize * 0.2,
-                color: Colors.grey.withOpacity(0.5),
-              ),
-            ),
-          );
-        },
+        alignment: alignment,
+        errorBuilder: errorBuilder ??
+            (ctx, e, trace) {
+              return Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  "Failed to load media!",
+                  style: TextStyle(
+                    fontSize: _loadingSize * 0.2,
+                    color: Colors.grey.withOpacity(0.5),
+                  ),
+                ),
+              );
+            },
         loadingBuilder: (context, child, chuck) {
           double? progress;
 
           if (chuck == null) {
-            return child;
+            return Center(child: child);
           }
 
-          if (chuck.expectedTotalBytes != null) {
+          if (chuck.expectedTotalBytes != null &&
+              chuck.expectedTotalBytes != null) {
             progress = chuck.cumulativeBytesLoaded / chuck.expectedTotalBytes!;
           }
 

@@ -6,6 +6,7 @@ import 'package:roomy_finder/functions/check_for_update.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/screens/utility_screens/contact_us.dart';
+import 'package:roomy_finder/screens/utility_screens/faq.dart';
 import 'package:roomy_finder/screens/utility_screens/view_pdf.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:roomy_finder/utilities/data.dart';
@@ -109,6 +110,7 @@ class AboutScreeen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Card(
+                surfaceTintColor: Colors.white,
                 child: ListTile(
                   onTap: () {
                     Get.to(() {
@@ -127,6 +129,7 @@ class AboutScreeen extends StatelessWidget {
                 ),
               ),
               Card(
+                surfaceTintColor: Colors.white,
                 child: ListTile(
                   onTap: () {
                     Get.to(() {
@@ -145,13 +148,11 @@ class AboutScreeen extends StatelessWidget {
                 ),
               ),
               Card(
+                surfaceTintColor: Colors.white,
                 child: ListTile(
                   onTap: () {
                     Get.to(() {
-                      return const ViewPdfScreen(
-                        title: "FAQ",
-                        asset: "assets/pdf/faq.pdf",
-                      );
+                      return const FAQScreen();
                     });
                   },
                   leading: const Icon(Icons.question_answer),
@@ -163,6 +164,7 @@ class AboutScreeen extends StatelessWidget {
                 ),
               ),
               Card(
+                surfaceTintColor: Colors.white,
                 child: ListTile(
                   onTap: () {
                     Get.to(() => const ContactUsScreen());
@@ -177,6 +179,7 @@ class AboutScreeen extends StatelessWidget {
               ),
               Obx(() {
                 return Card(
+                  surfaceTintColor: Colors.white,
                   child: ListTile(
                     onTap: controller._checkUpdate,
                     leading: const Icon(Icons.system_update),
@@ -195,6 +198,7 @@ class AboutScreeen extends StatelessWidget {
               }),
               if (AppController.me.isLandlord)
                 Card(
+                  surfaceTintColor: Colors.white,
                   child: ListTile(
                     onTap: () {
                       Get.to(() {

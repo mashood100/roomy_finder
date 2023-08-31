@@ -13,7 +13,7 @@ import 'package:get/get.dart';
 import 'package:roomy_finder/classes/file_helprer.dart';
 import 'package:roomy_finder/classes/theme_helper.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/local_notifications.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/firebase_options.dart';
 import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/localization/messages.dart';
@@ -56,10 +56,10 @@ void main() async {
 
   // Firebase Cloud Messaging
   FirebaseMessaging.onMessage.listen((msg) {
-    LocalNotificationController.firebaseMessagingHandler(msg, true);
+    NotificationController.firebaseMessagingHandler(msg, true);
   });
   FirebaseMessaging.onMessageOpenedApp.listen((msg) {
-    LocalNotificationController.handleFCMMessageOpenedAppMessage(msg);
+    NotificationController.handleFCMMessageOpenedAppMessage(msg);
   });
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -70,7 +70,7 @@ void main() async {
   );
 
   // Local notification
-  await LocalNotificationController.initializeLocalNotifications();
+  await NotificationController.initializeLocalNotifications();
 
   // Dynamic link
 
@@ -165,5 +165,5 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 @pragma("vm:entry-point")
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await LocalNotificationController.firebaseMessagingHandler(message, false);
+  await NotificationController.firebaseMessagingHandler(message, false);
 }

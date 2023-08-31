@@ -22,6 +22,7 @@ class RoommateAd {
   List<String> amenities;
   List<String> interests;
   String? shareLink;
+  bool? billIncluded;
 
   RoommateAd({
     required this.id,
@@ -42,36 +43,23 @@ class RoommateAd {
     required this.amenities,
     required this.interests,
     this.shareLink,
+    this.billIncluded,
   });
 
   bool get isMine => poster.isMe;
   bool get isHaveRoom => action == "HAVE ROOM";
   bool get isNeedRoom => action == "NEED ROOM";
 
-  List<String> get technologyAmenities {
-    return amenities.where((e) {
-      return ["WIFI", "TV"].contains(e);
-    }).toList();
-  }
+  String get city => address["city"].toString();
 
-  List<String> get homeAppliancesAmenities {
-    return amenities.where((e) {
-      return ["Washer", "Cleaning Included", "Kitchen Appliances"].contains(e);
-    }).toList();
-  }
+  String get location {
+    var value = address["location"].toString();
 
-  List<String> get utilitiesAmenities {
-    return amenities.where((e) {
-      return [
-        "Close to Metro",
-        "Balcony",
-        "Parking Lot",
-        "Gym",
-        "Near Grocery",
-        "Swimming Pool",
-        "Near Pharmacy",
-      ].contains(e);
-    }).toList();
+    if (value.contains("(") && !value.endsWith('(')) {
+      return '(${value.split("(").last}';
+    }
+
+    return value;
   }
 
   @override
@@ -106,6 +94,7 @@ class RoommateAd {
       'amenities': amenities,
       'interests': interests,
       'shareLink': shareLink,
+      'billIncluded': billIncluded,
     };
   }
 
@@ -132,6 +121,7 @@ class RoommateAd {
       amenities: List<String>.from((map['amenities'] as List)),
       interests: List<String>.from((map['interests'] as List)),
       shareLink: map['shareLink'] as String?,
+      billIncluded: map['billIncluded'] as bool?,
     );
   }
 

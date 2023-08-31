@@ -9,12 +9,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/components/alert.dart';
+import 'package:roomy_finder/components/image_grid.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/components/loading_placeholder.dart';
-import 'package:roomy_finder/components/loading_progress_image.dart';
 import 'package:roomy_finder/components/phone_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/static.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/data/enums.dart';
@@ -23,362 +24,15 @@ import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/firebase_file_helper.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/screens/utility_screens/play_video.dart';
-import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 import "package:path/path.dart" as path;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-class _PostPropertyAdController extends LoadingController {
-  // Input controller
-  final _informationFormKey = GlobalKey<FormState>();
-  final _agentBrokerFormKey = GlobalKey<FormState>();
-  final _addressFormKey = GlobalKey<FormState>();
-
-  final _cityController = TextEditingController();
-  final _locationController = TextEditingController();
-
-  late final PageController _pageController;
-  final _pageIndex = 0.obs;
-  final needsPhotograph = false.obs;
-
-  final PropertyAd? oldData;
-  _PostPropertyAdController({this.oldData});
-
-  // Information
-  final oldImages = <String>[].obs;
-  final images = <XFile>[].obs;
-
-  final oldVideos = <String>[].obs;
-  final videos = <XFile>[].obs;
-
-  final amenties = <String>[].obs;
-
-  PhoneNumber agentPhoneNumber = PhoneNumber();
-
-  final information = <String, Object?>{
-    "type": "Bed",
-    "quantity": "",
-    "preferedRentType": "Monthly",
-    "monthlyPrice": "",
-    "weeklyPrice": "",
-    "dailyPrice": "",
-    "deposit": false,
-    "depositPrice": null,
-    "posterType": "Landlord",
-    "description": "",
-  }.obs;
-
-  final address = <String, String?>{
-    "city": "",
-    "location": "",
-    "buildingName": "",
-    "floorNumber": "",
-    "countryCode": AppController.instance.country.value.code,
-  }.obs;
-
-  final socialPreferences = <String, Object?>{
-    "numberOfPeople": "1 to 5",
-    "grouping": "Single",
-    "gender": "Mix",
-    "nationality": "Mix",
-    "smoking": false,
-    "cooking": false,
-    "drinking": false,
-    "visitors": false,
-  }.obs;
-
-  final agentBrokerInformation = {
-    "firstName": "",
-    "lastName": "",
-    "email": "",
-    "phone": "",
-  }.obs;
-
-  @override
-  void onInit() {
-    _pageController = PageController();
-
-    if (oldData != null) {
-      oldImages.addAll(oldData!.images);
-      oldVideos.addAll(oldData!.videos);
-
-      information["type"] = oldData!.type;
-      information["quantity"] = oldData!.quantity.toString();
-      information["preferedRentType"] = oldData!.preferedRentType;
-      information["monthlyPrice"] = oldData!.monthlyPrice.toString();
-      information["weeklyPrice"] = oldData!.weeklyPrice.toString();
-      information["dailyPrice"] = oldData!.dailyPrice.toString();
-      information["deposit"] = oldData!.deposit;
-      information["depositPrice"] = oldData!.depositPrice;
-
-      information["description"] = oldData!.description;
-      information["posterType"] = oldData!.posterType;
-
-      _cityController.text =
-          address["city"] = oldData!.address["city"].toString();
-      _locationController.text =
-          address["location"] = oldData!.address["location"].toString();
-      address["buildingName"] = oldData!.address["buildingName"].toString();
-      address["floorNumber"] = oldData!.address["floorNumber"].toString();
-      address["countryCode"] = oldData!.address["countryCode"].toString();
-      address["appartmentNumber"] =
-          oldData!.address["appartmentNumber"].toString();
-      amenties.value = oldData!.amenities;
-    }
-    super.onInit();
-  }
-
-  @override
-  void onClose() {
-    _pageController.dispose();
-    _cityController.dispose();
-    _locationController.dispose();
-    super.onClose();
-  }
-
-  void _moveToNextPage() {
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.linear,
-    );
-  }
-
-  void _moveToPreviousPage() {
-    _pageController.previousPage(
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.linear,
-    );
-  }
-
-  Future<void> _pickPicture({bool gallery = true}) async {
-    if (images.length >= 10) return;
-
-    try {
-      final ImagePicker picker = ImagePicker();
-
-      if (gallery) {
-        final data = await picker.pickMultiImage();
-        final sumImages = [...images, ...data];
-        images.clear();
-        if (sumImages.length <= 10) {
-          images.addAll(sumImages);
-        } else {
-          images.addAll(sumImages.sublist(0, 9));
-        }
-      } else {
-        final image = await picker.pickImage(source: ImageSource.camera);
-        if (image != null) images.add(image);
-      }
-    } catch (e) {
-      Get.log("$e");
-      showGetSnackbar('someThingWhenWrong'.tr, severity: Severity.error);
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  Future<void> _pickVideo() async {
-    if (videos.length >= 10) return;
-
-    try {
-      final ImagePicker picker = ImagePicker();
-
-      final data = await picker.pickVideo(source: ImageSource.gallery);
-      if (data != null) {
-        videos.add(data);
-      }
-    } catch (e) {
-      Get.log("$e");
-      showGetSnackbar('someThingWhenWrong'.tr, severity: Severity.error);
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  void _playVideo(String source, bool isAsset) {
-    Get.to(() => PlayVideoScreen(source: source, isAsset: isAsset));
-  }
-
-  Future<void> _savePropertyAd() async {
-    isLoading(true);
-
-    List<String> imagesUrls = [];
-    List<String> videosUrls = [];
-    try {
-      if (information["description"] == null ||
-          "${information["description"]}".trim().isEmpty) {
-        information.remove("description");
-      }
-      final data = {
-        ...information,
-        "address": address,
-        "amenities": amenties,
-        "agentInfo": agentBrokerInformation,
-        "socialPreferences": socialPreferences,
-        "needsPhotograph": needsPhotograph.value,
-      };
-
-      if (data["deposit"] != true) data.remove("depositPrice");
-
-      final imagesTaskFuture = images.map((e) async {
-        final index = images.indexOf(e);
-        final imgRef = FirebaseStorage.instance.ref().child('images').child(
-            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
-
-        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
-
-        final imageUrl = await (await uploadTask).ref.getDownloadURL();
-
-        return imageUrl;
-      }).toList();
-
-      imagesUrls = await Future.wait(imagesTaskFuture);
-
-      final videoTaskFuture = videos.map((e) async {
-        final index = images.indexOf(e);
-        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
-            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
-
-        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
-
-        final videoUrl = await (await uploadTask).ref.getDownloadURL();
-
-        return videoUrl;
-      }).toList();
-
-      videosUrls = await Future.wait(videoTaskFuture);
-
-      data["images"] = imagesUrls;
-      data["videos"] = videosUrls;
-
-      if (data["posterType"] != "Landlord") {
-        data.remove("agentInfo");
-      }
-
-      final res = await ApiService.getDio.post("/ads/property-ad", data: data);
-
-      if (res.statusCode != 200) {
-        deleteManyFilesFromUrl(imagesUrls);
-        deleteManyFilesFromUrl(videosUrls);
-      }
-
-      switch (res.statusCode) {
-        case 200:
-          await showSuccessDialog("Your property is added.", isAlert: true);
-
-          Get.offNamedUntil(
-            "/my-property-ads",
-            ModalRoute.withName('/home'),
-          );
-
-          break;
-        default:
-          showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
-      }
-    } catch (e) {
-      Get.log("$e");
-      deleteManyFilesFromUrl(imagesUrls);
-      deleteManyFilesFromUrl(videosUrls);
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  Future<void> _upatePropertyAd() async {
-    isLoading(true);
-
-    List<String> imagesUrls = [];
-    List<String> videosUrls = [];
-
-    if (information["description"] == null ||
-        "${information["description"]}".trim().isEmpty) {
-      information.remove("description");
-    }
-    try {
-      final data = {
-        ...information,
-        "address": address,
-        "amenities": amenties,
-        "agentInfo": agentBrokerInformation,
-        "socialPreferences": socialPreferences,
-      };
-
-      if (data["deposit"] != true) data.remove("depositPrice");
-
-      final imagesTaskFuture = images.map((e) async {
-        final index = images.indexOf(e);
-        final imgRef = FirebaseStorage.instance.ref().child('images').child(
-            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
-
-        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
-
-        final imageUrl = await (await uploadTask).ref.getDownloadURL();
-
-        return imageUrl;
-      }).toList();
-
-      imagesUrls = await Future.wait(imagesTaskFuture);
-
-      final videoTaskFuture = videos.map((e) async {
-        final index = images.indexOf(e);
-        final imgRef = FirebaseStorage.instance.ref().child('videos').child(
-            '/${createDateTimeFileName(index)}${path.extension(e.path)}');
-
-        final uploadTask = imgRef.putData(await File(e.path).readAsBytes());
-
-        final videoUrl = await (await uploadTask).ref.getDownloadURL();
-
-        return videoUrl;
-      }).toList();
-
-      videosUrls = await Future.wait(videoTaskFuture);
-
-      data["images"] = [...oldImages, ...imagesUrls];
-      data["videos"] = [...oldVideos, ...videosUrls];
-
-      final res = await ApiService.getDio
-          .put("/ads/property-ad/${oldData?.id}", data: data);
-
-      // print(res.data["details"]);
-
-      if (res.statusCode != 200) {
-        deleteManyFilesFromUrl(imagesUrls);
-        deleteManyFilesFromUrl(videosUrls);
-      }
-
-      switch (res.statusCode) {
-        case 200:
-          isLoading(false);
-          await showSuccessDialog("Ad updated successfully. ", isAlert: true);
-
-          deleteManyFilesFromUrl(
-            oldData!.images.where((e) => !oldImages.contains(e)).toList(),
-          );
-          deleteManyFilesFromUrl(
-            oldData!.videos.where((e) => !oldVideos.contains(e)).toList(),
-          );
-          Get.offNamedUntil(
-            "/my-property-ads",
-            ModalRoute.withName('/home'),
-          );
-          break;
-        case 500:
-          showGetSnackbar("someThingWentWrong".tr, severity: Severity.error);
-          break;
-        default:
-          showToast("someThingWentWrong".tr);
-      }
-    } catch (e) {
-      Get.log("$e");
-      deleteManyFilesFromUrl(imagesUrls);
-      deleteManyFilesFromUrl(videosUrls);
-    } finally {
-      isLoading(false);
-    }
-  }
-}
+part './post_property_ad_controller.dart';
 
 class PostPropertyAdScreen extends StatelessWidget {
   const PostPropertyAdScreen({super.key, this.oldData});
@@ -387,6 +41,11 @@ class PostPropertyAdScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(_PostPropertyAdController(oldData: oldData));
+
+    const labelStyle = TextStyle(fontWeight: FontWeight.bold);
+    int bigSizeGridCount = MediaQuery.sizeOf(context).width ~/ 150;
+    int smallSizeGridCount = MediaQuery.sizeOf(context).width ~/ 100;
+
     return WillPopScope(
       onWillPop: () async {
         if (controller._pageIndex.value != 0) {
@@ -410,9 +69,9 @@ class PostPropertyAdScreen extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(
-                    left: 10,
-                    right: 10,
-                    top: 5,
+                    left: 20,
+                    right: 20,
+                    top: 20,
                     bottom: 50,
                   ),
                   child: PageView(
@@ -427,34 +86,26 @@ class PostPropertyAdScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 10),
-                              const Center(
-                                child: Text(
-                                  "Please choose LOCATION \nof your property:",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: ROOMY_PURPLE,
-                                  ),
-                                ),
+                              const InputPageHeader(
+                                title: "DESCRIBE YOUR PROPERTY",
+                                subtitle: "Where your property is located?",
                               ),
-                              const Divider(height: 30),
+                              const SizedBox(height: 20),
+
                               // City
+                              const Text("City", style: labelStyle),
                               InlineDropdown<String>(
-                                labelText: 'City',
                                 hintText:
                                     AppController.instance.country.value.isUAE
                                         ? 'Example : Dubai'
                                         : "Example : Riyadh",
-                                value: controller.address["city"]!.isEmpty
-                                    ? null
-                                    : controller.address["city"],
+                                value: controller.address["city"]?.toString(),
                                 items: CITIES_FROM_CURRENT_COUNTRY,
                                 onChanged: controller.isLoading.isTrue
                                     ? null
                                     : (val) {
                                         if (val != null) {
-                                          controller.address["location"] = "";
+                                          controller.address["location"] = null;
                                           controller.address["city"] = val;
                                         }
                                       },
@@ -467,12 +118,11 @@ class PostPropertyAdScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 20),
                               // Area
+                              const Text("Area", style: labelStyle),
                               InlineDropdown<String>(
-                                labelText: 'Area',
-                                hintText: "Choose location",
-                                value: controller.address["location"]!.isEmpty
-                                    ? null
-                                    : controller.address["location"],
+                                hintText: "Example Al Barsha",
+                                value:
+                                    controller.address["location"]?.toString(),
                                 items: getLocationsFromCity(
                                   controller.address["city"].toString(),
                                 ),
@@ -493,11 +143,12 @@ class PostPropertyAdScreen extends StatelessWidget {
                               const SizedBox(height: 20),
 
                               // Building Name
+                              const Text("Tower name", style: labelStyle),
                               InlineTextField(
-                                labelText: "Tower name",
+                                hintText: "Example ABC Tower",
                                 enabled: controller.isLoading.isFalse,
-                                initialValue:
-                                    controller.address["buildingName"],
+                                initialValue: controller.address["buildingName"]
+                                    ?.toString(),
                                 onChanged: (value) {
                                   controller.address["buildingName"] = value;
                                 },
@@ -510,12 +161,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   }
                                   return null;
                                 },
+                                textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 20),
 
                               // Apartment number
+                              const Text("Apartment number", style: labelStyle),
                               InlineTextField(
-                                labelText: "Apartment number",
+                                hintText: "Example 456",
                                 enabled: controller.isLoading.isFalse,
                                 initialValue:
                                     controller.address["appartmentNumber"],
@@ -538,12 +191,14 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     RegExp(r'^\d*'),
                                   )
                                 ],
+                                textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 20),
 
                               // Floor number
+                              const Text("Floor number", style: labelStyle),
                               InlineTextField(
-                                labelText: "Floor number",
+                                hintText: "Example 4",
                                 enabled: controller.isLoading.isFalse,
                                 initialValue: controller.address["floorNumber"],
                                 onChanged: (value) {
@@ -564,6 +219,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     RegExp(r'^\d*'),
                                   )
                                 ],
+                                textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 20),
                             ],
@@ -574,17 +230,11 @@ class PostPropertyAdScreen extends StatelessWidget {
                       // Property type
                       SingleChildScrollView(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Please choose \nPROPERTY TYPE:",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PROPERTY",
+                              subtitle: "What is your property type?",
                             ),
                             const Divider(height: 30),
                             GridView.count(
@@ -662,119 +312,187 @@ class PostPropertyAdScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 10),
-                              const Center(
-                                child: Text(
-                                  "Please fill in \nRENT DETAILS:",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: ROOMY_PURPLE,
-                                  ),
-                                ),
+                              const InputPageHeader(
+                                title: "DESCRIBE YOUR PROPERTY",
+                                subtitle:
+                                    "How many units are available in your property?",
                               ),
-                              const Divider(height: 30),
-                              // Quantity
-                              InlineTextField(
-                                labelWidth: Get.width * 0.3,
-                                labelText: 'Number of units'.tr,
-                                hintText: 'maximum : 500'.tr,
-                                initialValue: controller.information["quantity"]
-                                    as String,
-                                enabled: controller.isLoading.isFalse,
-                                onChanged: (value) =>
-                                    controller.information["quantity"] = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'thisFieldIsRequired'.tr;
-                                  }
-                                  final numValue = int.tryParse(value);
 
-                                  if (numValue == null || numValue < 1) {
-                                    return 'invalidPropertyAdQuantityMessage'
-                                        .tr;
-                                  }
-                                  if (numValue > 500) {
-                                    return 'Quantity must be less than 500'.tr;
-                                  }
-                                  return null;
-                                },
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d*'))
-                                ],
+                              const Divider(height: 20),
+                              const InputPageHeader(
+                                subtitle: "Number of units",
                               ),
                               const SizedBox(height: 20),
+                              // Quantity
+                              for (var count in [1, 6])
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: InlineSelector(
+                                    items: List.generate(
+                                      5,
+                                      (index) => "${index + count}",
+                                    ),
+                                    value: controller.information["quantity"]
+                                        as String?,
+                                    onChanged: (value) {
+                                      controller.information[
+                                          "quantityGreaterThan10"] = false;
+                                      controller.information["quantity"] =
+                                          value;
+                                    },
+                                  ),
+                                ),
 
-                              // Rent type
+                              const SizedBox(height: 10),
                               Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    "Rent period",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                    ),
+                                    "More than 10 units",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  const Spacer(),
-                                  ...["Monthly", "Weekly", "Daily"].map((e) {
-                                    return Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      padding: const EdgeInsets.all(8.0),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: controller.information[
-                                                    "preferedRentType"] ==
-                                                e
-                                            ? ROOMY_ORANGE
-                                            : Colors.grey.shade200,
-                                      ),
-                                      child: InkWell(
-                                        onTap: () {
-                                          controller.information[
-                                              "preferedRentType"] = e;
-                                        },
-                                        child: Text(e),
-                                      ),
-                                    );
-                                  }).toList()
+                                  Checkbox(
+                                    value: controller.information[
+                                        "quantityGreaterThan10"] as bool?,
+                                    onChanged: (val) {
+                                      if (val == false) {
+                                        controller.information["quantity"] =
+                                            "10";
+                                      }
+                                      controller.information[
+                                          "quantityGreaterThan10"] = val;
+                                      controller.update();
+                                    },
+                                  ),
                                 ],
                               ),
 
-                              const SizedBox(height: 20),
+                              if (controller
+                                      .information["quantityGreaterThan10"] ==
+                                  true) ...[
+                                InlineTextField(
+                                  hintText: 'Enter number of units',
+                                  initialValue: controller
+                                      .information["quantity"] as String,
+                                  enabled: controller.isLoading.isFalse,
+                                  onChanged: (value) => controller
+                                      .information["quantity"] = value,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'thisFieldIsRequired'.tr;
+                                    }
+                                    final numValue = int.tryParse(value);
 
-                              const Text(
-                                "Prices",
-                                style: TextStyle(
-                                  fontSize: 18,
+                                    if (numValue == null || numValue < 1) {
+                                      return 'Must be greater than 10';
+                                    }
+                                    if (numValue > 500) {
+                                      return 'Quantity must be less than 500'
+                                          .tr;
+                                    }
+                                    return null;
+                                  },
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                        RegExp(r'^\d*'))
+                                  ],
+                                )
+                              ],
+
+                              const SizedBox(height: 20),
+                              const Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  "Number of rooms, beds or partitions available at 1 property",
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                      ),
 
-                              // Price
-                              for (final item in [
-                                {
-                                  'value': "monthlyPrice",
-                                  'label': "Monthly",
-                                },
-                                {
-                                  'value': "weeklyPrice",
-                                  'label': "Weekly",
-                                },
-                                {
-                                  'value': "dailyPrice",
-                                  'label': "Daily",
-                                },
-                              ]) ...[
+                      // Pricing
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PLACE",
+                              subtitle: "What are your rent out requeriments?",
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            const CustomTooltip(
+                              message:
+                                  "You can set rental prices for different periods,"
+                                  " ensuring your properties are occupied at all time.",
+                            ),
+                            const Divider(),
+
+                            const Text(
+                              "Price",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+
+                            // Price
+                            for (final item in [
+                              {
+                                'value': "monthlyPrice",
+                                'label': "Monthly",
+                              },
+                              {
+                                'value': "weeklyPrice",
+                                'label': "Weekly",
+                              },
+                              {
+                                'value': "dailyPrice",
+                                'label': "Daily",
+                              },
+                            ]) ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(item["label"].toString()),
+                                  Checkbox(
+                                    value: controller.information[
+                                            "${item["value"]}-selected"] ==
+                                        true,
+                                    onChanged: (val) {
+                                      controller.information[
+                                          "${item["value"]}-selected"] = val;
+                                      if (val != true) {
+                                        controller.information[
+                                            "${item["value"]}"] = null;
+                                      }
+                                      controller.update();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              if (controller.information[
+                                      "${item["value"]}-selected"] ==
+                                  true)
                                 InlineTextField(
-                                  labelWidth: Get.width * 0.3,
+                                  hintText: "Enter the ${item["label"]} price",
                                   labelStyle: const TextStyle(
                                     fontSize: 15,
                                     color: Colors.grey,
                                   ),
-                                  labelText: item['label']!,
-                                  suffixText: "AED",
+                                  // labelText: item['label']!,
+                                  suffixText:
+                                      "AED ${item["label"]!.padLeft(7, " ")}",
                                   initialValue: controller
-                                      .information[item['value']] as String,
+                                      .information[item['value']] as String?,
                                   enabled: controller.isLoading.isFalse,
                                   onChanged: (value) => controller
                                       .information[item['value']!] = value,
@@ -810,105 +528,582 @@ class PostPropertyAdScreen extends StatelessWidget {
                                     }
                                     return null;
                                   },
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
                                   keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.done,
                                   inputFormatters: [
                                     FilteringTextInputFormatter.allow(
                                         priceRegex)
                                   ],
                                 ),
-                                const SizedBox(height: 20),
-                              ],
+                              const SizedBox(height: 20),
+                            ],
 
-                              // Deposit
-                              GestureDetector(
-                                onTap: () {
-                                  FocusManager.instance.primaryFocus?.unfocus();
-                                  if (controller.information["deposit"] ==
-                                      true) {
-                                    controller.information["deposit"] = false;
-                                  } else {
-                                    controller.information["deposit"] = true;
+                            const CustomTooltip(
+                              message:
+                                  "Please note that a 10% will be automatically included"
+                                  " in the rental price, which will be deducted"
+                                  " from the tenant's payment.",
+                            ),
+
+                            const Divider(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  "Deposit",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Checkbox(
+                                  value: controller.information["deposit"]
+                                      as bool?,
+                                  onChanged: (val) {
+                                    controller.information["deposit"] = val;
+                                    if (val != true) {
+                                      controller.information
+                                          .remove("depositPrice");
+                                    }
+                                    controller.update();
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            if (controller.information["deposit"] == true)
+                              InlineTextField(
+                                hintText: "Enter deposit amount",
+                                initialValue:
+                                    controller.information["depositPrice"] ==
+                                            null
+                                        ? ''
+                                        : controller.information["depositPrice"]
+                                            .toString(),
+                                labelStyle: const TextStyle(fontSize: 15),
+                                enabled: controller.isLoading.isFalse,
+                                suffixText: "AED",
+                                onChanged: (value) => controller
+                                    .information["depositPrice"] = value,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'thisFieldIsRequired'.tr;
                                   }
+
+                                  final numValue = int.tryParse(value);
+
+                                  if (numValue == null || numValue < 0) {
+                                    return 'invalidValue'.tr;
+                                  }
+                                  return null;
                                 },
-                                child: Row(
-                                  children: [
-                                    const Text(
-                                      "Deposit",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: Colors.black,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(priceRegex)
+                                ],
+                              ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  "Bill included",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Checkbox(
+                                  value: controller.information["billIncluded"]
+                                      as bool?,
+                                  onChanged: (val) {
+                                    controller.information["billIncluded"] =
+                                        val;
+                                    controller.update();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Amenities
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PROPERTY",
+                              subtitle:
+                                  "What amenities are available at your property?",
+                            ),
+                            const SizedBox(height: 20),
+                            GridView.count(
+                              shrinkWrap: true,
+                              crossAxisCount: smallSizeGridCount,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              children: ALL_AMENITIES
+                                  .map(
+                                    (e) => GestureDetector(
+                                      onTap: () {
+                                        if (controller.amenities
+                                            .contains(e["value"])) {
+                                          controller.amenities
+                                              .remove(e["value"]);
+                                        } else {
+                                          controller.amenities
+                                              .add("${e["value"]}");
+                                        }
+
+                                        controller.update();
+                                      },
+                                      child: Container(
+                                        decoration: shadowedBoxDecoration,
+                                        padding: const EdgeInsets.all(5),
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          children: [
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              flex: 1,
+                                              child: Image.asset(
+                                                "${e["asset"]}",
+                                                color: controller.amenities
+                                                        .contains(e["value"])
+                                                    ? ROOMY_ORANGE
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 1,
+                                              child: Center(
+                                                child: Text(
+                                                  "${e["value"]}",
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                    color: Colors.black,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Icon(
-                                      controller.information["deposit"] == true
-                                          ? Icons.check_circle_outline_outlined
-                                          : Icons.circle_outlined,
-                                      color: ROOMY_ORANGE,
-                                    )
-                                  ],
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      //Images
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PROPERTY",
+                              subtitle: "Add pictures of your property",
+                            ),
+
+                            // Images
+                            if (controller.images.isEmpty &&
+                                controller.oldImages.isEmpty)
+                              Center(
+                                child: Image.asset(
+                                  AssetImages.defaultRoomPNG,
+                                  height: 150,
+                                ),
+                              )
+                            else ...[
+                              ImageGrid(
+                                items: controller.oldImages,
+                                getImage: (item) =>
+                                    CachedNetworkImageProvider(item),
+                                onItemRemoved: (item) {
+                                  controller.oldImages.remove(item);
+                                  controller.update();
+                                },
+                                noDataMessage: "",
+                              ),
+                              ImageGrid(
+                                items: controller.images,
+                                getImage: (item) => FileImage(File(item.path)),
+                                onItemRemoved: (item) {
+                                  controller.images.remove(item);
+                                  controller.update();
+                                },
+                                noDataMessage: "",
+                              ),
+                            ],
+
+                            // Old Videos
+                            FutureBuilder(
+                              future: Future.wait(controller.oldVideos.map(
+                                  (e) =>
+                                      VideoThumbnail.thumbnailData(video: e))),
+                              builder: (context, asp) {
+                                if (asp.connectionState ==
+                                    ConnectionState.done) {
+                                  final data = asp.data!;
+
+                                  return ImageGrid(
+                                    items: data,
+                                    isVideo: true,
+                                    getImage: (item) => MemoryImage(item!),
+                                    onItemRemoved: (item) {
+                                      controller.oldVideos
+                                          .removeAt(data.indexOf(item));
+                                      controller.update();
+                                    },
+                                    noDataMessage: "",
+                                    onItemTap: (item) {
+                                      controller._playVideo(
+                                        controller
+                                            .oldVideos[data.indexOf(item)],
+                                        false,
+                                      );
+                                    },
+                                  );
+                                }
+
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // New videos
+                            FutureBuilder(
+                              future: Future.wait(
+                                controller.videos.map((e) {
+                                  return VideoThumbnail.thumbnailData(
+                                      video: e.path);
+                                }),
+                              ),
+                              builder: (context, asp) {
+                                if (asp.connectionState ==
+                                    ConnectionState.done) {
+                                  final data = asp.data!;
+
+                                  return ImageGrid(
+                                    items: data,
+                                    isVideo: true,
+                                    getImage: (item) => MemoryImage(item!),
+                                    onItemRemoved: (item) {
+                                      controller.videos
+                                          .removeAt(data.indexOf(item));
+                                      controller.update();
+                                    },
+                                    noDataMessage: "",
+                                    onItemTap: (item) {
+                                      controller._playVideo(
+                                        controller
+                                            .videos[data.indexOf(item)].path,
+                                        false,
+                                      );
+                                    },
+                                  );
+                                }
+
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+                            const Center(
+                              child: Text(
+                                "Show off your place!",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                (
+                                  label: "Images",
+                                  asset: AssetIcons.galleryPNG,
+                                  onPressed: () => controller._pickPicture(),
+                                ),
+                                (
+                                  label: "Camera",
+                                  asset: AssetIcons.camera2PNG,
+                                  onPressed: () =>
+                                      controller._pickPicture(gallery: false),
+                                ),
+                                (
+                                  label: "Video",
+                                  asset: AssetIcons.videoPNG,
+                                  onPressed: () => controller._pickVideo(),
+                                ),
+                              ].map((e) {
+                                return OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: ROOMY_PURPLE,
+                                    backgroundColor: Colors.transparent,
+                                    shape: const RoundedRectangleBorder(
+                                      side: BorderSide(color: ROOMY_PURPLE),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(5),
+                                      ),
+                                    ),
+                                  ),
+                                  onPressed: e.onPressed,
+                                  icon: Image.asset(e.asset, height: 15),
+                                  label: Text(
+                                    e.label,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 100),
+                            const CustomTooltip(message: _imagetoolTiptext),
+                          ],
+                        ),
+                      ),
+
+                      // Tenant preferences
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PREFFERED TENANT",
+                              subtitle: "Who are your preferred tenants?",
+                            ),
+
+                            // Gender
+                            const Text("Gender"),
+                            InlineSelector(
+                              items: const ["Male", "Female", "Mix"],
+                              value: controller.socialPreferences["gender"],
+                              onChanged: (value) {
+                                controller.socialPreferences["gender"] = value;
+                                controller.update();
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Nationality
+                            const Text("Nationality"),
+
+                            InlineDropdown<String>(
+                              hintText: "Indian",
+                              value: controller.socialPreferences["nationality"]
+                                  as String?,
+                              items: ALL_NATIONALITIES,
+                              onChanged: controller.isLoading.isTrue
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        controller.socialPreferences[
+                                            "nationality"] = val;
+                                      }
+                                    },
+                            ),
+
+                            const Divider(height: 40),
+                            const InputPageHeader(
+                              subtitle:
+                                  "How many people live at your property now?",
+                            ),
+
+                            for (var count in [1, 6])
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: InlineSelector(
+                                  items: List.generate(
+                                    5,
+                                    (index) => "${index + count}",
+                                  ),
+                                  value: controller
+                                          .socialPreferences["numberOfPeople"]
+                                      as String?,
+                                  onChanged: (value) {
+                                    controller.socialPreferences[
+                                        "peopleGreaterThan10"] = false;
+                                    controller.socialPreferences[
+                                        "numberOfPeople"] = value;
+                                  },
                                 ),
                               ),
 
-                              const SizedBox(height: 10),
-                              if (controller.information["deposit"] == true)
-                                InlineTextField(
-                                  labelWidth: Get.width * 0.3,
-                                  labelText: "Deposit price",
-                                  initialValue: controller
-                                              .information["depositPrice"] ==
-                                          null
-                                      ? ''
-                                      : controller.information["depositPrice"]
-                                          .toString(),
-                                  labelStyle: const TextStyle(fontSize: 15),
-                                  enabled: controller.isLoading.isFalse,
-                                  suffixText: "AED",
-                                  onChanged: (value) => controller
-                                      .information["depositPrice"] = value,
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'thisFieldIsRequired'.tr;
-                                    }
-
-                                    final numValue = int.tryParse(value);
-
-                                    if (numValue == null || numValue < 0) {
-                                      return 'invalidValue'.tr;
-                                    }
-                                    return null;
-                                  },
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(
-                                        priceRegex)
-                                  ],
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  "More than 10 people",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                              const SizedBox(height: 10),
-                              // // Description
-                              // Text('description'.tr),
-                              // TextFormField(
-                              //   initialValue: controller
-                              //       .information["description"] as String,
-                              //   enabled: controller.isLoading.isFalse,
-                              //   decoration: InputDecoration(
-                              //     hintText: 'Add your ad description here'.tr,
-                              //   ),
-                              //   onChanged: (value) =>
-                              //       controller.information["description"] = value,
-                              //   validator: (value) {
-                              //     if (value == null || value.trim().isEmpty) {
-                              //       return 'thisFieldIsRequired'.tr;
-                              //     }
-                              //     return null;
-                              //   },
-                              //   minLines: 2,
-                              //   maxLines: 5,
-                              //   maxLength: 500,
-                              // ),
-                            ],
-                          ),
+                                Checkbox(
+                                  value: controller.socialPreferences[
+                                      "peopleGreaterThan10"] as bool?,
+                                  onChanged: (val) {
+                                    if (val == false) {
+                                      controller.socialPreferences[
+                                          "numberOfPeople"] = "10";
+                                    } else {
+                                      controller.socialPreferences[
+                                          "numberOfPeople"] = "10+";
+                                    }
+                                    controller.socialPreferences[
+                                        "peopleGreaterThan10"] = val;
+                                    controller.update();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Tenant preference 2
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PREFFERED TENANT",
+                              subtitle:
+                                  "What things would you allow for tenants at your property?",
+                            ),
+                            const SizedBox(height: 20),
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: bigSizeGridCount,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 1.3,
+                              children: ALL_SOCIAL_PREFERENCES.map((e) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (controller
+                                            .socialPreferences[e["value"]] ==
+                                        true) {
+                                      controller.socialPreferences[
+                                          "${e["value"]}"] = false;
+                                    } else {
+                                      controller.socialPreferences[
+                                          "${e["value"]}"] = true;
+                                    }
+                                    controller.update();
+                                  },
+                                  child: Container(
+                                    decoration: shadowedBoxDecoration,
+                                    padding: const EdgeInsets.all(5),
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      children: [
+                                        const SizedBox(height: 10),
+                                        Expanded(
+                                          flex: 3,
+                                          child: Image.asset(
+                                            "${e["asset"]}",
+                                            color: controller.socialPreferences[
+                                                        e["value"]] ==
+                                                    true
+                                                ? ROOMY_ORANGE
+                                                : Colors.grey,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            "${e["label"]}",
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Description
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const InputPageHeader(
+                              title: "DESCRIBE YOUR PROPERTY",
+                              subtitle: "Write a description of your property!",
+                            ),
+                            const Text(
+                              "Optional",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: TextFormField(
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      width: 1,
+                                      color: Colors.grey,
+                                    ),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
+                                  ),
+                                  hintText: "2 BR apartment with a balcony…",
+                                ),
+                                initialValue: controller
+                                    .information["description"] as String?,
+                                enabled: controller.isLoading.isFalse,
+                                onChanged: (value) => controller
+                                    .information["description"] = value,
+                                validator: (value) {
+                                  if (value == null) return null;
+
+                                  final (_, message) =
+                                      validateAdsDescription(value);
+                                  return message;
+                                },
+                                minLines: 10,
+                                maxLines: 20,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const CustomTooltip(
+                              message: _descriptionTooltipMessage,
+                            ),
+                          ],
                         ),
                       ),
 
@@ -916,17 +1111,12 @@ class PostPropertyAdScreen extends StatelessWidget {
                       SingleChildScrollView(
                         child: Column(
                           children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Please fill in IF you are \nan AGENT or BROKER:",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
+                            const InputPageHeader(
+                              title: "One last step!",
+                              subtitle:
+                                  "Please tell us if you are a landlord or agent?",
                             ),
+
                             const Divider(height: 30),
                             Row(
                               children: [
@@ -952,7 +1142,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   child: const Text(
                                     "Landlord",
                                     style: TextStyle(
-                                      color: ROOMY_PURPLE,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -979,7 +1169,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   child: const Text(
                                     "Agent/Broker",
                                     style: TextStyle(
-                                      color: ROOMY_PURPLE,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1075,608 +1265,15 @@ class PostPropertyAdScreen extends StatelessWidget {
                                   ],
                                 ),
                               )
-                            else
-                              const Center(
-                                child: Text(
-                                  "Continue",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              )
-                          ],
-                        ),
-                      ),
-
-                      // property preferences
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Please specify TENANT details :",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
+                            else ...[
+                              const SizedBox(height: 200),
+                              const CustomTooltip(
+                                message:
+                                    "This will help Roomy FINDER to provide you "
+                                    "with more accurate assistance regarding"
+                                    " real estate matters.",
                               ),
-                            ),
-                            const Divider(height: 30),
-
-                            // People Count
-                            InlineDropdown<String>(
-                              // labelWidth: Get.width * 0.3,
-                              labelText: 'numberOfPeople'.tr,
-                              value:
-                                  controller.socialPreferences["numberOfPeople"]
-                                      as String,
-                              items: PROPERTY_ADS_NUMBERS_OF_PEOPLES,
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.socialPreferences[
-                                            "numberOfPeople"] = val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 20),
-                            // Gender
-                            InlineDropdown<String>(
-                              labelText: 'gender'.tr,
-                              value: controller.socialPreferences["gender"]
-                                  as String,
-                              items: ALL_GENDERS_WITH_MIX,
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.socialPreferences["gender"] =
-                                            val;
-                                      }
-                                    },
-                            ),
-                            const SizedBox(height: 20),
-                            // Nationalities
-                            InlineDropdown<String>(
-                              labelText: 'nationality'.tr,
-                              value: controller.socialPreferences["nationality"]
-                                  as String,
-                              items: ALL_NATIONALITIES,
-                              onChanged: controller.isLoading.isTrue
-                                  ? null
-                                  : (val) {
-                                      if (val != null) {
-                                        controller.socialPreferences[
-                                            "nationality"] = val;
-                                      }
-                                    },
-                            ),
-                            const Divider(height: 40),
-
-                            const Center(
-                              child: Text(
-                                "Comfortable with :",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 10),
-                            GridView.count(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                              children: [
-                                {
-                                  "value": "smoking",
-                                  "label": "Smoking",
-                                  "asset": "assets/icons/smoking.png",
-                                },
-                                {
-                                  "value": "drinking",
-                                  "label": "Drinking",
-                                  "asset": "assets/icons/drink.png",
-                                },
-                                {
-                                  "value": "visitors",
-                                  "label": "Visitors",
-                                  "asset": "assets/icons/people.png",
-                                },
-
-                                // "Mix"
-                              ].map((e) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (controller
-                                            .socialPreferences[e["value"]] ==
-                                        true) {
-                                      controller.socialPreferences[
-                                          "${e["value"]}"] = false;
-                                    } else {
-                                      controller.socialPreferences[
-                                          "${e["value"]}"] = true;
-                                    }
-                                  },
-                                  child: Container(
-                                    decoration: shadowedBoxDecoration,
-                                    padding: const EdgeInsets.all(10),
-                                    alignment: Alignment.center,
-                                    child: Column(
-                                      children: [
-                                        const SizedBox(height: 10),
-                                        Expanded(
-                                          child: Image.asset(
-                                            "${e["asset"]}",
-                                            color: controller.socialPreferences[
-                                                        e["value"]] ==
-                                                    true
-                                                ? ROOMY_ORANGE
-                                                : null,
-                                          ),
-                                        ),
-                                        Text(
-                                          "${e["label"]}",
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Amenities
-                      SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Please choose AMENITIES \nof your property:",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
-                            ),
-                            const Divider(height: 30),
-                            const SizedBox(height: 10),
-                            GridView.count(
-                              shrinkWrap: true,
-                              crossAxisCount: 3,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              children: ALL_AMENITIES
-                                  .map(
-                                    (e) => GestureDetector(
-                                      onTap: () {
-                                        if (controller.amenties
-                                            .contains(e["value"])) {
-                                          controller.amenties
-                                              .remove(e["value"]);
-                                        } else {
-                                          controller.amenties
-                                              .add("${e["value"]}");
-                                        }
-                                      },
-                                      child: Container(
-                                        decoration: shadowedBoxDecoration,
-                                        padding: const EdgeInsets.all(10),
-                                        alignment: Alignment.center,
-                                        child: Column(
-                                          children: [
-                                            const SizedBox(height: 10),
-                                            Expanded(
-                                              child: Image.asset(
-                                                "${e["asset"]}",
-                                                color: controller.amenties
-                                                        .contains(e["value"])
-                                                    ? ROOMY_ORANGE
-                                                    : Colors.grey,
-                                              ),
-                                            ),
-                                            Text(
-                                              "${e["value"]}",
-                                              style: const TextStyle(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Images/Videos
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "IMAGES & VIDEOS:",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
-                            ),
-                            const Divider(height: 30),
-                            if (controller.images.length +
-                                    controller.oldImages.length !=
-                                0)
-                              GridView.count(
-                                crossAxisCount: Get.width > 370 ? 4 : 2,
-                                crossAxisSpacing: 10,
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                children: [
-                                  ...controller.oldImages.map((e) {
-                                    return {
-                                      "onTap": () =>
-                                          controller.oldImages.remove(e),
-                                      "imageUrl": e,
-                                      "isFile": false,
-                                      "onViewImage": () {
-                                        Get.to(transition: Transition.zoom, () {
-                                          return ViewImages(
-                                            images: controller.oldImages
-                                                .map((e) =>
-                                                    CachedNetworkImageProvider(
-                                                        e))
-                                                .toList(),
-                                            initialIndex:
-                                                controller.oldImages.indexOf(e),
-                                            title: oldData == null
-                                                ? "Images"
-                                                : "Old images",
-                                          );
-                                        });
-                                      }
-                                    };
-                                  }),
-                                  ...controller.images.map((e) {
-                                    return {
-                                      "onTap": () =>
-                                          controller.images.remove(e),
-                                      "imageUrl": e.path,
-                                      "isFile": true,
-                                      "onViewImage": () {
-                                        Get.to(transition: Transition.zoom, () {
-                                          return ViewImages(
-                                            images: controller.images
-                                                .map((e) =>
-                                                    FileImage(File(e.path)))
-                                                .toList(),
-                                            initialIndex:
-                                                controller.images.indexOf(e),
-                                            title: oldData == null
-                                                ? "Images"
-                                                : "New images",
-                                          );
-                                        });
-                                      }
-                                    };
-                                  }),
-                                ]
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.topRight,
-                                        children: [
-                                          GestureDetector(
-                                            onTap: e["onViewImage"] as void
-                                                Function()?,
-                                            child: Container(
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              decoration: BoxDecoration(
-                                                border: Border.all(
-                                                  color: Colors.grey,
-                                                  width: 1,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              margin: const EdgeInsets.all(5),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                                child:
-                                                    Builder(builder: (context) {
-                                                  if (e["isFile"] == true) {
-                                                    return Image.file(
-                                                      File("${e["imageUrl"]}"),
-                                                      fit: BoxFit.cover,
-                                                    );
-                                                  }
-                                                  return LoadingProgressImage(
-                                                    image:
-                                                        CachedNetworkImageProvider(
-                                                            "${e["imageUrl"]}"),
-                                                    fit: BoxFit.cover,
-                                                  );
-                                                }),
-                                              ),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap:
-                                                e["onTap"] as void Function()?,
-                                            child: const Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red,
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            if (controller.videos.length +
-                                    controller.oldVideos.length !=
-                                0)
-                              GridView.count(
-                                crossAxisCount: Get.width > 370 ? 4 : 2,
-                                crossAxisSpacing: 10,
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                children: [
-                                  ...controller.oldVideos.map((e) {
-                                    return {
-                                      "onTap": () =>
-                                          controller.oldVideos.remove(e),
-                                      "onPlayVideo": () {
-                                        controller._playVideo(e, false);
-                                      },
-                                      "url": e,
-                                      "isFile": false,
-                                    };
-                                  }),
-                                  ...controller.videos.map((e) {
-                                    return {
-                                      "onTap": () =>
-                                          controller.videos.remove(e),
-                                      "onPlayVideo": () {
-                                        controller._playVideo(e.path, false);
-                                      },
-                                      "url": e.path,
-                                      "isFile": true,
-                                    };
-                                  }),
-                                ]
-                                    .map(
-                                      (e) => Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Container(
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                                width: 1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                            margin: const EdgeInsets.all(5),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              child:
-                                                  Builder(builder: (context) {
-                                                if (e["isFile"] == true) {
-                                                  return FutureBuilder(
-                                                    builder: (ctx, asp) {
-                                                      if (asp.hasData) {
-                                                        return Image.memory(
-                                                          asp.data!,
-                                                          fit: BoxFit.cover,
-                                                          alignment:
-                                                              Alignment.center,
-                                                        );
-                                                      }
-                                                      return Container();
-                                                    },
-                                                    future: VideoThumbnail
-                                                        .thumbnailData(
-                                                      video: "${e["url"]}",
-                                                    ),
-                                                  );
-                                                }
-                                                return FutureBuilder(
-                                                  builder: (ctx, asp) {
-                                                    if (asp.hasData) {
-                                                      return Image.file(
-                                                        File("${asp.data}"),
-                                                        fit: BoxFit.cover,
-                                                        alignment:
-                                                            Alignment.center,
-                                                      );
-                                                    }
-                                                    return Container();
-                                                  },
-                                                  future: VideoThumbnail
-                                                      .thumbnailFile(
-                                                    video: "${e["url"]}",
-                                                  ),
-                                                );
-                                              }),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: e["onPlayVideo"] as void
-                                                Function()?,
-                                            child: const Icon(
-                                              Icons.play_arrow,
-                                              size: 40,
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 10,
-                                            right: 10,
-                                            child: GestureDetector(
-                                              onTap: e["onTap"] as void
-                                                  Function()?,
-                                              child: const Icon(
-                                                Icons.remove_circle,
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 35,
-                                    child: ElevatedButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(),
-                                      icon: const Icon(Icons.image),
-                                      label: Text(
-                                        "Images".tr,
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 35,
-                                    child: ElevatedButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : () => controller._pickPicture(
-                                              gallery: false),
-                                      icon: const Icon(Icons.camera),
-                                      label: Text(
-                                        "camera".tr,
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 35,
-                                    child: ElevatedButton.icon(
-                                      onPressed: controller.images.length >= 10
-                                          ? null
-                                          : controller._pickVideo,
-                                      icon: const Icon(Icons.video_camera_back),
-                                      label: Text(
-                                        "Videos".tr,
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  child: Checkbox(
-                                    value: controller.needsPhotograph.isTrue,
-                                    onChanged: controller.isLoading.isTrue
-                                        ? null
-                                        : (_) =>
-                                            controller.needsPhotograph.toggle(),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text("Need photographer?".tr),
-                                const Spacer(),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            const SizedBox(height: 50),
-                          ],
-                        ),
-                      ),
-
-                      // Description
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 10),
-                            const Center(
-                              child: Text(
-                                "Please add description to your\n property:",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ROOMY_PURPLE,
-                                ),
-                              ),
-                            ),
-                            const Divider(height: 30),
-
-                            // Description
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: TextFormField(
-                                initialValue: controller
-                                    .information["description"] as String?,
-                                enabled: controller.isLoading.isFalse,
-                                decoration: InputDecoration(
-                                  hintText: 'Type...'.tr,
-                                  border: InputBorder.none,
-                                  fillColor: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.grey
-                                      : Colors.grey.shade200,
-                                ),
-                                onChanged: (value) => controller
-                                    .information["description"] = value,
-                                validator: (value) {
-                                  return null;
-                                },
-                                minLines: 5,
-                                maxLines: 10,
-                              ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -1706,6 +1303,7 @@ class PostPropertyAdScreen extends StatelessWidget {
                       ? null
                       : () {
                           FocusScope.of(context).requestFocus(FocusNode());
+                          var info = controller.information;
                           switch (controller._pageIndex.value) {
                             case 0:
                               if (controller._addressFormKey.currentState
@@ -1715,9 +1313,6 @@ class PostPropertyAdScreen extends StatelessWidget {
                               }
                               break;
 
-                            case 1:
-                              controller._moveToNextPage();
-                              break;
                             case 2:
                               if (controller._informationFormKey.currentState
                                       ?.validate() ==
@@ -1725,39 +1320,51 @@ class PostPropertyAdScreen extends StatelessWidget {
                                 controller._moveToNextPage();
                               }
                               break;
-
                             case 3:
+                              var isValid = info["monthlyPrice"] != null ||
+                                  info["weeklyPrice"] != null ||
+                                  info["dailyPrice"] != null;
+
+                              if (isValid) {
+                                controller._moveToNextPage();
+                              } else {
+                                showToast("At least one price is required");
+                              }
+                              break;
+                            case 5:
+                              if (controller.images.isEmpty &&
+                                  controller.oldImages.isEmpty) {
+                                showToast("Please provide at least one image");
+                                return;
+                              }
+                              controller._moveToNextPage();
+
+                              break;
+                            case 8:
+                              if (controller._validateDescription()) {
+                                controller._moveToNextPage();
+                              }
+                              break;
+
+                            case 9:
                               if (controller.information['posterType'] ==
                                   "Agent/Broker") {
-                                var validate = controller
+                                var isvalid = controller
                                     ._agentBrokerFormKey.currentState
                                     ?.validate();
 
-                                if (validate == true) {
-                                  controller._moveToNextPage();
-                                }
-                              } else {
-                                controller._moveToNextPage();
+                                if (isvalid != true) return;
                               }
 
-                              break;
-                            case 4:
-                              controller._moveToNextPage();
-                              break;
-                            case 5:
-                              controller._moveToNextPage();
-                              break;
-                            case 6:
-                              controller._moveToNextPage();
-                              break;
-                            case 7:
                               if (oldData != null) {
                                 controller._upatePropertyAd();
                               } else {
                                 controller._savePropertyAd();
                               }
+
                               break;
                             default:
+                              controller._moveToNextPage();
                           }
                           controller.update();
                         },
@@ -1776,3 +1383,44 @@ class PostPropertyAdScreen extends StatelessWidget {
     );
   }
 }
+
+class InputPageHeader extends StatelessWidget {
+  const InputPageHeader({super.key, this.title, this.subtitle});
+  final String? title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null) ...[
+          Text(
+            title!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (subtitle != null)
+          Text(
+            subtitle!,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+const _imagetoolTiptext =
+    "Upload photos in the order that you would like it to "
+    "appear on your listing. Ex: upload best images of your room first";
+
+const _descriptionTooltipMessage =
+    "Tell your potential tenants about your property "
+    "including its additional features, furnishing and any relevant "
+    "information to attract more tenants!";

@@ -27,9 +27,6 @@ class Country {
   /// @example `fr,en`, `id`
   final String locale;
 
-  /// The currency convertion rate respect to AEU
-  final num aedCurrencyConvertRate;
-
   /// The country's localization code
   /// @example `en_US`, `fr_FR`, `fr_CM`, `en`, `fr`
 
@@ -40,7 +37,6 @@ class Country {
     required this.currencyCode,
     required this.flag,
     required this.locale,
-    required this.aedCurrencyConvertRate,
   });
 
   String get flagPhone => "$flag +$phone";
@@ -75,7 +71,6 @@ class Country {
       'currencyCode': currencyCode,
       'flag': flag,
       'locale': locale,
-      'aedCurrencyConvertRate': aedCurrencyConvertRate,
     };
   }
 
@@ -87,7 +82,6 @@ class Country {
       currencyCode: map['currencyCode'] as String,
       flag: map['flag'] as String,
       locale: map['locale'] as String,
-      aedCurrencyConvertRate: map['aedCurrencyConvertRate'] as num,
     );
   }
 
@@ -112,8 +106,6 @@ class Country {
       currencyCode: currencyCode ?? this.currencyCode,
       flag: flag ?? this.flag,
       locale: locale ?? this.locale,
-      aedCurrencyConvertRate:
-          aedCurrencyConvertRate ?? this.aedCurrencyConvertRate,
     );
   }
 
@@ -147,7 +139,7 @@ class Country {
     currencyCode: "NULL",
     flag: "",
     locale: '',
-    aedCurrencyConvertRate: 0,
+    // aedCurrencyConvertRate: 0,
   );
 
   static const UAE = Country(
@@ -157,7 +149,7 @@ class Country {
     currencyCode: "AED",
     flag: "🇦🇪",
     locale: 'ar',
-    aedCurrencyConvertRate: 1,
+    // aedCurrencyConvertRate: 1,
   );
   static const SAUDI_ARABIA = Country(
     name: 'Saudi Arabia',
@@ -166,7 +158,7 @@ class Country {
     currencyCode: "SAR",
     flag: "🇸🇦",
     locale: 'ar',
-    aedCurrencyConvertRate: 1.0211028,
+    // aedCurrencyConvertRate: 1.0211028,
   );
 }
 

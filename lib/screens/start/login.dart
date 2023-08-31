@@ -8,28 +8,24 @@ import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/classes/exceptions.dart';
 import 'package:roomy_finder/components/inputs.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class _LoginController extends LoadingController {
   final formkey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // final _emailController = TextEditingController();
+  // final _passwordController = TextEditingController();
   final country = Country.currentCountry.obs;
+  final data = {"email": "", "password": ""};
 
   final showPassword = false.obs;
   final savePassword = false.obs;
-
-  @override
-  void onClose() {
-    _passwordController.dispose();
-    super.onClose();
-  }
 
   Future<void> _login() async {
     if (!formkey.currentState!.validate()) return;
@@ -38,34 +34,39 @@ class _LoginController extends LoadingController {
       isLoading(true);
       final dio = ApiService.getDio;
 
-      final data = {
-        'email': _emailController.text,
-        "password": _passwordController.text,
+      final map = {
+        'email': data["email"],
+        "password": data["password"],
         "fcmToken": await FirebaseMessaging.instance.getToken(),
       };
 
-      final res = await dio.post("/auth/login", data: data);
+      final res = await dio.post("/auth/login", data: map);
 
       switch (res.statusCode) {
         case 200:
-          await FirebaseAuth.instance.signInAnonymously();
-
           final user = User.fromMap(res.data);
 
           AppController.instance.user = user.obs;
-          AppController.instance.userPassword = _passwordController.text;
+          AppController.instance.userPassword = data["password"];
           AppController.setupFCMTokenHandler();
 
           await AppController.saveUser(user);
-          await AppController.saveUserPassword(_passwordController.text);
+          await AppController.saveUserPassword(data["password"]!);
 
           AppController.instance.setIsFirstStart(false);
+
+          if (FirebaseAuth.instance.currentUser != null) {
+            await FirebaseAuth.instance
+                .signInWithCustomToken(res.data["firebaseToken"]);
+          }
 
           if (user.isMaintenant) {
             showToast("Maintenance accounts are temporally unavailable");
           } else {
             Get.offAllNamed("/home");
           }
+
+          ApiService.setLanlordIsBlocked();
 
           break;
         case 403:
@@ -179,8 +180,11 @@ class LoginScreen extends StatelessWidget {
                               // const SizedBox(height: 5),
                               InlineTextField(
                                 hintText: "emailAddress".tr,
-                                controller: controller._emailController,
                                 suffixIcon: const Icon(CupertinoIcons.mail),
+                                initialValue: controller.data["email"],
+                                onChanged: (value) {
+                                  controller.data["email"] = value;
+                                },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'thisFieldIsRequired'.tr;
@@ -191,6 +195,8 @@ class LoginScreen extends StatelessWidget {
                                   return null;
                                 },
                                 keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                fillColor: Colors.white,
                               ),
                               const SizedBox(height: 20),
                               // const Text("Password"),
@@ -198,7 +204,10 @@ class LoginScreen extends StatelessWidget {
                               InlineTextField(
                                 hintText: "enterYourPassword".tr,
                                 obscureText: controller.showPassword.isFalse,
-                                controller: controller._passwordController,
+                                initialValue: controller.data["password"],
+                                onChanged: (value) {
+                                  controller.data["password"] = value;
+                                },
                                 suffixIcon: IconButton(
                                   onPressed: controller.showPassword.toggle,
                                   icon: controller.showPassword.isTrue
@@ -214,6 +223,7 @@ class LoginScreen extends StatelessWidget {
                                   return null;
                                 },
                                 keyboardType: TextInputType.visiblePassword,
+                                fillColor: Colors.white,
                               ),
                               const SizedBox(height: 20),
                               SizedBox(
@@ -289,7 +299,7 @@ class LoginScreen extends StatelessWidget {
                                   ),
                                   TextButton(
                                     onPressed: () {
-                                      Get.offAllNamed("/home");
+                                      Get.to(() => const HomeTab());
                                     },
                                     style: TextButton.styleFrom(
                                       // backgroundColor: ROOMY_ORANGE,

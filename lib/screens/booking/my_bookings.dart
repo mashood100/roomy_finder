@@ -7,56 +7,75 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/components/label.dart';
 import 'package:roomy_finder/components/loading_placeholder.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
+import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 const _statuses = ["All", "Pending", "Offered", "Active", "History"];
 
 class _MyBookingsController extends LoadingController
     with GetSingleTickerProviderStateMixin {
-  final RxList<PropertyBooking> _propertyBookings = <PropertyBooking>[].obs;
+  final RxList<PropertyBooking> bookings = <PropertyBooking>[].obs;
 
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<RemoteMessage> fcmStream;
 
   late TabController _tabController;
+  late final Timer _timer;
 
   @override
   void onInit() {
     _fetchData();
+
     super.onInit();
 
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
-        _fetchData();
+        _fetchData(isSilent: true);
       }
     });
 
     _tabController = TabController(length: _statuses.length, vsync: this);
 
-    fcmStream = FirebaseMessaging.onMessage.asBroadcastStream().listen((event) {
+    fcmStream =
+        FirebaseMessaging.onMessage.asBroadcastStream().listen((event) async {
       final data = event.data;
 
-      if (data["event"] == "new-booking") {
-        ApiService.fetchBooking(data["bookingId"].toString()).then((b) {
-          if (b != null) {
+      if (!data.containsKey("bookingId")) return;
+
+      ApiService.setUnreadBookingCount();
+
+      final b = await ApiService.fetchBooking(data["bookingId"].toString());
+      if (b == null) return;
+
+      switch (data["event"]) {
+        case "new-booking":
+          if (ModalRoute.of(Get.context!)?.isCurrent == true) {
             showToast("New booking");
-            _propertyBookings.insert(0, b);
-            update();
           }
-        });
-      } else if (data["event"] == "booking-cancelled") {
-        final id = data["bookingId"].toString();
-        _propertyBookings.removeWhere((e) => e.id == id);
-        showToast("One booking cancelled");
-        update();
+          bookings.insert(0, b);
+          break;
+
+        default:
+          final target = bookings.firstWhereOrNull((e) => e.id == b.id);
+          if (target != null) {
+            target.updateFrom(b);
+          } else {
+            _fetchData(isSilent: true, isReFresh: true);
+          }
       }
+      update();
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (hasFetchError.isTrue) _fetchData(isSilent: true);
     });
   }
 
@@ -66,32 +85,35 @@ class _MyBookingsController extends LoadingController
     _fGBGNotifierSubScription.cancel();
     fcmStream.cancel();
     _tabController.dispose();
-    PropertyBooking.unViewBookingsCount(0);
+
+    _timer.cancel();
   }
 
-  Future<void> _fetchData({bool isReFresh = true}) async {
+  Future<void> _fetchData(
+      {bool isReFresh = true, bool isSilent = false}) async {
     try {
-      isLoading(true);
+      if (!isSilent) isLoading(true);
       hasFetchError(false);
-      final query = <String, dynamic>{};
+      update();
+      final map = <String, dynamic>{};
 
-      final res = await ApiService.getDio
-          .get("/bookings/my-bookings", queryParameters: query);
+      final res =
+          await ApiService.getDio.get("/bookings/my-bookings", data: map);
       if (res.statusCode == 200) {
         final data = (res.data as List).map((e) {
           try {
             var propertyBooking = PropertyBooking.fromMap(e);
             return propertyBooking;
           } catch (e) {
-            Get.log("$e");
+            // Get.log("$trace");
             return null;
           }
         });
 
         if (isReFresh) {
-          _propertyBookings.clear();
+          bookings.clear();
         }
-        _propertyBookings.addAll(data.whereType<PropertyBooking>());
+        bookings.addAll(data.whereType<PropertyBooking>());
       } else {
         showToast("Failed to load data");
       }
@@ -106,8 +128,12 @@ class _MyBookingsController extends LoadingController
   }
 }
 
-class MyBookingsCreen extends StatelessWidget {
-  const MyBookingsCreen({super.key});
+class MyBookingsCreen extends StatelessWidget implements HomeScreenSupportable {
+  const MyBookingsCreen({super.key, this.showNavBar});
+  final bool? showNavBar;
+
+  @override
+  void onTabIndexSelected(int index) {}
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +144,7 @@ class MyBookingsCreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: const Text("My Bookings"),
-            backgroundColor: const Color.fromRGBO(96, 15, 116, 1),
+            backgroundColor: ROOMY_PURPLE,
             bottom: TabBar(
               tabs: _statuses.map((e) {
                 return Tab(
@@ -161,7 +187,7 @@ class MyBookingsCreen extends StatelessWidget {
                 return TabBarView(
                   controller: controller._tabController,
                   children: _statuses.map((status) {
-                    var data = controller._propertyBookings.where((e) {
+                    var data = controller.bookings.where((e) {
                       List<String> belongs;
                       switch (status) {
                         case "Pending":
@@ -196,14 +222,11 @@ class MyBookingsCreen extends StatelessWidget {
                           return _BookingCard(
                             booking: booking,
                             onTap: () async {
-                              await Get.to(
-                                () => ViewPropertyBookingScreen(
-                                  booking: booking,
-                                ),
-                              );
+                              await Get.to(() {
+                                return ViewPropertyBookingScreen(b: booking);
+                              });
 
                               controller.update();
-                              ApiService.setUnreadBookingCount();
                             },
                           );
                         }).toList(),
@@ -215,6 +238,8 @@ class MyBookingsCreen extends StatelessWidget {
               if (controller.isLoading.isTrue) const LoadingPlaceholder(),
             ],
           ),
+          bottomNavigationBar:
+              showNavBar == true ? const HomeBottomNavigationBar() : null,
         );
       }),
     );
@@ -271,16 +296,34 @@ class _BookingCard extends StatelessWidget {
                       value: "${booking.ad.address["location"]}",
                       boldValue: true,
                     ),
-                    Label(
-                      label: "Status     : ",
-                      value: booking.capitaliezedStatus,
-                      boldValue: true,
-                      valueColor: booking.isPayed || booking.isOffered
-                          ? Colors.green
-                          : booking.isPending
-                              ? Colors.blue
-                              : Colors.red,
-                    ),
+                    Builder(builder: (context) {
+                      var valueColor = Colors.blue;
+
+                      switch (booking.status) {
+                        case "pending":
+                          valueColor = Colors.blue;
+
+                          break;
+                        case "offered":
+                        case "active":
+                          valueColor = Colors.green;
+
+                          break;
+                        case "declined":
+                        case "cancelled":
+                        case "terminated":
+                          valueColor = Colors.red;
+
+                          break;
+                      }
+
+                      return Label(
+                        label: "Status     : ",
+                        value: booking.capitaliezedStatus,
+                        boldValue: true,
+                        valueColor: valueColor,
+                      );
+                    }),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -289,7 +332,8 @@ class _BookingCard extends StatelessWidget {
                           Jiffy.parseFromDateTime(booking.createdAt).yMMMEdjm,
                           style: const TextStyle(fontSize: 12),
                         ),
-                        if (booking.isMine && !booking.isViewedByLandlord)
+                        if ((booking.isMine && !booking.isViewedByLandlord ||
+                            !booking.isMine && !booking.isViewedByClient))
                           const Icon(
                             Icons.circle,
                             color: Colors.red,

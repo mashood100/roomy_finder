@@ -7,19 +7,20 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/classes/api_service.dart';
-import 'package:roomy_finder/components/alert.dart';
-import 'package:roomy_finder/components/label.dart';
-import 'package:roomy_finder/components/loading_progress_image.dart';
+import 'package:roomy_finder/components/custom_button.dart';
+import 'package:roomy_finder/components/image_grid.dart';
+import 'package:roomy_finder/components/loading_placeholder.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
+import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/property_booking.dart';
-import 'package:roomy_finder/screens/booking/pay_property_booking.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
-import 'package:roomy_finder/screens/utility_screens/view_images.dart';
+import 'package:roomy_finder/screens/utility_screens/value_sector.dart';
 import 'package:roomy_finder/utilities/data.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class _ViewPropertyBookingScreenController extends LoadingController {
   final PropertyBooking booking;
@@ -29,11 +30,44 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<RemoteMessage> fcmStream;
 
+  ({String asset, String label, String value})? _paymentService;
+
+  static const _paymentOptions = [
+    (
+      label: "Pay by Card",
+      value: "STRIPE",
+      asset: AssetImages.visaMasterCardPNG,
+    ),
+    (
+      label: "Pay with PayPal",
+      value: "PAYPAL",
+      asset: AssetImages.paypalBookingPNG,
+    ),
+    (
+      label: "Pay by Cash",
+      value: "PAY CASH",
+      asset: AssetIcons.dollarBanknotePNG,
+    ),
+  ];
+
   @override
   void onInit() {
     super.onInit();
 
-    if (booking.isMine) _markBookingAsViewed();
+    switch (booking.paymentService) {
+      case 'STRIPE':
+        _paymentService = _paymentOptions[0];
+        break;
+      case 'PAYPAL':
+        _paymentService = _paymentOptions[1];
+        break;
+      case 'PAY CASH':
+        _paymentService = _paymentOptions[2];
+        break;
+      default:
+    }
+
+    _markBookingAsViewed();
 
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
@@ -52,51 +86,44 @@ class _ViewPropertyBookingScreenController extends LoadingController {
       final id = data["bookingId"];
 
       if (id != booking.id) return;
+      final b = await ApiService.fetchBooking(data["bookingId"].toString());
+      if (b == null) return;
+
+      booking.updateFrom(b);
+
+      _markBookingAsViewed();
 
       switch (data["event"]) {
         case "booking-offered":
-          booking.status = "offered";
           showToast("Booking offered");
-          update();
 
           break;
         case "booking-declined":
-          booking.status = "declined";
           await showConfirmDialog(
             "This booking have just been declined by landlord",
             isAlert: true,
           );
-          update();
 
           break;
         case "booking-cancelled":
-          booking.status = "cancelled";
           await showConfirmDialog(
-            "This booking have just been cancelled by tenant",
+            "This booking have just been cancelled",
             isAlert: true,
           );
           // Get.back();
 
           break;
         case "pay-property-rent-fee-paid-cash":
-          booking.isPayed = true;
-          booking.paymentService = "PAY CASH";
-          showToast("Booking paid cash");
-          update();
-
-          break;
         case "pay-property-rent-fee-completed-client":
         case "pay-property-rent-fee-completed-landlord":
-          final paymentService = data["paymentService"];
-          booking.isPayed = true;
-          booking.paymentService = paymentService;
-          showToast("Booking paid by $paymentService");
-          update();
+          showToast("Booking paid");
 
           break;
 
         default:
       }
+
+      update();
     });
   }
 
@@ -104,7 +131,15 @@ class _ViewPropertyBookingScreenController extends LoadingController {
   void onClose() {
     super.onClose();
     fcmStream.cancel();
+
     _fGBGNotifierSubScription.cancel();
+
+    if (booking.isMine) {
+      booking.isViewedByLandlord = true;
+    } else {
+      booking.isViewedByClient = true;
+    }
+    ApiService.setUnreadBookingCount();
   }
 
   Future<void> acceptBooking() async {
@@ -121,6 +156,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
           isAlert: true,
         );
         booking.status = 'offered';
+        if (booking.paymentService == "PAY CASH") booking.isPayed = true;
         update();
       } else if (res.statusCode == 404) {
         showConfirmDialog(
@@ -130,7 +166,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
       } else {
         Get.log(res.statusCode.toString());
         showConfirmDialog(
-          "Something when wrong. Please try again later",
+          "Something went wrong. Please try again later",
           isAlert: true,
         );
       }
@@ -162,7 +198,6 @@ class _ViewPropertyBookingScreenController extends LoadingController {
         isLoading(false);
         update();
         booking.status = 'declined';
-        Get.back();
       } else if (res.statusCode == 404) {
         showConfirmDialog(
           "Booking not found",
@@ -171,7 +206,7 @@ class _ViewPropertyBookingScreenController extends LoadingController {
       } else {
         Get.log(res.statusCode.toString());
         showGetSnackbar(
-          "Something when wrong. Please try again later",
+          "Something went wrong. Please try again later",
           severity: Severity.error,
         );
       }
@@ -192,12 +227,17 @@ class _ViewPropertyBookingScreenController extends LoadingController {
       isLoading(true);
 
       final res = await ApiService.getDio.post(
-        "/bookings/property-ad/tenant/cancel",
+        "/bookings/property-ad/cancel",
         data: {'bookingId': booking.id},
       );
 
       if (res.statusCode == 200) {
         booking.status = "cancelled";
+        if (booking.poster.isMe) {
+          booking.cancelMessage = "Cancelled by landlord";
+        } else {
+          booking.cancelMessage = "Cancelled by tenant";
+        }
         isLoading(false);
         update();
 
@@ -205,40 +245,155 @@ class _ViewPropertyBookingScreenController extends LoadingController {
           "Booking cancelled",
           isAlert: true,
         );
-        Get.back();
+      } else if (res.statusCode == 400) {
+        showToast(
+          res.data["message"]?.toString() ?? "Can't cancel booking now",
+          severity: Severity.error,
+        );
       } else {
-        showGetSnackbar(
+        showToast(
           "Failed to cancel booking. Please try again",
           severity: Severity.error,
         );
       }
     } catch (e) {
       Get.log("$e");
-      showGetSnackbar(
+      showToast(
         "Failed to cancel booking. Please try again",
         severity: Severity.error,
       );
     } finally {
       isLoading(false);
+
+      update();
     }
   }
 
-  Future<void> payRent() async {
-    await Get.to(() => PayProperyBookingScreen(booking: booking));
+  Future<void> changePaymentMethod() async {
+    var result = await Get.to(
+      () {
+        return ValueSelctorScreen(
+          title: 'Select payment method',
+          data: _paymentOptions,
+          currentValue: _paymentService,
+          getLabel: (item) => item.label,
+          leadingBuilder: (item) => Image.asset(
+            item.asset,
+            height: 30,
+            width: 100,
+            color: item.value == "PAY CASH" ? Colors.green : null,
+          ),
+          confirmButtonText: "Confirm",
+        );
+      },
+    );
+
+    if (result == null) return;
+
+    _paymentService = result;
+    booking.paymentService = _paymentService?.value;
 
     update();
+
+    _payRent();
+  }
+
+  Future<void> _payRent() async {
+    if (_paymentService == null) {
+      showToast("Please choose payment method");
+      return;
+    }
+    String service = _paymentService!.value;
+
+    try {
+      isLoading(true);
+      switch (service) {
+        case "STRIPE":
+        case "PAYPAL":
+          final String endPoint;
+
+          if (service == "STRIPE") {
+            endPoint =
+                "/bookings/property-ad/stripe/create-pay-booking-checkout-session";
+          } else if (service == "PAYPAL") {
+            endPoint = "/bookings/property-ad/paypal/create-payment-link";
+          } else {
+            return;
+          }
+          // 1. create payment intent on the server
+          final res = await ApiService.getDio.post(
+            endPoint,
+            data: {"bookingId": booking.id},
+          );
+
+          if (res.statusCode == 409) {
+            showToast("Rent already paid");
+            booking.isPayed = true;
+          } else if (res.statusCode == 200) {
+            showToast("Payment initiated. Redirecting....");
+            isLoading(false);
+
+            final uri = Uri.parse(res.data["paymentUrl"]);
+
+            if (await canLaunchUrl(uri)) {
+              launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          } else {
+            showConfirmDialog("Something went wrong", isAlert: true);
+            Get.log("${res.data}}");
+            return;
+          }
+
+          break;
+
+        case "ROOMY_FINDER_CARD":
+          showGetSnackbar("Payment with Roomy Finder Card is comming soon!");
+          break;
+        case "PAY CASH":
+          final res = await ApiService.getDio.post(
+            "/bookings/property-ad/pay-cash",
+            data: {"bookingId": booking.id},
+          );
+          if (res.statusCode == 200) {
+            showToast("Booking paid cash successfully");
+            booking.isPayed = true;
+
+            return;
+          } else if (res.statusCode == 409) {
+            showToast("Booking already paid");
+            booking.isPayed = true;
+          } else {
+            showToast("Something went wrong");
+            Get.log("${res.data}}");
+          }
+          break;
+        default:
+      }
+    } catch (e) {
+      showToast("Something went wrong");
+      Get.log('Error: $e');
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   Future<void> _markBookingAsViewed() async {
     try {
-      if (booking.isViewedByLandlord) return;
+      if (booking.isViewedByLandlord && booking.isMine) return;
+      if (booking.isViewedByClient && !booking.isMine) return;
 
       final res = await ApiService.getDio.get(
         "/bookings/property-ad/${booking.id}/mark-booking-as-view",
       );
 
       if (res.statusCode == 200) {
-        booking.isViewedByLandlord = true;
+        if (booking.isMine) {
+          booking.isViewedByLandlord = true;
+        } else {
+          booking.isViewedByClient = true;
+        }
+        ApiService.setUnreadBookingCount();
       }
     } catch (e) {
       Get.log("$e");
@@ -255,12 +410,24 @@ class _ViewPropertyBookingScreenController extends LoadingController {
 }
 
 class ViewPropertyBookingScreen extends StatelessWidget {
-  const ViewPropertyBookingScreen({super.key, required this.booking});
-  final PropertyBooking booking;
+  const ViewPropertyBookingScreen({super.key, required this.b});
+  final PropertyBooking b;
+
+  bool get _canCancelBooking {
+    if (!["active", "pending", "offered"].contains(b.status)) {
+      return false;
+    }
+    if (b.isMine && b.isPending) return false;
+
+    return b.checkIn.add(const Duration(days: 1)).isAfter(DateTime.now());
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_ViewPropertyBookingScreenController(booking));
+    final controller = Get.put(_ViewPropertyBookingScreenController(b));
+
+    var canSeeDetails = !b.isPending && !b.isCancelled && !b.isDeclined;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('View booking'),
@@ -271,399 +438,395 @@ class ViewPropertyBookingScreen extends StatelessWidget {
           children: [
             GetBuilder<_ViewPropertyBookingScreenController>(
                 builder: (controller) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      if (!booking.isPayed &&
-                          !booking.isCancelled &&
-                          !booking.isDeclined) ...[
-                        const SizedBox(height: 10),
-                        Alert(
-                          text: booking.isMine
-                              ? "You will see the tenant information after "
-                                  "you have accepted the booking and he paid the rent."
-                              : "You will see the landlord information after "
-                                  "he have accepted the booking and you have paid rent.",
-                          severity: Severity.info,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      // About booking
-                      const Text(
-                        "About booking",
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // About booking
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Image.asset(
+                        AssetIcons.calenderPNG,
+                        height: 30,
+                      ),
+                      title: const Text(
+                        "Booking Details",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-
-                      Card(
-                        color: Colors.white,
-                        margin: EdgeInsets.zero,
-                        child: Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Label(label: "Property", value: booking.ad.type),
-                              if (booking.isPayed)
-                                Label(
-                                  label: "Property location",
-                                  value:
-                                      "${booking.ad.address['city']}, ${booking.ad.address['location']}",
-                                ),
-                              // Label(label: "Rent type", value: booking.rentType),
-                              Label(
-                                label: "Quantity booked",
-                                value: "${booking.quantity} ${booking.ad.type}"
-                                    "${booking.quantity > 1 ? "s" : ""}",
-                              ),
-                              Label(
-                                label: "Booking date",
-                                value:
-                                    Jiffy.parseFromDateTime(booking.createdAt)
-                                        .yMMMEd,
-                              ),
-                              Label(
-                                label: "Check In",
-                                value: Jiffy.parseFromDateTime(booking.checkIn)
-                                    .yMMMEd,
-                              ),
-                              Label(
-                                label: "Check Out",
-                                value: Jiffy.parseFromDateTime(booking.checkOut)
-                                    .yMMMEd,
-                              ),
-                              Label(
-                                label: "Status",
-                                value: booking.capitaliezedStatus,
-                                valueColor: booking.isOffered
-                                    ? Colors.green
-                                    : booking.isPending
-                                        ? Colors.blue
-                                        : Colors.red,
-                              ),
-                              if (booking.isOffered)
-                                Label(
-                                  label: "Payment status",
-                                  value: booking.isPayed
-                                      ? 'Paid'
-                                      : "Payment required",
-                                ),
-                            ],
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        (
+                          label: "Property",
+                          value: b.ad.type,
+                        ),
+                        if (b.isPayed)
+                          (
+                            label: "Property location",
+                            value: "${b.ad.city}, ${b.ad.location}",
                           ),
+                        (
+                          label: "Quantity ",
+                          value: "${b.quantity}",
+                        ),
+                        (
+                          label: "Booking date",
+                          value: Jiffy.parseFromDateTime(b.createdAt)
+                              .toLocal()
+                              .yMMMd,
+                        ),
+                        (
+                          label: "Check In",
+                          value: Jiffy.parseFromDateTime(b.checkIn)
+                              .toLocal()
+                              .yMMMd,
+                        ),
+                        (
+                          label: "Check Out",
+                          value: Jiffy.parseFromDateTime(b.checkOut)
+                              .toLocal()
+                              .yMMMd,
+                        ),
+                        (
+                          label: "Payment method",
+                          value: controller._paymentService?.label ?? "N/A",
+                        ),
+                        (
+                          label: "Status",
+                          value: b.capitaliezedStatus,
+                        ),
+                        if (b.cancelMessage != null)
+                          (
+                            label: "Note",
+                            value: b.cancelMessage!,
+                          ),
+                        if (b.isOffered)
+                          (
+                            label: "Payment status",
+                            value: b.isPayed ? 'Paid' : "Payment required",
+                          ),
+                      ].map((e) {
+                        Color? valueColor;
+                        if (e.label == "Status") {
+                          valueColor = b.isOffered
+                              ? Colors.green
+                              : b.isPending
+                                  ? Colors.blue
+                                  : Colors.red;
+                          if (b.isActive) valueColor = Colors.green;
+                        }
+                        return _Label(
+                          label: e.label,
+                          value: e.value,
+                          valueColor: valueColor,
+                        );
+                      }).toList(),
+                    ),
+                    const Divider(),
+
+                    // About property
+                    if (canSeeDetails)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Image.asset(
+                              AssetIcons.homePNG,
+                              height: 30,
+                            ),
+                            title: const Text(
+                              "About property",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ...[
+                            (
+                              label: "Property",
+                              value: b.ad.type,
+                            ),
+                            (
+                              label: "Property location",
+                              value: "${b.ad.city}, ${b.ad.location}",
+                            ),
+                            (
+                              label: "Building",
+                              value: b.ad.address['buildingName'] ?? "N/A",
+                            ),
+                            (
+                              label: "Apartment number",
+                              value: b.ad.address['appartmentNumber'] ?? "N/A",
+                            ),
+                            (
+                              label: "Floor number",
+                              value: b.ad.address['floorNumber'] ?? "N/A",
+                            ),
+                          ].map((e) => _Label(label: e.label, value: e.value)),
+                          const Divider(),
+                        ],
+                      ),
+
+                    // About Landlord
+                    if (canSeeDetails && !b.isMine)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Image.asset(
+                              AssetIcons.personPNG,
+                              height: 30,
+                            ),
+                            title: const Text(
+                              "About Landlord",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ...[
+                            (
+                              label: "Name",
+                              value: b.poster.fullName,
+                            ),
+                            (
+                              label: "Nationality",
+                              value: b.poster.country ?? "N/A",
+                            ),
+                            (
+                              label: "Gender",
+                              value: b.poster.gender ?? "N/A",
+                            ),
+                          ].map((e) => _Label(label: e.label, value: e.value)),
+                          const Divider(),
+                        ],
+                      ),
+
+                    // About tenant
+                    if ((b.isActive || b.isPending || b.isOffered) && b.isMine)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Image.asset(
+                              AssetIcons.personPNG,
+                              height: 30,
+                            ),
+                            title: const Text(
+                              "About Tenant",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ...[
+                            (
+                              label: "Name",
+                              value: b.client.fullName,
+                            ),
+                            (
+                              label: "Nationality",
+                              value: b.client.country ?? "N/A",
+                            ),
+                            (
+                              label: "Gender",
+                              value: b.client.gender ?? "N/A",
+                            ),
+                          ].map((e) => _Label(label: e.label, value: e.value)),
+                          const Divider(),
+                        ],
+                      ),
+
+                    // Agent / Broker
+                    if (b.ad.posterType != "Landlord" && canSeeDetails)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Image.asset(
+                              AssetIcons.personPNG,
+                              height: 30,
+                            ),
+                            title: const Text(
+                              "Agent/Broker Details",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ...[
+                            (
+                              label: "first name",
+                              value: b.ad.agentInfo?["firstName"] ?? "N/A",
+                            ),
+                            (
+                              label: "Last name",
+                              value: b.ad.agentInfo?["lastName"] ?? "N/A",
+                            ),
+                            // (
+                            //   label: "Email",
+                            //   value: booking.ad.agentInfo?["email"] ?? "N/A",
+                            // ),
+                            // (
+                            //   label: "Phone",
+                            //   value: booking.ad.agentInfo?["phone"] ?? "N/A",
+                            // ),
+                          ].map((e) => _Label(label: e.label, value: e.value)),
+                          const Divider(height: 20),
+                        ],
+                      ),
+
+                    if (b.isActive || b.isOffered) ...[
+                      CustomButton(
+                        b.isMine ? "Chat with tenant" : "Chat with landlord",
+                        width: double.infinity,
+                        onPressed: () {
+                          if (b.isMine) {
+                            controller.chatWithClient();
+                          } else {
+                            controller.chatWithLandlord();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    if (_canCancelBooking) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
+                          onPressed: controller.cancelBooking,
+                          child: const Text("Cancel booking"),
                         ),
                       ),
-                      // About property
-                      if (booking.isPayed) ...[
-                        const SizedBox(height: 10),
-                        const Text(
-                          "About Property",
+                      const SizedBox(height: 10)
+                    ],
+
+                    if (b.isPending && b.isMine) ...[
+                      const Center(
+                        child: Text(
+                          "Do you accept this booking?",
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ],
-                      if (booking.isPayed)
-                        Card(
-                          color: Colors.white,
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Label(
-                                    label: "Property", value: booking.ad.type),
-                                Label(
-                                  label: "Property location",
-                                  value: "${booking.ad.address['city']}, "
-                                      "${booking.ad.address['location']}",
-                                ),
-                                Label(
-                                  label: "Building",
-                                  value:
-                                      "${booking.ad.address['buildingName']}",
-                                ),
-                                Label(
-                                  label: "Apartment number",
-                                  value:
-                                      "${booking.ad.address['appartmentNumber']}",
-                                ),
-                                Label(
-                                  label: "Floor number",
-                                  value: "${booking.ad.address['floorNumber']}",
-                                ),
-                              ],
-                            ),
+                      ),
+                      const SizedBox(height: 10),
+                      Builder(builder: (context) {
+                        var list = [
+                          (
+                            label: "Accept",
+                            onPressed: controller.acceptBooking,
+                            bColor: Colors.green,
                           ),
-                        ),
-
-                      // About landlord
-                      if (!booking.isMine && booking.isPayed) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          booking.ad.posterType == "Landlord"
-                              ? "About Landlond"
-                              : "About Agent/Broker",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                      if (!booking.isMine && booking.isPayed)
-                        Card(
-                          color: Colors.white,
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: booking.ad.posterType == "Landlord"
-                                  ? [
-                                      Label(
-                                        label: "Name",
-                                        value: booking.poster.fullName,
-                                      ),
-                                      Label(
-                                        label: "Country",
-                                        value: booking.poster.country ?? 'N/A',
-                                      ),
-                                      Label(
-                                        label: "Email",
-                                        value: booking.poster.email,
-                                      ),
-                                      // Label(
-                                      //   label: "Phone",
-                                      //   value: booking.poster.phone,
-                                      // ),
-                                      Label(
-                                        label: "Gender",
-                                        value: booking.poster.gender ?? 'N/A',
-                                      ),
-                                    ]
-                                  : [
-                                      Label(
-                                        label: "Name",
-                                        value:
-                                            "${booking.ad.agentInfo?["firstName"]} "
-                                            "${booking.ad.agentInfo?["lastName"]}",
-                                      ),
-                                      Label(
-                                        label: "Email",
-                                        value:
-                                            "${booking.ad.agentInfo?["email"]}",
-                                      ),
-                                      Label(
-                                        label: "Phone",
-                                        value:
-                                            "${booking.ad.agentInfo?["phone"]}",
-                                      ),
-                                    ],
-                            ),
+                          null,
+                          (
+                            label: "Decline",
+                            onPressed: controller.declineBooking,
+                            bColor: Colors.red,
                           ),
-                        ),
+                        ];
 
-                      // About client
-                      if (booking.isMine && booking.isPayed) ...[
-                        const SizedBox(height: 10),
-                        const Text(
-                          "About client",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-
-                      if (booking.isCancelled || booking.isDeclined)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text("Booking ${booking.status}"),
-                        )
-                      else ...[
-                        if (booking.isMine && booking.isPayed)
-                          Card(
-                            color: Colors.white,
-                            margin: EdgeInsets.zero,
-                            child: Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: Column(
-                                children: [
-                                  Label(
-                                      label: "Name",
-                                      value: booking.client.fullName),
-                                  Label(
-                                    label: "Country",
-                                    value: booking.client.country ?? "N/A",
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: list.map(
+                            (e) {
+                              if (e == null) return const SizedBox(width: 10);
+                              return Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(width: 2, color: e.bColor),
                                   ),
-                                  Label(
-                                      label: "Email",
-                                      value: booking.client.email),
-                                  // Label(
-                                  //     label: "Phone",
-                                  //     value: booking.client.phone),
-                                  Label(
-                                    label: "Gender",
-                                    value: booking.client.gender ?? "N/A",
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 10),
-                        if (!booking.isMine && booking.isPending)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red),
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : controller.cancelBooking,
-                              child: const Text(
-                                "Cancel booking",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        if (booking.isMine && booking.isPending)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red),
-                                  onPressed: controller.isLoading.isTrue
-                                      ? null
-                                      : controller.declineBooking,
-                                  child: const Text(
-                                    "Decline",
-                                    style: TextStyle(color: Colors.white),
+                                  onPressed: e.onPressed,
+                                  child: Text(
+                                    e.label,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 20),
+                              );
+                            },
+                          ).toList(),
+                        );
+                      }),
+                      const Divider(height: 20),
+                    ],
 
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green),
-                                  onPressed: controller.isLoading.isTrue
-                                      ? null
-                                      : controller.acceptBooking,
-                                  child: const Text(
-                                    "Accept",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                              // if (!booking.isMine) const SizedBox(width: 20),
-                            ],
-                          ),
-                        if (booking.isPayed)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ROOMY_ORANGE,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                side: const BorderSide(color: ROOMY_ORANGE),
-                              ),
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : () {
-                                      if (booking.isMine) {
-                                        controller.chatWithClient();
-                                      } else {
-                                        controller.chatWithLandlord();
-                                      }
-                                    },
-                              child: booking.isMine
-                                  ? const Text(
-                                      "Chat with Client",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      "Chat with Landlord",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        if (!booking.isMine &&
-                            booking.isOffered &&
-                            !booking.isPayed)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromRGBO(96, 15, 116, 1),
-                              ),
-                              onPressed: controller.isLoading.isTrue
-                                  ? null
-                                  : controller.payRent,
-                              child: const Text(
-                                "Pay rent",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                      ],
-                      const SizedBox(height: 20),
-                      if (controller.booking.ad.images.isNotEmpty)
-                        GridView.count(
-                          crossAxisCount:
-                              MediaQuery.of(context).size.width > 370 ? 4 : 2,
-                          crossAxisSpacing: 10,
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          children: booking.ad.images
-                              .map(
-                                (e) => GestureDetector(
-                                  onTap: () {
-                                    Get.to(
-                                      () => ViewImages(
-                                        images: booking.ad.images
-                                            .map((e) =>
-                                                CachedNetworkImageProvider(e))
-                                            .toList(),
-                                        initialIndex:
-                                            booking.ad.images.indexOf(e),
-                                      ),
-                                      transition: Transition.zoom,
-                                    );
-                                  },
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: LoadingProgressImage(
-                                        image: CachedNetworkImageProvider(e),
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-
+                    if (b.isOffered && !b.isMine && !b.isPayed) ...[
+                      CustomButton(
+                        "Change payment method",
+                        width: double.infinity,
+                        onPressed: controller.changePaymentMethod,
+                      ),
+                      const SizedBox(height: 10),
+                      CustomButton(
+                        controller._paymentService != null
+                            ? "Confirm"
+                            : "Please select payment method",
+                        width: double.infinity,
+                        onPressed: () {
+                          if (controller._paymentService == null) {
+                            controller.changePaymentMethod();
+                          } else {
+                            controller._payRent();
+                          }
+                        },
+                      ),
                       const SizedBox(height: 20),
                     ],
-                  ),
+
+                    ImageGrid(
+                      items: b.ad.images,
+                      getImage: (item) => CachedNetworkImageProvider(item),
+                      noDataMessage: "No images",
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
               );
             }),
-            if (controller.isLoading.isTrue) const LinearProgressIndicator(),
+            if (controller.isLoading.isTrue) const LoadingPlaceholder(),
           ],
         );
       }),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  const _Label({
+    required this.label,
+    this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final dynamic value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(label),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              value.toString(),
+              style: TextStyle(fontWeight: FontWeight.bold, color: valueColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

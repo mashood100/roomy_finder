@@ -9,46 +9,47 @@ class PropertyAd {
   String type;
   int quantity;
   int quantityTaken;
-  String preferedRentType;
-  num monthlyPrice;
-  num weeklyPrice;
-  num dailyPrice;
-  bool deposit;
+  num? monthlyPrice;
+  num? weeklyPrice;
+  num? dailyPrice;
   num? depositPrice;
   String posterType;
-  Map<String, String>? agentInfo;
+  Map<String, dynamic>? agentInfo;
   String? description;
   List<String> images;
   List<String> videos;
   List<String> amenities;
   DateTime createdAt;
-  Map<String, Object> address;
-  Map<String, Object> socialPreferences;
+  Map<String, dynamic> address;
+  Map<String, dynamic> socialPreferences;
   bool? needsPhotograph;
-  Map<String, Object>? autoApproval;
+  Map<String, dynamic>? autoApproval;
+  bool? billIncluded;
 
   String? shareLink;
 
+  bool get hasDeposit => depositPrice != null;
   bool get isMine => poster.isMe;
   bool get isAvailable => quantity != quantityTaken;
-  String? get depositPriceText => deposit ? "Deposit $depositPrice AED" : null;
-  String get locationText {
-    return "${address["city"]}, ${address["location"]}, ${address["buildingName"]}";
-  }
 
-  num get monthlyCommission => monthlyPrice * 0.1;
-  num get weeklyCommission => weeklyPrice * 0.1;
-  num get dailyCommission => dailyPrice * 0.05;
+  num? get monthlyCommission =>
+      monthlyPrice == null ? null : monthlyPrice! * 0.1;
+  num? get weeklyCommission => weeklyPrice == null ? null : weeklyPrice! * 0.1;
+  num? get dailyCommission => dailyPrice == null ? null : dailyPrice! * 0.05;
 
   num get prefferedRentDisplayPrice {
-    switch (preferedRentType) {
-      case "Monthly":
-        return monthlyPrice + monthlyCommission;
-      case "Weekly":
-        return weeklyPrice + weeklyCommission;
-      default:
-        return dailyPrice + dailyCommission;
+    if (monthlyPrice != null) {
+      return monthlyPrice! + monthlyCommission!;
     }
+
+    if (weeklyPrice != null) {
+      return weeklyPrice! + weeklyCommission!;
+    }
+    if (dailyPrice != null) {
+      return dailyPrice! + dailyCommission!;
+    }
+
+    return 0;
   }
 
   bool get autoApprovalIsActivated {
@@ -67,30 +68,40 @@ class PropertyAd {
     return autoApprovalIsActivated && autoApproval?["enabled"] == true;
   }
 
-  List<String> get technologyAmenities {
-    return amenities.where((e) {
-      return ["WIFI", "TV"].contains(e);
-    }).toList();
+  String get preferedRentType {
+    if (monthlyPrice != null) {
+      return "Monthly";
+    }
+
+    if (weeklyPrice != null) {
+      return "Weekly";
+    }
+
+    return "Daily";
   }
 
-  List<String> get homeAppliancesAmenities {
-    return amenities.where((e) {
-      return ["Washer", "Cleaning Included", "Kitchen Appliances"].contains(e);
-    }).toList();
+  String get city => address["city"].toString();
+
+  String get location {
+    var value = address["location"].toString();
+
+    if (value.contains("(") && !value.endsWith('(')) {
+      return '(${value.split("(").last}';
+    }
+
+    return value;
   }
 
-  List<String> get utilitiesAmenities {
-    return amenities.where((e) {
-      return [
-        "Close to Metro",
-        "Balcony",
-        "Parking Lot",
-        "Gym",
-        "Near Grocery",
-        "Swimming Pool",
-        "Near Pharmacy",
-      ].contains(e);
-    }).toList();
+  String get buildingName {
+    return address["buildingName"]?.toString() ?? "N/A";
+  }
+
+  String get appartmentNumber {
+    return address["appartmentNumber"]?.toString() ?? "N/A";
+  }
+
+  String get floorNumber {
+    return address["floorNumber"]?.toString() ?? "N/A";
   }
 
   PropertyAd({
@@ -99,11 +110,9 @@ class PropertyAd {
     required this.type,
     required this.quantity,
     required this.quantityTaken,
-    required this.preferedRentType,
-    required this.monthlyPrice,
-    required this.weeklyPrice,
-    required this.dailyPrice,
-    required this.deposit,
+    this.monthlyPrice,
+    this.weeklyPrice,
+    this.dailyPrice,
     this.depositPrice,
     required this.posterType,
     this.agentInfo,
@@ -115,8 +124,9 @@ class PropertyAd {
     required this.address,
     required this.socialPreferences,
     this.needsPhotograph,
-    this.shareLink,
     this.autoApproval,
+    this.billIncluded,
+    this.shareLink,
   });
 
   Map<String, dynamic> toMap() {
@@ -126,11 +136,9 @@ class PropertyAd {
       'type': type,
       'quantity': quantity,
       'quantityTaken': quantityTaken,
-      'preferedRentType': preferedRentType,
       'monthlyPrice': monthlyPrice,
       'weeklyPrice': weeklyPrice,
       'dailyPrice': dailyPrice,
-      'deposit': deposit,
       'depositPrice': depositPrice,
       'posterType': posterType,
       'agentInfo': agentInfo,
@@ -142,43 +150,51 @@ class PropertyAd {
       'address': address,
       'socialPreferences': socialPreferences,
       'needsPhotograph': needsPhotograph,
-      'shareLink': shareLink,
       'autoApproval': autoApproval,
+      'billIncluded': billIncluded,
+      'shareLink': shareLink,
     };
   }
 
   factory PropertyAd.fromMap(Map<String, dynamic> map) {
-    if (map["posterType"] == "Landlord") map.remove("agentInfo");
     return PropertyAd(
       id: map['id'] as String,
       poster: User.fromMap(map['poster'] as Map<String, dynamic>),
       type: map['type'] as String,
       quantity: map['quantity'] as int,
       quantityTaken: map['quantityTaken'] as int,
-      preferedRentType: map['preferedRentType'] as String,
-      monthlyPrice: map['monthlyPrice'] as num,
-      weeklyPrice: map['weeklyPrice'] as num,
-      dailyPrice: map['dailyPrice'] as num,
-      deposit: map['deposit'] as bool,
-      depositPrice: num.tryParse("${map['depositPrice']}") ?? 0,
+      monthlyPrice:
+          map['monthlyPrice'] != null ? map['monthlyPrice'] as num : null,
+      weeklyPrice:
+          map['weeklyPrice'] != null ? map['weeklyPrice'] as num : null,
+      dailyPrice: map['dailyPrice'] != null ? map['dailyPrice'] as num : null,
+      depositPrice:
+          map['depositPrice'] != null ? map['depositPrice'] as num : null,
       posterType: map['posterType'] as String,
+      agentInfo: map['agentInfo'] != null
+          ? Map<String, dynamic>.from(
+              (map['agentInfo'] as Map<String, dynamic>))
+          : null,
       description:
-          map["description"] == null ? null : map['description'] as String,
+          map['description'] != null ? map['description'] as String : null,
       images: List<String>.from((map['images'] as List)),
       videos: List<String>.from((map['videos'] as List)),
       amenities: List<String>.from((map['amenities'] as List)),
       createdAt: DateTime.parse(map['createdAt'] as String),
-      address: Map<String, Object>.from((map['address'] as Map)),
-      agentInfo: map["agentInfo"] == null
-          ? null
-          : Map<String, String>.from((map['agentInfo'] as Map)),
-      socialPreferences:
-          Map<String, Object>.from((map['socialPreferences'] as Map)),
-      needsPhotograph: map["needsPhotograph"] == true,
-      shareLink: map['shareLink'] as String?,
-      autoApproval: map["autoApproval"] == null
-          ? null
-          : Map<String, Object>.from((map['autoApproval'] as Map)),
+      address:
+          Map<String, dynamic>.from((map['address'] as Map<String, dynamic>)),
+      socialPreferences: Map<String, dynamic>.from(
+          (map['socialPreferences'] as Map<String, dynamic>)),
+      needsPhotograph: map['needsPhotograph'] != null
+          ? map['needsPhotograph'] as bool
+          : null,
+      autoApproval: map['autoApproval'] != null
+          ? Map<String, dynamic>.from(
+              (map['autoApproval'] as Map<String, dynamic>))
+          : null,
+      billIncluded:
+          map['billIncluded'] != null ? map['billIncluded'] as bool : null,
+      shareLink: map['shareLink'] != null ? map['shareLink'] as String : null,
     );
   }
 
@@ -189,7 +205,7 @@ class PropertyAd {
 
   @override
   String toString() {
-    return 'PropertyAd(id: $id, poster: $poster, type: $type, quantity: $quantity, quantityTaken: $quantityTaken, preferedRentType: $preferedRentType, monthlyPrice: $monthlyPrice, weeklyPrice: $weeklyPrice, dailyPrice: $dailyPrice, deposit: $deposit, depositPrice: $depositPrice, posterType: $posterType, description: $description, images: $images, videos: $videos, amenties: $amenities, createdAt: $createdAt, address: $address, socialPreferences: $socialPreferences)';
+    return 'PropertyAd(id: $id, type: $type, quantity: $quantity)';
   }
 
   @override
@@ -208,11 +224,9 @@ class PropertyAd {
     type = other.type;
     quantity = other.quantity;
     quantityTaken = other.quantityTaken;
-    preferedRentType = other.preferedRentType;
     monthlyPrice = other.monthlyPrice;
     weeklyPrice = other.weeklyPrice;
     dailyPrice = other.dailyPrice;
-    deposit = other.deposit;
     depositPrice = other.depositPrice;
     posterType = other.posterType;
     agentInfo = other.agentInfo;

@@ -3,8 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/ads.dart';
-import 'package:roomy_finder/components/get_more_button.dart';
-import 'package:roomy_finder/controllers/loadinding_controller.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/controllers/loading_controller.dart';
+import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 
@@ -59,6 +60,7 @@ class MyRoommateAdsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(_MyRoommateAdsController());
+    final crossAxisCount = MediaQuery.sizeOf(context).width ~/ 300;
     return RefreshIndicator(
       onRefresh: controller._fetchData,
       child: Scaffold(
@@ -98,38 +100,48 @@ class MyRoommateAdsScreen extends StatelessWidget {
             return const Center(child: Text("No data"));
           }
 
-          return ListView.builder(
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: 1.25,
+            ),
             itemBuilder: (context, index) {
-              if (index == data.length) {
-                if (data.length.remainder(100) == 0) {
-                  return GetMoreButton(
-                    getMore: () {
-                      controller._skip += 100;
-                      controller._fetchData();
-                    },
-                  );
-                } else {
-                  return const SizedBox();
-                }
-              }
-              final ad = data[index];
-              return RoommateAdWidget(
-                ad: ad,
-                onTap: () async {
-                  final res = await Get.to(() => ViewRoommateAdScreen(ad: ad));
+              final ad = controller.ads[index];
 
-                  if (res is Map) {
-                    if (res["deletedId"] == ad.id) {
-                      controller.ads.remove(ad);
-                      controller.update();
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: RoommateAdWidget(
+                  ad: ad,
+                  // isMiniView: true,
+                  onTap: () async {
+                    if (AppController.me.isGuest) {
+                      showToast("Please register to see ad details");
+                      return;
                     }
-                  }
-                },
+                    final result =
+                        await Get.to(() => ViewRoommateAdScreen(ad: ad));
+                    if (result is Map<String, dynamic>) {
+                      final deletedId = result["deletedId"];
+                      if (deletedId != null) {
+                        controller.ads.removeWhere((e) => e.id == deletedId);
+                      }
+                    }
+                    controller.update();
+                  },
+                ),
               );
             },
-            itemCount: data.length + 1,
+            itemCount: controller.ads.length,
           );
         }),
+        floatingActionButton: controller.ads.length.isGreaterThan(100)
+            ? FloatingActionButton(
+                onPressed: () {
+                  controller._skip += 100;
+                  controller._fetchData();
+                },
+              )
+            : null,
       ),
     );
   }

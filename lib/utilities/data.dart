@@ -122,4 +122,12 @@ const RENT_TYPES = ["Monthly", "Weekly", "Daily"];
 const ALL_LIFE_STYLES = ["Early Bird", "Night Owl"];
 
 ///  ["Professional", "Student", "Other"]
-const ALL_OCCUPATIONS = ["Professional", "Student", "Other"];
+const ALL_OCCUPATIONS = [
+  "Working full-time",
+  "Working part-time",
+  "Unemployed",
+  "Student",
+  "Traveller",
+  "Freelancer",
+  "Other",
+];

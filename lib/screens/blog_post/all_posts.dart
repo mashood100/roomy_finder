@@ -26,6 +26,7 @@ class _AllBlogPostsScreenState extends State<AllBlogPostsScreen> {
       final posts = await BlogPost.getBlogPost();
       _blogPosts.clear();
       _blogPosts.addAll(posts);
+
       setState(() {});
     } catch (e) {
       debugPrint('$e');

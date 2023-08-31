@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/utilities/data.dart';
 
 class InlinePhoneNumberInput extends StatelessWidget {
   const InlinePhoneNumberInput({
@@ -56,10 +57,13 @@ class InlinePhoneNumberInput extends StatelessWidget {
               locale: AppController.locale.languageLocale,
               textFieldController: controller,
               inputDecoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: ROOMY_PURPLE),
+                ),
                 hintText: hintText ?? 'enterYourPhoneNumber'.tr,
                 suffixText: suffixText,
                 contentPadding: const EdgeInsets.all(5),
-                border: InputBorder.none,
                 fillColor: Theme.of(context).brightness == Brightness.dark
                     ? Colors.grey
                     : Colors.grey.shade200,

@@ -36,6 +36,8 @@ class InlineTextField extends StatelessWidget {
     this.onSubmit,
     this.autofocus = false,
     this.textInputAction,
+    this.fillColor,
+    this.autovalidateMode,
   });
 
   final String? labelText;
@@ -57,6 +59,8 @@ class InlineTextField extends StatelessWidget {
   final void Function()? onTap;
   final void Function(String? value)? onSubmit;
   final TextInputAction? textInputAction;
+  final Color? fillColor;
+  final AutovalidateMode? autovalidateMode;
 
   @override
   Widget build(BuildContext context) {
@@ -75,32 +79,28 @@ class InlineTextField extends StatelessWidget {
                 ),
         ),
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: TextFormField(
-              autofocus: autofocus,
-              enabled: enabled,
-              readOnly: readOnly ?? false,
-              initialValue: initialValue,
-              obscureText: obscureText,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                suffixIcon: suffixIcon,
-                hintText: hintText,
-                suffixText: suffixText,
-                fillColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey
-                    : Colors.grey.shade200,
-              ),
-              onChanged: onChanged,
-              controller: controller,
-              validator: validator,
-              inputFormatters: inputFormatters,
-              keyboardType: keyboardType,
-              onTap: onTap,
-              textInputAction: textInputAction,
-              onFieldSubmitted: onSubmit,
+          child: TextFormField(
+            autovalidateMode: autovalidateMode,
+            autofocus: autofocus,
+            enabled: enabled,
+            readOnly: readOnly ?? false,
+            initialValue: initialValue,
+            obscureText: obscureText,
+            decoration: InputDecoration(
+              suffixIcon: suffixIcon,
+              hintText: hintText,
+              suffixText: suffixText,
+              fillColor: fillColor,
+              filled: fillColor != null,
             ),
+            onChanged: onChanged,
+            controller: controller,
+            validator: validator,
+            inputFormatters: inputFormatters,
+            keyboardType: keyboardType,
+            onTap: onTap,
+            textInputAction: textInputAction,
+            onFieldSubmitted: onSubmit,
           ),
         )
       ],
@@ -136,7 +136,9 @@ class InlineDropdown<T> extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: labelWidth ?? MediaQuery.of(context).size.width * 0.25,
+          width: labelText == null
+              ? 0
+              : labelWidth ?? MediaQuery.of(context).size.width * 0.25,
           child: labelText != null
               ? Text(
                   labelText!,
@@ -145,43 +147,108 @@ class InlineDropdown<T> extends StatelessWidget {
               : null,
         ),
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: DropdownButtonFormField<T>(
-              dropdownColor: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              iconSize: 30,
-              iconEnabledColor: ROOMY_ORANGE,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_sharp,
-                color: ROOMY_ORANGE,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                fillColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey
-                    : Colors.grey.shade200,
-              ),
-              value: value,
-              items: items.map((e) {
-                if (dropDownItemBuilder != null) {
-                  return dropDownItemBuilder!(e);
-                }
-                return DropdownMenuItem<T>(
-                  value: e,
-                  child: Text(
-                    "$e",
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList(),
-              onChanged: onChanged,
-              validator: validator,
+          child: DropdownButtonFormField<T>(
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(5),
+            iconSize: 30,
+            iconEnabledColor: ROOMY_ORANGE,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_sharp,
+              color: ROOMY_ORANGE,
             ),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: ROOMY_PURPLE),
+              ),
+              hintText: hintText,
+            ),
+            value: value,
+            items: items.map((e) {
+              if (dropDownItemBuilder != null) {
+                return dropDownItemBuilder!(e);
+              }
+              return DropdownMenuItem<T>(
+                value: e,
+                child: Text(
+                  "$e",
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+            onChanged: onChanged,
+            validator: validator,
           ),
         )
       ],
+    );
+  }
+}
+
+class InlineSelector<T> extends StatelessWidget {
+  InlineSelector({
+    super.key,
+    required List<T> items,
+    this.getLabel,
+    this.itemBuilder,
+    this.labelText,
+    T? value,
+    this.onChanged,
+    this.labelWidth,
+  })  : assert(items.isNotEmpty, "Items cannot be empty"),
+        value = items.contains(value) ? value : null,
+        items = items.removeDupicates();
+
+  final List<T> items;
+  final String Function(T item)? getLabel;
+  final Widget Function(T item)? itemBuilder;
+  final void Function(T value)? onChanged;
+  final T? value;
+  final String? labelText;
+  final double? labelWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(5)),
+        border: Border.all(color: ROOMY_PURPLE, width: 1),
+      ),
+      child: Row(
+        children: items.map((e) {
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (onChanged != null) onChanged!(e);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: value == e ? ROOMY_PURPLE : null,
+                  border: Border(
+                    left: e != items.first
+                        ? const BorderSide(width: 1, color: ROOMY_PURPLE)
+                        : BorderSide.none,
+                  ),
+                ),
+                child: itemBuilder != null
+                    ? itemBuilder!(e)
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 2, vertical: 5),
+                        child: Text(
+                          getLabel != null ? getLabel!(e) : e.toString(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: value == e ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

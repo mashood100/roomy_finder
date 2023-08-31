@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
 import 'package:roomy_finder/utilities/data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 String relativeTimeText(DateTime dateTime, {bool fromNow = true}) {
   if (dateTime.add(const Duration(minutes: 59)).isAfter(DateTime.now())) {
@@ -185,31 +185,30 @@ IconData getIconDataFromAmenties(String search) {
   }
 }
 
-Future<bool> addAdToFavorite(String item, String listKey) async {
-  try {
-    final pref = await SharedPreferences.getInstance();
+(bool, String?) validateAdsDescription(String value) {
+  if (value.contains(uaePhoneNumberRegex)) {
+    return (false, "Description cannot contain phone number");
+  }
+  if (value.contains(threeNumbersRegex)) {
+    return (false, "Description cannot contain phone number");
+  }
 
-    final favorites = pref.getStringList(listKey) ?? [];
-    if (!favorites.contains(item)) {
-      favorites.add(item);
+  if (value.contains(emailRegex)) {
+    return (false, "Description cannot contain email");
+  }
+
+  for (var val in value.split(" ")) {
+    if (val.contains(uaePhoneNumberRegex)) {
+      return (false, "Description cannot contain phone number");
     }
-    pref.setStringList(listKey, favorites);
-    return true;
-  } catch (_) {
-    return false;
+    if (val.contains(threeNumbersRegex)) {
+      return (false, "Description cannot contain phone number");
+    }
+
+    if (val.contains(emailRegex)) {
+      return (false, "Description cannot contain email");
+    }
   }
-}
 
-Future<bool> removeAdFromFavorite(String item, String listKey) async {
-  try {
-    final pref = await SharedPreferences.getInstance();
-
-    final favorites = pref.getStringList(listKey) ?? [];
-    favorites.remove(item);
-
-    pref.setStringList(listKey, favorites);
-    return true;
-  } catch (_) {
-    return false;
-  }
+  return (true, null);
 }
