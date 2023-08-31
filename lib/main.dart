@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -65,7 +64,6 @@ void main() async {
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: false,
     sound: false,
-
     badge: false,
   );
 
@@ -165,6 +163,5 @@ class MyApp extends StatelessWidget {
 // Declared as global, outside of any class
 @pragma("vm:entry-point")
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  
-  await LocalNotificationController.firebaseMessagingHandler(message, false);
+  await NotificationController.firebaseMessagingHandler(message, false);
 }
