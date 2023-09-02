@@ -23,6 +23,7 @@ import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
+import 'package:roomy_finder/functions/message.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/helpers/chat_events_helper.dart';
@@ -703,14 +704,14 @@ Future<void> moveToChatRoom(
 
     ChatConversationV2.currentChatRoomKey = conv.key;
 
-    Get.to(() {
+    await Get.to(() {
       return _ChatRoomScreen(
         conv: conv!,
         initialRoommateAd: roommateAd,
         initialBooking: booking,
       );
     })?.then((value) {
-      return ChatConversationV2.currentChatRoomKey = null;
+      ChatConversationV2.currentChatRoomKey = null;
     });
   } catch (e, trace) {
     Get.log("$e");

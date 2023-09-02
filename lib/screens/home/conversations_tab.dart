@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:isar/isar.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
+import 'package:roomy_finder/functions/message.dart';
 import 'package:roomy_finder/helpers/chat_events_helper.dart';
 import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/screens/home/home.dart';
@@ -66,7 +67,8 @@ class _ConversationsController extends LoadingController {
   @override
   void onInit() {
     super.onInit();
-    isLoading.value = true;
+
+    _syncMessages();
 
     socket = io(SERVER_URL, AppController.me.socketOption);
 
@@ -120,10 +122,12 @@ class _ConversationsController extends LoadingController {
 
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
+        _syncMessages();
         _loadConversations(isSilent: true);
         _setUnreadMessagesCount();
         AppController.isForeground = true;
       } else {
+        ChatConversationV2.messagesAreSync = false;
         AppController.isForeground = false;
       }
     });
@@ -162,6 +166,15 @@ class _ConversationsController extends LoadingController {
       update();
       _setUnreadMessagesCount();
     });
+  }
+
+  void _syncMessages() async {
+    if (!ChatConversationV2.messagesAreSync) {
+      await syncChatMessages();
+    }
+
+    await _loadConversations(isSilent: true);
+    _setUnreadMessagesCount();
   }
 
   @override
@@ -289,7 +302,9 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations;
+                final data = controller.conversations.where((c) {
+                  return c.first.value != null && c.second.value != null;
+                }).toList();
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
@@ -305,8 +320,8 @@ class ChatConversationsTab extends StatelessWidget
                           conv.first.value!,
                           conv.second.value!,
                         ).then((value) {
-                          controller._setUnreadMessagesCount();
                           controller._loadConversations();
+                          controller._setUnreadMessagesCount();
                           controller.update();
                         });
                       },
