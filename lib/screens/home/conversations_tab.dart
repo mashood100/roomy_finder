@@ -37,7 +37,8 @@ class _ConversationsController extends LoadingController {
     var conversations = ISAR
         .txnSync(() =>
             ISAR.chatConversationV2s.filter().unReadMessageCountGreaterThan(0))
-        .findAllSync();
+        .findAllSync()
+        .where((e) => e.first.value != null && e.second.value != null);
 
     if (conversations.isEmpty) {
       Home.unreadMessagesCount(0);
@@ -302,9 +303,7 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations.where((c) {
-                  return c.first.value != null && c.second.value != null;
-                }).toList();
+                final data = controller.conversations;
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
