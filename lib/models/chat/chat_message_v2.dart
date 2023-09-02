@@ -1,17 +1,32 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:isar/isar.dart';
 import 'package:path/path.dart';
-import 'package:roomy_finder/classes/file_helprer.dart';
 
 import 'package:roomy_finder/controllers/app_controller.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
+part 'chat_message_v2.g.dart';
+
+@Collection()
 class ChatMessageV2 {
+  @Index(unique: true, replace: true)
   String id;
+
+  Id get isarId => fastHash(id);
+
+  @Index()
+  String key;
+
+  @Index()
   String senderId;
+
+  @Index()
   String recieverId;
   String type;
   String? content;
@@ -19,19 +34,24 @@ class ChatMessageV2 {
   List<String> reads;
   List<String> deletes;
   bool isDeletedForAll;
+
+  @Index()
   DateTime createdAt;
   String? replyId;
   String? bookingId;
   String? roommateId;
-  Map<String, dynamic>? event;
-  Map<String, dynamic>? voice;
+  String? event;
+  ChatVoiceNote? voice;
   List<ChatFile> files;
   bool isSending;
+
+  int localNotificationsId;
 
   ChatMessageV2({
     required this.id,
     required this.senderId,
     required this.recieverId,
+    required this.key,
     required this.type,
     this.content,
     required this.recieveds,
@@ -46,29 +66,26 @@ class ChatMessageV2 {
     this.event,
     this.voice,
     required this.files,
-  }) {
-    if (voice != null && voice!["bytes"] != null) {
-      try {
-        final bytes = voice!["bytes"] as Map<String, dynamic>;
+    required this.localNotificationsId,
+  });
 
-        voiceFile = Uint8List.fromList(List<int>.from(bytes["data"]));
-      } catch (e, trace) {
-        Get.log("Voice file reading failed");
-        Get.log("$e");
-        Get.log("$trace");
-      }
-    }
-  }
-
+  @ignore
   bool get isMine => senderId == AppController.me.id;
 
+  @ignore
   bool get isRecieved => isRead || recieveds.contains(recieverId);
+
+  @ignore
   bool get isRead => reads.contains(recieverId);
+
+  @ignore
   bool get isDeleted =>
       deletes.contains(AppController.me.id) || isDeletedForAll;
 
+  @ignore
   bool get isVoice => type == "voice";
 
+  @ignore
   String get typedMessage {
     if (voiceFile != null) {
       var min = voiceMinutues.toString().padLeft(2, "0");
@@ -81,32 +98,22 @@ class ChatMessageV2 {
     return "Sent a $type";
   }
 
-  Uint8List? voiceFile;
+  @ignore
+  Uint8List? get voiceFile {
+    return voice == null ? null : Uint8List.fromList(voice!.bytes);
+  }
 
+  @ignore
   int? get voiceMinutues {
-    if (voice != null && voice!["seconds"] is int) {
-      var i = voice!["seconds"] as int;
+    if (voice != null && voice!.seconds != null) {
+      var i = voice!.seconds!;
       return i ~/ 60;
     }
     return null;
   }
 
-  int? get voiceSeconds {
-    if (voice != null && voice!["seconds"] is int) {
-      var i = voice!["seconds"] as int;
-      return i - (i ~/ 60);
-    }
-    return null;
-  }
-
-  void addDeletes(String userId, [DateTime? date]) {
-    if (deletes.any((e) => e == userId)) return;
-    deletes.add(userId);
-
-    if (userId == AppController.me.id) {
-      FileHelper.deleteFiles(files.map((e) => e.url).toList());
-    }
-  }
+  @ignore
+  int? get voiceSeconds => voice?.seconds;
 
   Map<String, dynamic> createLocalNotificationPayload(String key,
       [String? event]) {
@@ -122,6 +129,7 @@ class ChatMessageV2 {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
+      'key': key,
       'senderId': senderId,
       'recieverId': recieverId,
       'type': type,
@@ -136,14 +144,16 @@ class ChatMessageV2 {
       'roommateId': roommateId,
       'event': event,
       'isSending': isSending,
-      'voice': voice,
+      'voice': voice?.toMap(),
       'files': files.map((x) => x.toMap()).toList(),
+      "localNotificationsId": localNotificationsId,
     };
   }
 
   factory ChatMessageV2.fromMap(Map<String, dynamic> map) {
     return ChatMessageV2(
       id: map['id'] as String,
+      key: map['key'] as String,
       senderId: map['senderId'] as String,
       recieverId: map['recieverId'] as String,
       type: map['type'] as String,
@@ -158,17 +168,18 @@ class ChatMessageV2 {
       roommateId:
           map['roommateId'] != null ? map['roommateId'] as String : null,
       isSending: false,
-      event: map['event'] != null
-          ? Map<String, dynamic>.from((map['event'] as Map))
-          : null,
+      event: map['event']?.toString(),
       voice: map['voice'] != null
-          ? Map<String, dynamic>.from((map['voice'] as Map))
+          ? ChatVoiceNote.fromMap((map['voice'] as Map<String, dynamic>))
           : null,
       files: List<ChatFile>.from(
         (map['files'] as List).map<ChatFile>(
           (x) => ChatFile.fromMap(x as Map<String, dynamic>),
         ),
       ),
+      localNotificationsId:
+          int.tryParse(map["localNotificationsId"].toString()) ??
+              Random().nextInt(pow(2, 30).toInt()),
     );
   }
 
@@ -189,6 +200,7 @@ class ChatMessageV2 {
     return other.id == id;
   }
 
+  @ignore
   @override
   int get hashCode {
     return id.hashCode;
@@ -196,6 +208,7 @@ class ChatMessageV2 {
 
   void updateFrom(ChatMessageV2 other) {
     id = other.id;
+    key = other.key;
     senderId = other.senderId;
     recieverId = other.recieverId;
     type = other.type;
@@ -215,38 +228,42 @@ class ChatMessageV2 {
   }
 }
 
+@Embedded()
 class ChatFile {
-  final String id;
-  final String name;
-  final String url;
-  final int size;
-  final String? thumbnail;
-  ChatFile({
-    required this.id,
-    required this.name,
-    required this.url,
-    required this.size,
-    this.thumbnail,
-  });
+  late String id;
+  late String name;
+  late String url;
+  late int size;
+  late String? thumbnail;
 
+  ChatFile();
+
+  @ignore
   bool get haveThumbnail => thumbnail != null;
 
+  @ignore
   bool get isImage => name.isImageFileName;
 
+  @ignore
   bool get isVideo => name.isVideoFileName;
 
+  @ignore
   bool get isPdf => name.isPDFFileName;
 
+  @ignore
   String get typeLabel => extension(name).replaceFirst('.', '').toUpperCase();
 
+  @ignore
   bool get isDocument {
     return DOCUMENT_EXTENSIONS.contains(extension(name.toLowerCase()));
   }
 
+  @ignore
   bool get isFile {
     return OTHER_EXTENSIONS.contains(extension(name.toLowerCase()));
   }
 
+  @ignore
   String get sizeText {
     const oneKB = 1024;
     if (size < oneKB) return "${size}B";
@@ -267,13 +284,14 @@ class ChatFile {
   }
 
   factory ChatFile.fromMap(Map<String, dynamic> map) {
-    return ChatFile(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      url: map['url'] as String,
-      size: map['size'] as int,
-      thumbnail: map['thumbnail'] != null ? map['thumbnail'] as String : null,
-    );
+    var chatFile = ChatFile();
+    chatFile.id = map['id'] as String;
+    chatFile.name = map['name'] as String;
+    chatFile.url = map['url'] as String;
+    chatFile.size = map['size'] as int;
+    chatFile.thumbnail =
+        map['thumbnail'] != null ? map['thumbnail'] as String : null;
+    return chatFile;
   }
 
   String toJson() => json.encode(toMap());
@@ -292,8 +310,46 @@ class ChatFile {
         other.thumbnail == thumbnail;
   }
 
+  @ignore
   @override
   int get hashCode {
     return id.hashCode;
   }
+}
+
+@Embedded()
+class ChatVoiceNote {
+  String? name;
+  late List<int> bytes;
+  int? seconds;
+
+  ChatVoiceNote({
+    this.name,
+    this.seconds,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'bytes': {"type": "Buffer", "data": bytes},
+      'seconds': seconds,
+    };
+  }
+
+  factory ChatVoiceNote.fromMap(Map<String, dynamic> map) {
+    var v = ChatVoiceNote(
+      name: map['name'],
+      seconds: map['seconds'],
+    );
+
+    final buff = map['bytes'] as Map<String, dynamic>;
+
+    v.bytes = List<int>.from((buff['data'] as List));
+    return v;
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory ChatVoiceNote.fromJson(String source) =>
+      ChatVoiceNote.fromMap(json.decode(source));
 }

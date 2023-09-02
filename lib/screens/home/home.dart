@@ -15,7 +15,6 @@ import 'package:roomy_finder/functions/dynamic_link_handler.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
-import 'package:roomy_finder/models/chat_conversation_v2.dart';
 import 'package:roomy_finder/screens/ads/property_ad/post_property_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/post_ad_first_screen.dart';
 import 'package:roomy_finder/screens/booking/my_bookings.dart';
@@ -154,6 +153,11 @@ class Home extends StatelessWidget {
   static final RxInt unreadMessagesCount = 0.obs;
   static final RxInt unReadNotificationsCount = 0.obs;
 
+  static bool get chatIsCurrentTab {
+    if (AppController.me.isLandlord) return currentIndex.value == 2;
+    return currentIndex.value == 3;
+  }
+
   static List<({String assetIcon, RxInt badge, String label})> get _tabs => [
         (
           label: 'Account',
@@ -210,11 +214,6 @@ class Home extends StatelessWidget {
         (index == 2 || index == 3)) {
       RoomyNotificationHelper.showDashBoardIsBlocked();
       return;
-    }
-    if (_tabs[index] is ChatConversationsTab) {
-      ChatConversationV2.homeTabIsChat = true;
-    } else {
-      ChatConversationV2.homeTabIsChat = false;
     }
 
     _screens[index].onTabIndexSelected(index);

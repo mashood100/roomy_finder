@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:roomy_finder/classes/file_helprer.dart';
 import 'package:roomy_finder/components/loading_progress_image.dart';
-import 'package:roomy_finder/models/chat_message_v2.dart';
+import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 // import 'package:roomy_finder/screens/new_chat/helper.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';

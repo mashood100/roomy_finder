@@ -10,6 +10,7 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:isar/isar.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as path;
@@ -23,15 +24,19 @@ import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
-import 'package:roomy_finder/models/chat_conversation_v2.dart';
-import 'package:roomy_finder/models/chat_message_v2.dart';
+import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/helpers/chat_events_helper.dart';
+import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
+import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/chat/chat_room_helper.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
+import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/screens/user/public_profile.dart';
 import 'package:roomy_finder/utilities/data.dart';
+import 'package:roomy_finder/utilities/isar.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 
@@ -195,6 +200,7 @@ class _ChatRoomScreen extends StatelessWidget {
                     bottom: MediaQuery.of(context).viewPadding.bottom + 50,
                   ),
                   child: ScrollablePositionedList.builder(
+                    reverse: true,
                     initialScrollIndex: controller.messages.isEmpty
                         ? 0
                         : controller.messages.length - 1,
@@ -223,13 +229,22 @@ class _ChatRoomScreen extends StatelessWidget {
                         previous = controller.messages[index - 1];
                       }
                       if (index < controller.messages.length - 1) {
-                        previous = controller.messages[index + 1];
+                        next = controller.messages[index + 1];
                       }
 
                       if (msg.replyId != null) {
                         repliedMessage = controller.messages
                             .firstWhereOrNull((e) => e.id == msg.replyId);
                       }
+
+                      final lastDateRead = controller.messages
+                          .firstWhereOrNull((e) =>
+                              e.isMine && e.reads.contains(conv.other.id))
+                          ?.createdAt;
+                      final lastDateRecieved = controller.messages
+                          .firstWhereOrNull((e) =>
+                              e.isMine && e.recieveds.contains(conv.other.id))
+                          ?.createdAt;
 
                       return SizedBox(
                         width: MediaQuery.of(context).size.width - 20,
@@ -275,6 +290,13 @@ class _ChatRoomScreen extends StatelessWidget {
                               );
                             }
                           },
+                          isRead:
+                              lastDateRead?.isAfter(msg.createdAt) == true ||
+                                  lastDateRead == msg.createdAt,
+                          isRecieved:
+                              lastDateRecieved?.isAfter(msg.createdAt) ==
+                                      true ||
+                                  lastDateRecieved == msg.createdAt,
                         ),
                       );
                     },
@@ -646,45 +668,38 @@ Future<void> moveToChatRoom(
   PropertyBooking? booking,
 }) async {
   try {
-    if (first.isTerminatedUser ||
-        second.isTerminatedUser ||
-        first.isGuest ||
-        second.isGuest) {
+    if (first.isTerminatedUser || second.isTerminatedUser) {
       showToast("Cannot chat with this user");
       return;
     }
     final key = ChatConversationV2.createKey(first.id, second.id);
 
     var conv =
-        ChatConversationV2.conversations.firstWhereOrNull((e) => e.key == key);
+        ISAR.txnSync(() => ISAR.chatConversationV2s.getSync(fastHash(key)));
 
-    conv ??= ChatConversationV2(
-      key: key,
-      first: first,
-      second: second,
-      messages: [],
-      blocks: [],
-    );
+    conv ??=
+        ChatConversationV2(key: key, blocks: [], createdAt: DateTime.now());
+    ISAR.writeTxnSync(() {
+      ISAR.users.putSync(first);
+      ISAR.users.putSync(second);
+    });
 
-    if (Get.currentRoute == "/_ChatRoomScreen") {
-      await Get.off(
-        () => _ChatRoomScreen(
-          conv: conv!,
-          initialRoommateAd: roommateAd,
-          initialBooking: booking,
-        ),
-        transition: Transition.fadeIn,
-        preventDuplicates: false,
+    conv.first.value = first;
+    conv.second.value = second;
+
+    ChatConversationV2.currentChatRoomKey = conv.key;
+
+    if (Get.currentRoute.contains("ChatRoomScreen")) Get.back();
+
+    Get.to(() {
+      return _ChatRoomScreen(
+        conv: conv!,
+        initialRoommateAd: roommateAd,
+        initialBooking: booking,
       );
-    } else {
-      await Get.to(() => _ChatRoomScreen(
-            conv: conv!,
-            initialRoommateAd: roommateAd,
-            initialBooking: booking,
-          ));
-    }
-
-    ChatConversationV2.onChatEventCallback = null;
+    })?.then((value) {
+      return ChatConversationV2.currentChatRoomKey = null;
+    });
   } catch (e, trace) {
     Get.log("$e");
     Get.log("$trace");

@@ -21,7 +21,7 @@ import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -153,7 +153,7 @@ class _UpdateProfileController extends LoadingController {
       var payload = {...information, "aboutMe": aboutMe};
 
       if (imageUrl != null) payload["profilePicture"] = imageUrl;
-      if (imageUrl != null && _oldProfilePicture == null) {
+      if (imageUrl == null && _oldProfilePicture == null) {
         payload["profilePicture"] = null;
       }
 

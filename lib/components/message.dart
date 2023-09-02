@@ -9,8 +9,8 @@ import 'package:readmore/readmore.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
 import 'package:swipe_to/swipe_to.dart';
 
-import 'package:roomy_finder/models/chat_message_v2.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/chat/chat_message_v2.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/components/chat_files_preview.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
@@ -28,6 +28,10 @@ class ChatMessageV2Widget extends StatefulWidget {
     this.onSelectionChanged,
     this.onLongPress,
     this.onRepliedMessageTapped,
+    this.lastReadDate,
+    this.lastRecievedDate,
+    required this.isRead,
+    required this.isRecieved,
   });
 
   final User author;
@@ -43,6 +47,10 @@ class ChatMessageV2Widget extends StatefulWidget {
   final void Function(ChatMessageV2 msg)? onRepliedMessageTapped;
   // final bool? isPlayingVoice;
   // final bool? playProgress;
+  final DateTime? lastReadDate;
+  final DateTime? lastRecievedDate;
+  final bool isRead;
+  final bool isRecieved;
 
   static const Color rightColor = ROOMY_ORANGE;
   static const Color leftColor = ROOMY_PURPLE;
@@ -444,13 +452,13 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                                   color: Colors.white70,
                                   size: 15,
                                 );
-                              } else if (widget.msg.isRead) {
+                              } else if (widget.isRead) {
                                 return const Icon(
                                   Icons.done_all,
                                   color: ROOMY_PURPLE,
                                   size: 15,
                                 );
-                              } else if (widget.msg.isRecieved) {
+                              } else if (widget.isRecieved) {
                                 return const Icon(
                                   Icons.done_all,
                                   color: Colors.white70,

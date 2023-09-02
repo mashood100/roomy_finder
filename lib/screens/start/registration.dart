@@ -27,7 +27,7 @@ import 'package:roomy_finder/functions/create_datetime_filename.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/start/login.dart';
 import 'package:roomy_finder/screens/start/roommate_post_registration.dart';
 import 'package:roomy_finder/screens/utility_screens/view_images.dart';

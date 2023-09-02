@@ -11,7 +11,7 @@ import 'package:roomy_finder/classes/app_locale.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/models/app_version.dart';
 import 'package:roomy_finder/models/country.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 
 class AppController extends GetxController {
   static late ThemeMode themeMode;
@@ -20,6 +20,8 @@ class AppController extends GetxController {
   static late bool isFirstStart;
   static Uri? dynamicInitialLink;
   static bool haveOpenInitialMessage = false;
+
+  static bool isForeground = true;
 
   static AppController instance = Get.find<AppController>(tag: "appController");
   static User get me => instance.user.value;
