@@ -303,7 +303,9 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations;
+                final data = controller.conversations.where((c) {
+                  return c.first.value != null && c.second.value != null;
+                }).toList();
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
