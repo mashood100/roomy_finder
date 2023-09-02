@@ -37,7 +37,8 @@ class _ConversationsController extends LoadingController {
     var conversations = ISAR
         .txnSync(() =>
             ISAR.chatConversationV2s.filter().unReadMessageCountGreaterThan(0))
-        .findAllSync();
+        .findAllSync()
+        .where((e) => e.first.value != null && e.second.value != null);
 
     if (conversations.isEmpty) {
       Home.unreadMessagesCount(0);
