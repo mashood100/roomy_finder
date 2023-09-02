@@ -15,6 +15,7 @@ part 'chat_conversation_v2.g.dart';
 
 @Collection()
 class ChatConversationV2 {
+  static bool messagesAreSync = false;
   static String? currentChatRoomKey;
   static final messagesNotificationIds = <int>[];
 
@@ -84,8 +85,12 @@ class ChatConversationV2 {
 
     final second = User.fromMap(map['second'] as Map<String, dynamic>);
 
+    final lastMessage =
+        ChatMessageV2.fromMap(map['lastMessage'] as Map<String, dynamic>);
+
     chat.first.value = first;
     chat.second.value = second;
+    chat.lastMessage.value = lastMessage;
 
     return chat;
   }

@@ -11,6 +11,7 @@ class _ChatRoomController extends LoadingController {
 
   late final ItemScrollController _scrollController;
   late final TextEditingController _newMessageController;
+  late final StreamSubscription _messageSyncSubscription;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
 
@@ -159,6 +160,10 @@ class _ChatRoomController extends LoadingController {
       }
     });
 
+// Message Sync events
+    _messageSyncSubscription = messageSyncStream.listen((keys) {
+      if (keys.contains(conversation.key)) _loadMessages();
+    });
 // Recorder
     _recordStream = _voiceRecoder.onProgress?.listen((event) {
       _recordDuration = event.duration;
@@ -237,6 +242,7 @@ class _ChatRoomController extends LoadingController {
     // _scrollController.dispose();
 
     _fGBGNotifierSubScription.cancel();
+    _messageSyncSubscription.cancel();
 
     _newMessageSoundPlayer.closePlayer();
 
