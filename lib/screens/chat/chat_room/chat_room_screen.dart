@@ -39,6 +39,7 @@ import 'package:roomy_finder/utilities/data.dart';
 import 'package:roomy_finder/utilities/isar.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:socket_io_client/socket_io_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part './chat_room_controller.dart';
 
@@ -297,6 +298,17 @@ class _ChatRoomScreen extends StatelessWidget {
                               lastDateRecieved?.isAfter(msg.createdAt) ==
                                       true ||
                                   lastDateRecieved == msg.createdAt,
+                          onLinkPressed: (link) async {
+                            var uri = Uri.tryParse(link);
+
+                            if (uri == null) return;
+                            if (await canLaunchUrl(uri)) {
+                              launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
                         ),
                       );
                     },
@@ -687,9 +699,9 @@ Future<void> moveToChatRoom(
     conv.first.value = first;
     conv.second.value = second;
 
-    ChatConversationV2.currentChatRoomKey = conv.key;
-
     if (Get.currentRoute.contains("ChatRoomScreen")) Get.back();
+
+    ChatConversationV2.currentChatRoomKey = conv.key;
 
     Get.to(() {
       return _ChatRoomScreen(

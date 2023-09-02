@@ -256,8 +256,8 @@ class ChatEventHelper {
 
       if (Home.chatIsCurrentTab) shouldShow = false;
 
-      if (ChatConversationV2.currentChatRoomKey != conv.key) {
-        shouldShow = true;
+      if (ChatConversationV2.currentChatRoomKey == conv.key) {
+        shouldShow = false;
       }
 
       if (data["isBackgroundFCM"] == true) {

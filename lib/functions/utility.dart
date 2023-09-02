@@ -186,28 +186,21 @@ IconData getIconDataFromAmenties(String search) {
 }
 
 (bool, String?) validateAdsDescription(String value) {
-  if (value.contains(uaePhoneNumberRegex)) {
-    return (false, "Description cannot contain phone number");
-  }
-  if (value.contains(threeNumbersRegex)) {
+  var matches = uaePhoneNumberRegex.allMatches(value);
+
+  if (matches.isNotEmpty) {
     return (false, "Description cannot contain phone number");
   }
 
-  if (value.contains(emailRegex)) {
+  matches = threeNumbersRegex.allMatches(value);
+  if (matches.isNotEmpty) {
+    return (false, "Description cannot contain phone number");
+  }
+
+  matches = emailRegex.allMatches(value);
+
+  if (matches.isNotEmpty) {
     return (false, "Description cannot contain email");
-  }
-
-  for (var val in value.split(" ")) {
-    if (val.contains(uaePhoneNumberRegex)) {
-      return (false, "Description cannot contain phone number");
-    }
-    if (val.contains(threeNumbersRegex)) {
-      return (false, "Description cannot contain phone number");
-    }
-
-    if (val.contains(emailRegex)) {
-      return (false, "Description cannot contain email");
-    }
   }
 
   return (true, null);

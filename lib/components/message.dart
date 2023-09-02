@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:link_preview_generator/link_preview_generator.dart';
-import 'package:readmore/readmore.dart';
+import 'package:any_link_preview/any_link_preview.dart';
 import 'package:roomy_finder/classes/voice_note_player_helper.dart';
 import 'package:swipe_to/swipe_to.dart';
 
@@ -32,6 +32,7 @@ class ChatMessageV2Widget extends StatefulWidget {
     this.lastRecievedDate,
     required this.isRead,
     required this.isRecieved,
+    this.onLinkPressed,
   });
 
   final User author;
@@ -51,6 +52,8 @@ class ChatMessageV2Widget extends StatefulWidget {
   final DateTime? lastRecievedDate;
   final bool isRead;
   final bool isRecieved;
+
+  final void Function(String link)? onLinkPressed;
 
   static const Color rightColor = ROOMY_ORANGE;
   static const Color leftColor = ROOMY_PURPLE;
@@ -112,19 +115,19 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
     return _playedProgress.inSeconds / _totalDuraton.inSeconds;
   }
 
-  String get sentDateString {
-    var date = widget.msg.createdAt.toLocal();
-    var today = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    ).toLocal();
+  // String get sentDateString {
+  //   var date = widget.msg.createdAt.toLocal();
+  //   var today = DateTime(
+  //     DateTime.now().year,
+  //     DateTime.now().month,
+  //     DateTime.now().day,
+  //   ).toLocal();
 
-    if (date.isBefore(today)) {
-      return Jiffy.parseFromDateTime(date).yMMMEd;
-    }
-    return Jiffy.parseFromDateTime(date).Hm;
-  }
+  //   if (date.isBefore(today)) {
+  //     return Jiffy.parseFromDateTime(date).yMMMEd;
+  //   }
+  //   return Jiffy.parseFromDateTime(date).Hm;
+  // }
 
   Future<void> _pauseVoice() async {
     if (isPlaying) await _player.pausePlayer();
@@ -183,33 +186,12 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
     return widget.previousMsg?.senderId != widget.author.id;
   }
 
-  String? get firstUrl {
-    if (widget.msg.content == null) return null;
-
-    final match = urlRegex.firstMatch(widget.msg.content!);
-    return match?[0];
-  }
-
   bool get hasFiles => widget.msg.files.isNotEmpty;
 
   ChatMessageV2? get rpMsg => widget.repliedMessage;
 
-  LinkPreviewStyle? get urlPreviewStyle {
-    if (firstUrl == null) return null;
-
-    if (widget.msg.content!.trim().isURL) return LinkPreviewStyle.large;
-
-    final match = urlRegex.firstMatch(widget.msg.content!);
-
-    if (match != null) return LinkPreviewStyle.small;
-    return null;
-  }
-
   void handleLinkPreviewTapped(String link) {
-    // print(link);
-    if (roomyFinderDynamicLinkDomainRegex1.hasMatch(firstUrl!)) {
-      // print("Is roomy finder link");
-    }
+    if (widget.onLinkPressed != null) widget.onLinkPressed!(link);
   }
 
   BoxConstraints get _boxConstraints {
@@ -222,6 +204,100 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
       );
     }
     return BoxConstraints(maxWidth: Get.width * 0.8, minWidth: 100);
+  }
+
+  String get displayDate {
+    var jiffy = Jiffy.parseFromDateTime(msg.createdAt).toLocal();
+    var date = jiffy.yMMMMdjm;
+
+    if (jiffy.isSame(Jiffy.now(), unit: Unit.year)) {
+      date = jiffy.yMMMMdjm;
+    }
+
+    if (jiffy.isSame(Jiffy.now(), unit: Unit.month)) {
+      date = '${jiffy.MMMMd} ${jiffy.jm}';
+    }
+
+    if (jiffy.isSame(Jiffy.now(), unit: Unit.week)) {
+      date = "${jiffy.EEEE} ${jiffy.jm}";
+    }
+
+    if (jiffy.isSame(Jiffy.now(), unit: Unit.day)) {
+      date = jiffy.jm;
+    }
+
+    if (jiffy.isSame(Jiffy.now(), unit: Unit.minute)) {
+      date = jiffy.fromNow();
+    }
+
+    return date;
+  }
+
+  TextSpan treatedMessage(String messageText) {
+    var list = <InlineSpan>[];
+    var span = TextSpan(children: list);
+
+    const noMatchStyle = TextStyle(
+      color: Colors.white,
+    );
+    const matchStyle = TextStyle(
+      decoration: TextDecoration.underline,
+      color: Colors.white,
+      decorationColor: Colors.white24,
+    );
+
+    final matches = urlRegex.allMatches(messageText).toList();
+
+    var noMatches = messageText.split(urlRegex);
+
+    for (var i = 0; i < matches.length; i++) {
+      var noMatch = noMatches[i];
+      var match = matches[i].group(0) ?? '';
+
+      span.children!.add(TextSpan(text: noMatch, style: noMatchStyle));
+      span.children!.add(
+        TextSpan(
+          text: match,
+          style: matchStyle,
+          recognizer: (TapGestureRecognizer()
+            ..onTap = (() => handleLinkPreviewTapped(match))),
+        ),
+      );
+    }
+
+    span.children!.add(
+      TextSpan(text: noMatches[matches.length], style: noMatchStyle),
+    );
+
+    return span;
+  }
+
+  Uri? get firstLink {
+    if (msg.content == null) return null;
+    var match = urlRegex.firstMatch(msg.content!)?.group(0);
+    if (match == null) return null;
+
+    if (!match.startsWith("http")) match = "https://$match";
+
+    return Uri.tryParse(match);
+  }
+
+  UIDirection get previewDirection {
+    if (msg.content == null) return UIDirection.uiDirectionHorizontal;
+
+    var match = urlRegex.firstMatch(msg.content!)?.group(0);
+
+    if (msg.content!.trim() == match) return UIDirection.uiDirectionVertical;
+
+    return UIDirection.uiDirectionHorizontal;
+  }
+
+  double get linkPreviewHeight {
+    if (previewDirection == UIDirection.uiDirectionHorizontal) {
+      return (MediaQuery.sizeOf(context).height) * 0.12;
+    }
+
+    return MediaQuery.sizeOf(context).height * 0.20;
   }
 
   @override
@@ -291,19 +367,34 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
 // Link preview
-                    if (firstUrl != null) ...[
-                      LinkPreviewGenerator(
+                    if (firstLink != null) ...[
+                      AnyLinkPreview(
+                        link: firstLink.toString(),
+                        displayDirection: previewDirection,
+                        showMultimedia: true,
                         bodyMaxLines: 3,
-                        link: firstUrl!,
-                        linkPreviewStyle: urlPreviewStyle!,
-                        showGraphic: true,
+                        previewHeight: linkPreviewHeight,
+                        bodyTextOverflow: TextOverflow.ellipsis,
+                        titleStyle: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                        bodyStyle:
+                            const TextStyle(color: Colors.grey, fontSize: 12),
+                        errorBody: 'Click to open link',
+                        errorTitle: firstLink!.host,
+                        errorWidget: Container(),
+                        // errorImage: "https://google.com/",
+                        cache: const Duration(days: 7),
+                        backgroundColor: Colors.grey[300],
+                        borderRadius: 12,
                         removeElevation: true,
-                        borderRadius: 5,
-                        errorWidget: const SizedBox(),
-                        placeholderWidget: const SizedBox(),
-                        onTap: () => handleLinkPreviewTapped(firstUrl!),
-                        bodyStyle: const TextStyle(fontFamily: "Roboto"),
-                        showDomain: false,
+                        boxShadow: const [
+                          BoxShadow(blurRadius: 3, color: Colors.grey)
+                        ],
+                        onTap: () =>
+                            handleLinkPreviewTapped(firstLink.toString()),
                       ),
                       const SizedBox(height: 5),
                     ],
@@ -322,6 +413,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                           decoration: BoxDecoration(
                             color: widget.msg.isMine
                                 ? ChatMessageV2Widget.rightShadedColor
+                                    .withOpacity(0.3)
                                 : ChatMessageV2Widget.leftShadedColor,
                             borderRadius:
                                 const BorderRadius.all(Radius.circular(5)),
@@ -329,7 +421,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                           child: Builder(builder: (context) {
                             return Text(
                               rpMsg!.content ?? rpMsg!.typedMessage,
-                              style: const TextStyle(color: Colors.grey),
+                              style: const TextStyle(color: Colors.white),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             );
@@ -407,15 +499,18 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
 // Message Content
                     if (widget.msg.content?.trim().isNotEmpty == true &&
                         !widget.msg.isVoice)
-                      ReadMoreText(
-                        "${widget.msg.content}",
-                        trimLines: 10,
-                        trimCollapsedText: "See more",
-                        trimExpandedText: " See less",
-                        style: const TextStyle(color: Colors.white),
-                        trimMode: TrimMode.Line,
-                        colorClickableText: Colors.blue,
+                      Text.rich(
+                        treatedMessage("${widget.msg.content}"),
                       ),
+                    // ReadMoreText(
+                    //   "${widget.msg.content}",
+                    //   trimLines: 10,
+                    //   trimCollapsedText: "See more",
+                    //   trimExpandedText: " See less",
+                    //   style: const TextStyle(color: Colors.white),
+                    //   trimMode: TrimMode.Line,
+                    //   colorClickableText: Colors.blue,
+                    // ),
 
                     // const SizedBox(height: 5),
 // Status && info
@@ -475,7 +570,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
                           ),
                         if (widget.msg.isMine) const SizedBox(width: 5),
                         Text(
-                          sentDateString,
+                          displayDate,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
