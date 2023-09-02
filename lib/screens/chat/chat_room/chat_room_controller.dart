@@ -12,6 +12,7 @@ class _ChatRoomController extends LoadingController {
   late final ItemScrollController _scrollController;
   late final TextEditingController _newMessageController;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+  late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
 
   ChatConversationV2 conversation;
   final List<ChatMessageV2> selectedMessages = [];
@@ -19,7 +20,7 @@ class _ChatRoomController extends LoadingController {
   // Voice recording
   // final _recorder = Record();
 
-  List<ChatMessageV2> get messages => conversation.messages;
+  List<ChatMessageV2> messages = [];
 
   bool haveHandledInitialAd = true;
 
@@ -33,7 +34,7 @@ class _ChatRoomController extends LoadingController {
   User get me => conversation.me;
   User get other => conversation.other;
   String get newMessageTitle => me.fullName;
-  ChatMessageV2? get lastMessage => conversation.lastMessage;
+  ChatMessageV2? get lastMessage => conversation.lastMessage.value;
 
   ChatMessageV2? repliedMessage;
 
@@ -42,7 +43,6 @@ class _ChatRoomController extends LoadingController {
   final isUploading = false.obs;
   final isSelectMode = false.obs;
   // ignore: prefer_final_fields
-  bool _isForeground = true;
 
 // Scroll
   final ItemPositionsListener itemPositionsListener =
@@ -60,7 +60,13 @@ class _ChatRoomController extends LoadingController {
   void onInit() {
     super.onInit();
 
-    conversation.upUserProfiles().then((value) => update());
+    ChatConversationV2.currentChatRoomKey = conversation.key;
+
+    _loadMessages(false);
+    conversation.unReadMessageCount = 0;
+    ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
+
+    conversation.updateUserProfiles().then((value) => update());
 
     _clearChatNotifications();
 
@@ -68,9 +74,6 @@ class _ChatRoomController extends LoadingController {
 
     _scrollController = ItemScrollController();
     _newMessageController = TextEditingController();
-
-// Room event callback
-    ChatConversationV2.onChatEventCallback = _chatEventsCallback;
 
 // New message voice player
     _newMessageSoundPlayer = FlutterSoundPlayer(logLevel: Level.warning);
@@ -97,31 +100,63 @@ class _ChatRoomController extends LoadingController {
 
     socket.connect();
 
+// Chat events
+    _chatEventsSubscription = ChatEventHelper.stream.listen((event) {
+      if (event.$2 != conversation.key) return;
+
+      if (event.$1 == ChatEvents.newMessage) {
+        if (ChatConversationV2.currentChatRoomKey == conversation.key &&
+            FileHelper.NEW_MESSAGE_SOUND != null &&
+            AppController.isForeground) {
+          _newMessageSoundPlayer.startPlayer(
+              fromDataBuffer: FileHelper.NEW_MESSAGE_SOUND);
+        }
+
+        if (event.$3 != null) {
+          final lastM = ISAR.txnSync(() {
+                return ISAR.chatMessageV2s.getSync(fastHash(event.$3!.id));
+              }) ??
+              event.$3!;
+
+          messages.insert(0, lastM);
+
+          _notifyThatIHaveReadMessages();
+        }
+      } else if (event.$1 == ChatEvents.messageRead) {
+        _markMyMessagesAsRead();
+      } else if (event.$1 == ChatEvents.messageRecieved) {
+        _markMyMessagesAsRecieved();
+      } else if (event.$1 == ChatEvents.replyMessageFromRaySuccedded) {
+        if (event.$3 != null) {
+          messages.insert(0, event.$3!);
+        }
+      } else if (event.$1 == ChatEvents.userBlocked) {
+        conversation.blocks = List.from(conversation.blocks)..add(me.id);
+      } else if (event.$1 == ChatEvents.userUnBlocked) {
+        conversation.blocks = List.from(conversation.blocks)
+          ..removeWhere((e) => e == me.id);
+      }
+      update();
+    });
+
 // Background foreground
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
-        _fetchMessages;
-        _isForeground = true;
+        _loadMessages();
+        AppController.isForeground = true;
 
-        conversation.markOthersMessagesAsRead();
+        conversation.unReadMessageCount = 0;
+        ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
 
-        conversation.updateFromStorage(me.id).then((val) => update());
+        _notifyThatIHaveReadMessages();
 
-        socket.emitWithAck(
-          "message-read",
-          {"key": conversation.key},
-          ack: (_) {},
-        );
         _clearChatNotifications();
+        update();
       } else {
-        _isForeground = false;
+        AppController.isForeground = false;
 
         if (_voiceRecoder.isRecording) _voiceRecoder.stopRecorder();
       }
-
-      update();
-
-      Get.log("FOREGROUND/BACKGROUND LISTENNER : $event");
     });
 
 // Recorder
@@ -137,8 +172,6 @@ class _ChatRoomController extends LoadingController {
 
     socket.connect();
 
-    socket.emitWithAck("message-read", {"key": conversation.key}, ack: (_) {});
-
     socket.onConnectError((data) {
       Get.log("Connection error...");
     });
@@ -148,12 +181,60 @@ class _ChatRoomController extends LoadingController {
     });
   }
 
+  void _notifyThatIHaveReadMessages() {
+    var lastM = messages.firstWhereOrNull((e) => e.senderId != me.id);
+
+    if (lastM != null && !lastM.reads.contains(me.id)) {
+      socket.emitWithAck(
+        "message-read",
+        {"key": conversation.key, "messageId": lastM.id, "userId": me.id},
+        ack: (_) {},
+      );
+
+      lastM.reads = List.from(lastM.reads)..add(me.id);
+      lastM.recieveds = List.from(lastM.recieveds)..add(me.id);
+
+      ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(lastM));
+
+      ISAR.writeTxnSync(() {
+        return ISAR.chatConversationV2s.putSync(conversation);
+      });
+    }
+  }
+
+  void _markMyMessagesAsRead() {
+    var lastM = messages.firstWhereOrNull((e) => e.senderId == me.id);
+
+    if (lastM != null) {
+      if (!lastM.reads.contains(other.id)) {
+        lastM.reads = List.from(lastM.reads)..add(other.id);
+      }
+      if (!lastM.recieveds.contains(other.id)) {
+        lastM.recieveds = List.from(lastM.recieveds)..add(other.id);
+      }
+      ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(lastM));
+    }
+
+    update();
+  }
+
+  void _markMyMessagesAsRecieved() {
+    var lastM = messages.firstWhereOrNull((e) => e.senderId == me.id);
+
+    if (lastM != null && !lastM.recieveds.contains(other.id)) {
+      lastM.recieveds = List.from(lastM.recieveds)..add(other.id);
+
+      ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(lastM));
+    }
+
+    update();
+  }
+
 // On Close
   @override
   void onClose() {
     super.onClose();
     // _scrollController.dispose();
-    _newMessageController.dispose();
 
     _fGBGNotifierSubScription.cancel();
 
@@ -163,87 +244,50 @@ class _ChatRoomController extends LoadingController {
 
     if (!_voiceRecoder.isStopped) _voiceRecoder.closeRecorder();
 
-    ChatConversationV2.onChatEventCallback = null;
-
     _recordStream?.cancel();
 
-    if (conversation.messages.isNotEmpty) {
-      ChatConversationV2.addConversation(conversation);
-    }
-
-    conversation.markOthersMessagesAsRead();
-
     _endAudioSession();
+
+    _chatEventsSubscription.cancel();
+
+    conversation.unReadMessageCount = 0;
+    ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
+    _setUnreadMessagesCount();
+
+    _newMessageController.dispose();
+
+    ChatConversationV2.currentChatRoomKey = null;
+  }
+
+// Load messages
+
+  Future<void> _loadMessages([bool silent = true]) async {
+    try {
+      if (!silent) {
+        isLoading(true);
+        update();
+      }
+
+      messages = await ISAR.txn(() => ISAR.chatMessageV2s
+          .filter()
+          .keyEqualTo(conversation.key)
+          .sortByCreatedAtDesc()
+          .findAll());
+    } catch (e) {
+      Get.log("$e");
+    } finally {
+      isLoading(false);
+      update();
+      _clearChatNotifications();
+      _notifyThatIHaveReadMessages();
+    }
   }
 
 // Clear notifications
   void _clearChatNotifications() {
-    for (var id in conversation.localNotificationsIds) {
-      NotificationController.plugin.cancel(id);
+    for (var m in messages) {
+      NotificationController.plugin.cancel(m.localNotificationsId);
     }
-
-    conversation.localNotificationsIds.clear();
-  }
-
-// Chat Events
-  void _chatEventsCallback(String event, dynamic data, String k) {
-    if (k != conversation.key) return;
-
-    // print("Inner event : $event");
-
-    if (event == "new-message-v2") {
-      conversation.markOthersMessagesAsRead();
-      try {
-        final msg = ChatMessageV2.fromMap(data["message"]);
-
-        if (!conversation.messages.contains(msg)) {
-          conversation.messages.add(msg);
-        }
-
-        if (_isForeground) {
-          if (FileHelper.NEW_MESSAGE_SOUND != null) {
-            _newMessageSoundPlayer.startPlayer(
-                fromDataBuffer: FileHelper.NEW_MESSAGE_SOUND);
-          }
-
-          socket.emitWithAck(
-            "message-read",
-            {"key": conversation.key},
-            ack: (_) {},
-          );
-        } else {
-          try {
-            NotificationController.showNotification(
-              conversation.other.fullName,
-              msg.content ?? msg.typedMessage,
-              payload: {"key": conversation.key, "messageId": msg.id},
-              category: AppNotificationCategory.messaging,
-              groupKey: conversation.other.fullName,
-            ).then((id) => conversation.localNotificationsIds.remove(id));
-          } catch (e, trace) {
-            Get.log("$e");
-            Get.log("$trace");
-          }
-        }
-      } catch (e, trace) {
-        Get.log("$e");
-        Get.log("$trace");
-      }
-    } else if (event == "message-recieved") {
-      // conversation.markAsRecieved();
-    } else if (event == "message-read") {
-      // conversation.markAsRead();
-    } else if (event == "message-deleted") {
-    } else if (event == "user-blocked") {
-      // conversation.blocks.add(data["userId"]);
-      showToast("${other.fullName} blocked you");
-    } else if (event == "user-unblocked") {
-      // conversation.blocks.removeWhere((e) => e == data["userId"]);
-
-      showToast("${other.fullName} unblocked you");
-    }
-
-    update();
   }
 
   Future<Codec?> _getSupporttedCodec() async {
@@ -369,6 +413,7 @@ class _ChatRoomController extends LoadingController {
 
       final msg = ChatMessageV2(
         id: DateTime.now().toIso8601String(),
+        key: conversation.key,
         senderId: me.id,
         recieverId: other.id,
         type: 'voice',
@@ -380,16 +425,16 @@ class _ChatRoomController extends LoadingController {
         isSending: true,
         files: [],
         replyId: repliedMessage?.id,
-        voice: {
-          "name": path.basename(filePath),
-          "bytes": {"type": "Buffer", "data": bytes},
-          "seconds": _recordDuration.inSeconds,
-        },
+        voice: ChatVoiceNote()
+          ..name = path.basename(filePath)
+          ..bytes = bytes
+          ..seconds = _recordDuration.inSeconds,
         bookingId: haveHandledInitialAd ? initialBooking?.id : null,
         roommateId: haveHandledInitialAd ? initialRoommateAd?.id : null,
+        localNotificationsId: Random().nextInt(pow(1, 30).toInt()),
       );
 
-      messages.add(msg);
+      messages.insert(0, msg);
 
       final map = {
         "type": msg.type,
@@ -421,7 +466,10 @@ class _ChatRoomController extends LoadingController {
             msg.id = res["message"]["id"];
             msg.isSending = false;
 
-            conversation.saveToStorage(AppController.me.id);
+            ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(msg));
+            conversation.lastMessage.value = msg;
+            ISAR.writeTxnSync(
+                () => ISAR.chatConversationV2s.putSync(conversation));
 
             update();
           } else {
@@ -440,11 +488,7 @@ class _ChatRoomController extends LoadingController {
   //   _scrollController.jumpTo(index: messages.length - 1);
   // }
 
-  void _sortMessages() {
-    if (messages.isEmpty) return;
-    messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  }
-
+/*
   Future<void> _fetchMessages() async {
     if (AppController.me.isGuest) return;
     isLoading(true);
@@ -483,6 +527,7 @@ class _ChatRoomController extends LoadingController {
       }
     });
   }
+*/
 
   // Send message
   void _sendMessage(
@@ -511,9 +556,12 @@ class _ChatRoomController extends LoadingController {
         if (res["code"] == 200) {
           final msg = ChatMessageV2.fromMap(res["message"]);
 
-          messages.add(msg);
+          messages.insert(0, msg);
 
-          conversation.saveToStorage(AppController.me.id);
+          ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(msg));
+          conversation.lastMessage.value = msg;
+          ISAR.writeTxnSync(
+              () => ISAR.chatConversationV2s.putSync(conversation));
 
           update();
 
@@ -754,23 +802,31 @@ class _ChatRoomController extends LoadingController {
     final res = await showConfirmDialog("Please confirm to delete");
 
     if (res != true) return;
-    socket.emitWithAck("delete-messages", {
-      "ids": selectedMessages.map((e) => e.id).toList(),
-      "key": conversation.key,
-    }, ack: (res) {
-      if (res == 200) {
-        for (var m in selectedMessages) {
-          m.addDeletes(me.id);
-        }
+    socket.emitWithAck(
+      "delete-messages",
+      {
+        "ids": selectedMessages.map((e) => e.id).toList(),
+        "key": conversation.key,
+      },
+      ack: (_) {},
+    );
 
-        isSelectMode(false);
-
-        selectedMessages.clear();
-        update();
-      } else {
-        showToast("Operation failed");
-      }
+    ISAR.writeTxnSync(() {
+      return ISAR.chatMessageV2s
+          .deleteAllSync(selectedMessages.map((e) => fastHash(e.id)).toList());
     });
+
+    messages.removeWhere((e) => selectedMessages.contains(e));
+    if (messages.isNotEmpty) {
+      conversation.lastMessage.value = messages.first;
+      ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
+    }
+
+    selectedMessages.clear();
+
+    isSelectMode(false);
+
+    update();
   }
 
   Future<void> _handlePopUpMenu(String? val) async {
@@ -788,7 +844,8 @@ class _ChatRoomController extends LoadingController {
             "block-user",
             {"userId": other.id, "key": conversation.key},
             ack: (data) {
-              conversation.blocks.add(other.id);
+              conversation.blocks = List.from(conversation.blocks)
+                ..add(other.id);
               update();
             },
           );
@@ -808,7 +865,8 @@ class _ChatRoomController extends LoadingController {
             "unblock-user",
             {"userId": other.id, "key": conversation.key},
             ack: (data) {
-              conversation.blocks.removeWhere((e) => e == other.id);
+              conversation.blocks = List.from(conversation.blocks)
+                ..remove(other.id);
               update();
             },
           );
@@ -817,6 +875,27 @@ class _ChatRoomController extends LoadingController {
         break;
       default:
     }
+  }
+
+  void _setUnreadMessagesCount() {
+    var conversations = ISAR
+        .txnSync(() =>
+            ISAR.chatConversationV2s.filter().unReadMessageCountGreaterThan(0))
+        .findAllSync();
+
+    if (conversations.isEmpty) {
+      Home.unreadMessagesCount(0);
+      update();
+      return;
+    }
+
+    var count = conversations
+        .map((e) => e.unReadMessageCount)
+        .reduce((val, el) => val + el);
+
+    Home.unreadMessagesCount(count);
+
+    update();
   }
 }
 

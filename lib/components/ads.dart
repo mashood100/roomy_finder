@@ -8,7 +8,7 @@ import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/utilities/data.dart';
 
 class PropertyAdWidget extends StatelessWidget {

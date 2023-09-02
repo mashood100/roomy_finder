@@ -12,7 +12,7 @@ import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/maintenance.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SeeMaintenanceOffersScreen extends StatefulWidget {

@@ -10,9 +10,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:roomy_finder/classes/chat_file_system.dart';
+import 'package:roomy_finder/functions/utility.dart';
+import 'package:roomy_finder/helpers/chat_events_helper.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
+import 'package:roomy_finder/utilities/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:roomy_finder/classes/api_service.dart';
@@ -22,10 +24,8 @@ import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/dialogs_bottom_sheets.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/maintenance/screens/view_maintenance/details.dart';
-import 'package:roomy_finder/models/chat_conversation_v2.dart';
-import 'package:roomy_finder/models/chat_message_v2.dart';
 import 'package:roomy_finder/models/maintenance.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/booking/view_property_booking.dart';
 
 final _random = Random();
@@ -139,6 +139,7 @@ class NotificationController {
     AppNotificationCategory? category,
     int badgeNumber = 0,
     String? groupKey,
+    int? id,
   }) async {
     final List<AndroidNotificationAction> actions = [];
     // var launInfo = await    _plugin.getNotificationAppLaunchDetails();
@@ -226,7 +227,8 @@ class NotificationController {
       android: androidDetails,
       iOS: darwinDetail,
     );
-    var id = _random.nextInt(1000);
+    id = id ?? _random.nextInt(1000);
+
     await plugin.show(
       id,
       title,
@@ -241,9 +243,15 @@ class NotificationController {
   @pragma("vm:entry-point")
   static Future<void> firebaseMessagingHandler(
       RemoteMessage msg, bool isForeground) async {
+    if (!isForeground) {
+      await initIsar();
+    }
+
     final notification = msg.notification;
 
     final data = msg.data;
+
+    data["isBackgroundFCM"] = !isForeground;
     final event = data["event"];
 
     AppNotificationCategory? category;
@@ -265,7 +273,10 @@ class NotificationController {
       "new-message-v2",
       // "pay-cash-survey-landlord",
       // "pay-cash-survey-tenant",
-      "message-reply-succeded"
+      "mark-as-read-succeded",
+      "message-read",
+      "message-recieved",
+      "message-reply-succeded",
     ].contains(event);
 
     if (shouldSaveNotification) {
@@ -347,42 +358,9 @@ class NotificationController {
               category: category,
             );
             break;
-
           case "new-message-v2":
-            var title = data["notificationTitle"].toString();
-            category = AppNotificationCategory.messaging;
-            final msg = ChatMessageV2.fromJson(data["message"]);
-
-            final id = await showNotification(
-              notification.title ?? title,
-              msg.content ?? msg.typedMessage,
-              payload: msg.createLocalNotificationPayload(data["key"]),
-              category: category,
-            );
-
-            final key =
-                ChatConversationV2.createKey(msg.recieverId, msg.senderId);
-
-            var conv =
-                await ChatFileSystem.getConversation(msg.recieverId, key);
-
-            if (conv == null) {
-              final sender = await ApiService.fetchUser(msg.senderId);
-
-              final reciever = await ApiService.fetchUser(msg.recieverId);
-
-              conv = ChatConversationV2(
-                key: key,
-                first: sender!,
-                second: reciever!,
-                messages: [msg],
-                blocks: [],
-              );
-            }
-            conv.localNotificationsIds.add(id);
-            await conv.saveToStorage(msg.recieverId);
-
             break;
+
           default:
             await showNotification(
               notification.title,
@@ -400,6 +378,22 @@ class NotificationController {
           default:
         }
       }
+    }
+
+    if (data["event"] == "new-message-v2") {
+      ChatEventHelper.newMessageHandler(
+        data..["message"] = json.decode(data["message"]),
+      );
+    } else if (data["event"] == "mark-as-read-succeded") {
+      ChatEventHelper.handleMarkAsReadReplySuceeded(data);
+    } else if (data["event"] == "message-read") {
+      ChatEventHelper.messageReadHandler(data);
+    } else if (data["event"] == "message-recieved") {
+      ChatEventHelper.messageRecievedHandler(data);
+    } else if (data["event"] == "message-reply-succeded") {
+      ChatEventHelper.replyMessageFromTraySuceeded(
+        data..["message"] = json.decode(data["message"]),
+      );
     }
   }
 
@@ -661,28 +655,14 @@ class NotificationController {
     bool isForeground, [
     String? anwser,
   ]) async {
-    final key = data["key"] as String;
     final senderId = data["senderId"] as String;
 
-    _log(isForeground);
-
     if (isForeground) {
-      ChatConversationV2.onLocalNotificationsAction(data);
-
-      User? user;
-      try {
-        final conv = ChatConversationV2.conversations
-            .firstWhereOrNull((e) => e.key == key);
-
-        if (conv != null) user = conv.other;
-      } catch (_) {}
+      var user = ISAR.txnSync(() => ISAR.users.getSync(fastHash(senderId)));
 
       user ??= await ApiService.fetchUser(senderId);
 
-      if (user == null) {
-        _log("Can't find other user in new message");
-        return;
-      }
+      if (user == null) return;
 
       moveToChatRoom(AppController.me, user);
     } else {
@@ -766,4 +746,4 @@ enum AppNotificationCategory {
 }
 
 // void _log(data) => print("[ LOCAL_NOTIFICATION ] : $data");
-void _log(data) {}
+// void _log(data) {}

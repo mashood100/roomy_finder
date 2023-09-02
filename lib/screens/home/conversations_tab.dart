@@ -1,61 +1,66 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:get/get.dart';
-import 'package:roomy_finder/classes/chat_file_system.dart';
+import 'package:isar/isar.dart';
 import 'package:roomy_finder/classes/home_screen_supportable.dart';
+import 'package:roomy_finder/controllers/notification_controller.dart';
+import 'package:roomy_finder/helpers/chat_events_helper.dart';
+import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/screens/home/home.dart';
 import 'package:roomy_finder/utilities/data.dart';
+import 'package:roomy_finder/utilities/isar.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as dd;
 
-import 'package:roomy_finder/classes/api_service.dart';
 import 'package:roomy_finder/components/loading_placeholder.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/loading_controller.dart';
-import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
-import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/functions/utility.dart';
-import 'package:roomy_finder/models/chat_conversation_v2.dart';
-import 'package:roomy_finder/models/chat_message_v2.dart';
+import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
 
 class _ConversationsController extends LoadingController {
   late final Socket socket;
 
-  late final StreamSubscription<RemoteMessage> fcmStream;
+  late final StreamSubscription<RemoteMessage> _fcmStream;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
+  late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
 
-  bool _isForeground = true;
-
-  RxList<ChatConversationV2> get conversations =>
-      ChatConversationV2.conversations;
+  final conversations = <ChatConversationV2>[].obs;
 
   void _setUnreadMessagesCount() {
-    var count = conversations.isEmpty
-        ? 0
-        : conversations
-            .map((e) => e.unReadMessageCount)
-            .reduce((value, e) => value + e);
+    var conversations = ISAR
+        .txnSync(() =>
+            ISAR.chatConversationV2s.filter().unReadMessageCountGreaterThan(0))
+        .findAllSync();
 
-    Home.unreadMessagesCount(count);
-  }
-
-  Future<void> _getInitalSaveMessages() async {
-    final data =
-        await ChatFileSystem.getSavedConversations(AppController.me.id);
-
-    for (var c in data) {
-      if (!conversations.contains(c)) conversations.add(c);
+    if (conversations.isEmpty) {
+      Home.unreadMessagesCount(0);
+      update();
+      return;
     }
 
-    _setUnreadMessagesCount();
+    var count = conversations
+        .map((e) => e.unReadMessageCount)
+        .reduce((val, el) => val + el);
+
+    Home.unreadMessagesCount(count);
 
     update();
+  }
+
+  void _notifyThatIHaveRecievedMessage(ChatMessageV2 lastM) {
+    if (!lastM.reads.contains(AppController.me.id)) {
+      socket.emitWithAck(
+        "message-recieved",
+        {"key": lastM.key, "messageId": lastM.id},
+        ack: (_) {},
+      );
+    }
   }
 
   @override
@@ -67,44 +72,95 @@ class _ConversationsController extends LoadingController {
 
     socket.connect();
 
-    _getInitalSaveMessages();
-
-    socket.onConnect((id) {
-      _fetchConversations(true);
-    });
+    _loadConversations();
 
     socket.onConnectError((data) {});
 
 // New message
-    socket.on("new-message-v2", _newMessageHandler);
+    socket.on(
+      "new-message-v2",
+      (data) => ChatEventHelper.newMessageHandler(data),
+    );
 
     // Message recieved
-    socket.on("message-recieved", _messageRecievedHandler);
+    socket.on(
+      "message-recieved",
+      (data) => ChatEventHelper.messageRecievedHandler(data),
+    );
 
 // Message read
-    socket.on("message-read", _messageReadHandler);
+    socket.on(
+      "message-read",
+      (data) => ChatEventHelper.messageReadHandler(data),
+    );
 
 // User blocked
-    socket.on("user-blocked", _userBlockedHandler);
+    socket.on(
+      "user-blocked",
+      (data) => ChatEventHelper.userBlockedHandler(data),
+    );
 
 // User unblocked
-    socket.on("user-unblocked", _userUnblockedHandler);
+    socket.on(
+      "user-unblocked",
+      (data) => ChatEventHelper.userUnblockedHandler(data),
+    );
 
 // Message deleted
-    socket.on("message-deleted", _messageDeletedHandler);
+    socket.on(
+      "message-deleted",
+      (data) => ChatEventHelper.messageDeletedHandler(data),
+    );
 
 // FCM
-    fcmStream = FirebaseMessaging.onMessage
+    _fcmStream = FirebaseMessaging.onMessage
         .asBroadcastStream()
         .listen((event) => _fcmHandler(event.data));
 // Background foreground
+
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
-        _fetchConversations(true);
-        _isForeground = true;
+        _loadConversations(isSilent: true);
+        _setUnreadMessagesCount();
+        AppController.isForeground = true;
       } else {
-        _isForeground = false;
+        AppController.isForeground = false;
       }
+    });
+
+// Chat events
+    _chatEventsSubscription = ChatEventHelper.stream.listen((event) async {
+      await _loadConversations(isSilent: true);
+
+      if (event.$1 == ChatEvents.newMessage) {
+        if (event.$3 != null) {
+          var lastM = conversations
+              .firstWhereOrNull((e) => e.key == event.$2)
+              ?.lastMessage
+              .value;
+
+          if (lastM != null && !lastM.recieveds.contains(lastM.recieverId)) {
+            _notifyThatIHaveRecievedMessage(lastM);
+
+            lastM.recieveds = List.from(lastM.recieveds)..add(lastM.recieverId);
+            ISAR.writeTxnSync(() => ISAR.chatMessageV2s.putSync(lastM));
+          }
+        }
+      } else if (event.$1 == ChatEvents.userBlocked) {
+        final conv = conversations.firstWhereOrNull((e) => event.$2 == e.key);
+
+        if (conv == null) return;
+        conv.blocks = List.from(conv.blocks)..add(conv.me.id);
+      } else if (event.$1 == ChatEvents.userUnBlocked) {
+        final conv = conversations.firstWhereOrNull((e) => event.$2 == e.key);
+
+        if (conv == null) return;
+        conv.blocks = List.from(conv.blocks)
+          ..removeWhere((e) => e == conv.me.id);
+      }
+
+      update();
+      _setUnreadMessagesCount();
     });
   }
 
@@ -118,264 +174,9 @@ class _ConversationsController extends LoadingController {
 
     dd.cache.clear();
 
-    fcmStream.cancel();
+    _fcmStream.cancel();
     _fGBGNotifierSubScription.cancel();
-  }
-
-  Future<void> _fetchConversations([bool? silent]) async {
-    if (AppController.me.isGuest) return;
-    if (silent != true) isLoading(true);
-    hasFetchError(false);
-    update();
-
-    try {
-      final res =
-          await ApiService.getDio.get("/messaging-v2/get-conversations");
-
-      if (res.statusCode == 200) {
-        final data = (res.data as List).map((e) {
-          try {
-            final conv = ChatConversationV2.fromMap(e);
-
-            return conv;
-          } catch (e, _) {
-            // Get.log("$e");
-            // Get.log("$trace");
-
-            return null;
-          }
-        });
-
-        conversations.clear();
-        _setUnreadMessagesCount();
-
-        conversations.addAll(data.whereType<ChatConversationV2>().toList());
-        _setUnreadMessagesCount();
-
-        for (var conv in data) {
-          if (conv == null) return;
-
-          final index = conversations.indexOf(conv);
-
-          if (index == -1) {
-            conversations.add(conv);
-          } else {
-            conversations[index].updateMessages(conv.messages);
-          }
-          conv.saveToStorage(conv.me.id);
-        }
-      } else {
-        hasFetchError(true);
-      }
-    } on DioException catch (e) {
-      if (e.message != null) showToast(e.message!);
-      rethrow;
-    } catch (e) {
-      hasFetchError(true);
-      Get.log("$e");
-    } finally {
-      isLoading(false);
-      _sortConversations();
-      update();
-    }
-  }
-
-  void _messageDeletedHandler(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-
-    final messageId = data["messageId"];
-
-    final index = conv.messages.indexWhere((m) => m.id == messageId);
-
-    if (index == -1) {
-      Get.log("Wrong message deleted index : messageId : $messageId");
-    } else {
-      conv.messages[index].isDeletedForAll = true;
-    }
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("message-deleted", data, key);
-    }
-    update();
-    _setUnreadMessagesCount();
-  }
-
-  void _userUnblockedHandler(data) {
-    final key = data["key"];
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-    conv.blocks.removeWhere((e) => e == data["userId"]);
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("user-unblocked", data, key);
-    }
-    update();
-  }
-
-  void _userBlockedHandler(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-
-    if (conv == null) return;
-
-    conv.blocks.add(data["userId"]);
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("user-blocked", data, key);
-    }
-
-    update();
-  }
-
-  void _messageReadHandler(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-
-    conv.markMyMessagesAsRead();
-
-    _setUnreadMessagesCount();
-    update();
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("message-read", data, key);
-    }
-  }
-
-  void _messageRecievedHandler(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-
-    conv.markMyMessagesAsRecieved();
-
-    update();
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("message-recieved", data, key);
-    }
-  }
-
-  void _handleMarkAsReadReplySuceeded(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-
-    conv.markOthersMessagesAsRead();
-
-    _setUnreadMessagesCount();
-
-    update();
-
-    if (ChatConversationV2.onChatEventCallback != null) {
-      ChatConversationV2.onChatEventCallback!("message-recieved", data, key);
-    }
-  }
-
-  // When message is replied from notification tray,
-  // The server will new an event with a new message
-  void _handleReplyMessageSuceeded(data) {
-    final key = data["key"];
-
-    final conv = conversations.firstWhereOrNull((e) => e.key == key);
-    if (conv == null) return;
-
-    final chatMessage = ChatMessageV2.fromJson(data["message"]);
-
-    conv.messages.add(chatMessage);
-
-    conv.markOthersMessagesAsRead();
-    _setUnreadMessagesCount();
-
-    update();
-
-    // if (ChatConversationV2.onChatEventCallback != null) {
-    //   ChatConversationV2.onChatEventCallback!("message-recieved", data, key);
-    // }
-  }
-
-  void _newMessageHandler(data) async {
-    try {
-      final msg = ChatMessageV2.fromMap(data["message"]);
-
-      final key = ChatConversationV2.createKey(
-        AppController.me.id,
-        msg.senderId,
-      );
-
-      final ChatConversationV2 conv;
-
-      final c = conversations.firstWhereOrNull((c) => c.key == key);
-
-      if (c != null) {
-        conv = c;
-      } else {
-        final other = await ApiService.fetchUser(msg.senderId);
-
-        if (other == null) {
-          Get.log("Failed to get user data on new message");
-          return;
-        }
-
-        conv = ChatConversationV2(
-          key: key,
-          first: AppController.me,
-          second: other,
-          messages: [],
-          createdAt: msg.createdAt,
-          blocks: [],
-        );
-
-        conversations.insert(0, conv);
-      }
-
-      conv.messages.add(msg);
-
-      await conv.saveToStorage(msg.recieverId);
-      conv.markMyMessagesAsRecieved();
-
-      socket.emitWithAck(
-        "message-recieved",
-        {"messageId": msg.id, "key": key},
-        ack: (data) {},
-      );
-
-      if (ChatConversationV2.onChatEventCallback != null) {
-        conv.markOthersMessagesAsRead();
-        ChatConversationV2.onChatEventCallback!("new-message-v2", data, key);
-      }
-      if (!_isForeground || ChatConversationV2.onChatEventCallback == null) {
-        try {
-          final id = await NotificationController.showNotification(
-            conv.other.fullName,
-            msg.content ?? msg.typedMessage,
-            payload: msg.createLocalNotificationPayload(key),
-            category: AppNotificationCategory.messaging,
-            groupKey: conv.other.fullName,
-          );
-
-          conv.localNotificationsIds.add(id);
-        } catch (e, trace) {
-          Get.log("$e");
-          Get.log("$trace");
-        }
-      }
-
-      _sortConversations();
-      _setUnreadMessagesCount();
-
-      update();
-    } catch (e, trace) {
-      Get.log("$e");
-      Get.log("$trace");
-    }
+    _chatEventsSubscription.cancel();
   }
 
   void _fcmHandler(Map<String, dynamic> data) {
@@ -384,14 +185,14 @@ class _ConversationsController extends LoadingController {
       //   _newMessageHandler({...data, "message": jsonDecode(data["message"])});
 
       case "message-read":
-        _messageReadHandler(data);
+        ChatEventHelper.messageReadHandler(data);
 
       case "mark-as-read-succeded":
-        _handleMarkAsReadReplySuceeded(data);
+        ChatEventHelper.handleMarkAsReadReplySuceeded(data);
 
         break;
       case "message-reply-succeded":
-        _handleReplyMessageSuceeded(data);
+        ChatEventHelper.replyMessageFromTraySuceeded(data);
 
         break;
 
@@ -399,13 +200,42 @@ class _ConversationsController extends LoadingController {
     }
   }
 
-  void _sortConversations() {
-    conversations.sort((a, b) {
-      if (a.lastMessage == null) return 1;
-      if (b.lastMessage == null) return 1;
+  Future<void> _loadConversations({bool? isSilent}) async {
+    try {
+      if (isSilent != true) {
+        isLoading(true);
+      }
+      update();
 
-      return b.lastMessage!.createdAt.compareTo(a.lastMessage!.createdAt);
-    });
+      var data = ISAR.txnSync(() => ISAR.chatConversationV2s
+          .filter()
+          .keyContains(AppController.me.id)
+          .sortByCreatedAtDesc()
+          .findAllSync());
+
+      conversations
+        ..clear()
+        ..addAll(data);
+    } on IsarError catch (e) {
+      Get.log(e.message);
+    } finally {
+      if (isSilent != true) {
+        isLoading(false);
+      }
+
+      conversations.sort(
+        (a, b) {
+          if (a.lastMessage.value == null) {
+            return 1;
+          }
+
+          return b.lastMessage.value?.createdAt
+                  .compareTo(a.lastMessage.value!.createdAt) ??
+              -1;
+        },
+      );
+      update();
+    }
   }
 }
 
@@ -417,8 +247,13 @@ class ChatConversationsTab extends StatelessWidget
   void onTabIndexSelected(int index) {
     final controller = Get.find<_ConversationsController>();
 
-    controller._sortConversations();
+    controller._loadConversations(isSilent: true);
     controller.update();
+
+    for (var id in ChatConversationV2.messagesNotificationIds) {
+      NotificationController.plugin.cancel(id);
+    }
+    NotificationController.plugin.cancelAll();
   }
 
   @override
@@ -432,16 +267,6 @@ class ChatConversationsTab extends StatelessWidget
           title: const Text('Chats'),
           centerTitle: false,
           elevation: 0,
-          actions: [
-            GetBuilder<_ConversationsController>(builder: (controller) {
-              return IconButton(
-                onPressed: controller.isLoading.isTrue
-                    ? null
-                    : controller._fetchConversations,
-                icon: const Icon(Icons.refresh),
-              );
-            })
-          ],
         ),
         body: Stack(
           children: [
@@ -464,9 +289,7 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations
-                    .where((c) => c.messages.isNotEmpty)
-                    .toList();
+                final data = controller.conversations;
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
@@ -475,16 +298,17 @@ class ChatConversationsTab extends StatelessWidget
                     return ListTile(
                       contentPadding:
                           const EdgeInsets.only(left: 10, right: 10),
-                      onTap: () async {
-                        // print(conv.messages
-                        //     .map((e) => (e.recieveds, e.isRecieved)));
-                        // return;
-                        await moveToChatRoom(conv.first, conv.second);
+                      onTap: () {
+                        conv.unReadMessageCount = 0;
 
-                        controller._sortConversations();
-                        conv.markOthersMessagesAsRead();
-                        controller._setUnreadMessagesCount();
-                        controller.update();
+                        moveToChatRoom(
+                          conv.first.value!,
+                          conv.second.value!,
+                        ).then((value) {
+                          controller._setUnreadMessagesCount();
+                          controller._loadConversations();
+                          controller.update();
+                        });
                       },
                       leading: Hero(
                         tag: "${conv.other.id}profile-picture",
@@ -497,9 +321,10 @@ class ChatConversationsTab extends StatelessWidget
                             conv.other.fullName,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          if (conv.lastMessage != null)
+                          if (conv.lastMessage.value != null)
                             Text(
-                              relativeTimeText(conv.lastMessage!.createdAt,
+                              relativeTimeText(
+                                  conv.lastMessage.value!.createdAt,
                                   fromNow: false),
                               style: const TextStyle(
                                 fontStyle: FontStyle.italic,
@@ -511,7 +336,7 @@ class ChatConversationsTab extends StatelessWidget
                       ),
                       subtitle: Builder(
                         builder: (context) {
-                          final msg = conv.lastMessage;
+                          final msg = conv.lastMessage.value;
 
                           if (msg == null) return const SizedBox();
 
@@ -524,13 +349,17 @@ class ChatConversationsTab extends StatelessWidget
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (msg.isMine && msg.isRead)
+                              if (msg.isMine &&
+                                  (conv.lastMessage.value?.isRead == true ||
+                                      msg.isRead))
                                 const Icon(
                                   Icons.done_all,
                                   color: Colors.blue,
                                   size: 16,
                                 )
-                              else if (msg.isMine && msg.isRecieved)
+                              else if (msg.isMine &&
+                                  (conv.lastMessage.value?.isRecieved == true ||
+                                      msg.isRecieved))
                                 const Icon(
                                   Icons.done_all,
                                   color: Colors.grey,
@@ -555,15 +384,6 @@ class ChatConversationsTab extends StatelessWidget
                           );
                         },
                       ),
-                      // trailing: SizedBox(
-                      //   width: 40,
-                      //   child: IconButton(
-                      //     onPressed: () {
-                      //       print(conv.messages.map((e) => e.reads).toList());
-                      //     },
-                      //     icon: const Icon(CupertinoIcons.ellipsis_vertical),
-                      //   ),
-                      // ),
                     );
                   },
                   itemCount: data.length,

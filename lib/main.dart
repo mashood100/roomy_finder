@@ -25,6 +25,7 @@ import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/screens/start/reset_password.dart';
 import 'package:roomy_finder/screens/start/welcome.dart';
 import 'package:roomy_finder/screens/utility_screens/update_app.dart';
+import 'package:roomy_finder/utilities/isar.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
@@ -32,6 +33,9 @@ void main() async {
 
   // final pref = await SharedPreferences.getInstance();
   // pref.clear();
+
+  // Database
+  await initIsar();
 
   // instantiating firebase
   await Firebase.initializeApp(
@@ -69,6 +73,7 @@ void main() async {
 
   // Local notification
   await NotificationController.initializeLocalNotifications();
+  await NotificationController.plugin.cancelAll();
 
   // Dynamic link
 

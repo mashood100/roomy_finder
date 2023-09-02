@@ -12,7 +12,7 @@ import 'package:roomy_finder/controllers/loading_controller.dart';
 import 'package:roomy_finder/data/enums.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/models/country.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/home/home_tab.dart';
 import 'package:roomy_finder/screens/start/registration.dart';
 import 'package:roomy_finder/utilities/data.dart';

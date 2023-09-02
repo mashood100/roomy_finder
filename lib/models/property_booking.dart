@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:roomy_finder/models/property_ad.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 
 class PropertyBooking {
   String id;

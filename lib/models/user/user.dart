@@ -4,12 +4,21 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:isar/isar.dart';
+import 'package:roomy_finder/functions/utility.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 
 import 'package:roomy_finder/controllers/app_controller.dart';
 
+part 'user.g.dart';
+
+@Collection()
 class User {
+  Id get isarId => fastHash(id);
+
+  @Index(unique: true, replace: true)
   String id;
+
   String type;
   String email;
   String? phone;
@@ -20,8 +29,8 @@ class User {
   String? profilePicture;
   bool isPremium;
   DateTime createdAt;
-  num? serviceFee;
-  num? VAT;
+  double? serviceFee;
+  double? VAT;
 
   AboutMe aboutMe;
 
@@ -42,15 +51,31 @@ class User {
     required this.aboutMe,
   });
 
+  @ignore
   String? get password => AppController.instance.userPassword;
+
+  @ignore
   String get fullName => "$firstName $lastName";
+
+  @ignore
   bool get isMe => AppController.instance.user.value.id == id;
+
+  @ignore
   bool get isLandlord => type == "landlord";
+
+  @ignore
   bool get isRoommate => type == "roommate";
+
+  @ignore
   bool get isMaintenant => type == "maintainer";
+
+  @ignore
   bool get isGuest => this == GUEST_USER;
+
+  @ignore
   bool get isTerminatedUser => id == "0" * 24;
 
+  @ignore
   Future<String> get formattedPhoneNumber async {
     final phoneNumber = PhoneNumber(
       phoneNumber: AppController.me.phone,
@@ -102,8 +127,8 @@ class User {
       profilePicture: map['profilePicture'] as String?,
       isPremium: map['isPremium'] as bool,
       createdAt: DateTime.parse(map['createdAt'] as String),
-      serviceFee: map['serviceFee'] as num?,
-      VAT: map['VAT'] as num?,
+      serviceFee: (map['serviceFee'] as num?)?.toDouble(),
+      VAT: (map['VAT'] as num?)?.toDouble(),
       aboutMe: AboutMe.fromMap(map['aboutMe'] as Map<String, dynamic>),
     );
   }
@@ -126,6 +151,7 @@ class User {
     return other.id == id;
   }
 
+  @ignore
   @override
   int get hashCode {
     return id.hashCode;
@@ -159,6 +185,7 @@ class User {
     );
   }
 
+  @ignore
   Map<String, dynamic> get socketOption {
     var options = OptionBuilder()
         .setAuth({
@@ -202,6 +229,7 @@ class User {
   }
 }
 
+@Embedded()
 class AboutMe {
   String? nationality;
   String? astrologicalSign;
@@ -211,6 +239,7 @@ class AboutMe {
   String? lifeStyle;
   String? description;
 
+  @ignore
   double get percentageCompleted {
     var values2 = toMap().values;
     var delta = 100 / values2.length;

@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/maintenance/helpers/get_sub_category_icon.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 
 class Maintenance {
   String id;

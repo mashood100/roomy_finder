@@ -9,7 +9,7 @@ import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
 import 'package:roomy_finder/functions/snackbar_toast.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/ads/roommates/filter.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
 import 'package:roomy_finder/screens/user/public_profile.dart';

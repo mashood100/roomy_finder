@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/data/constants.dart';
+import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
+import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/models/maintenance.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/property_booking.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/home/home.dart';
 
 const _validStatus = [200, 201, 204, 400, 403, 409, 404, 406, 500, 502, 503];
@@ -33,8 +35,8 @@ class ApiService {
           final token = await getToken();
 
           if (token == null) {
-            AppController.instance.logout();
-            Get.offAllNamed('/login');
+            // AppController.instance.logout();
+            // Get.offAllNamed('/login');
             return handler.reject(e);
           }
 
@@ -288,6 +290,34 @@ class ApiService {
   static Future<List<PropertyAd>> getUserPropertyAds(String id) async {
     final res = await getDio.get("/user/$id/property-ads");
     return (res.data as List).map((e) => PropertyAd.fromMap(e)).toList();
+  }
+
+  static Future<ChatConversationV2?> fetchConversation(key) async {
+    try {
+      final res = await getDio.get("/messaging-v2/conversation/$key");
+
+      if (res.statusCode == 200) {
+        return ChatConversationV2.fromMap(res.data);
+      }
+      return null;
+    } catch (e) {
+      Get.log("$e");
+      return null;
+    }
+  }
+
+  static Future<ChatMessageV2?> fetchMessage(messageId) async {
+    try {
+      final res = await getDio.get("/messaging-v2/$messageId");
+
+      if (res.statusCode == 200) {
+        return ChatMessageV2.fromMap(res.data);
+      }
+      return null;
+    } catch (e) {
+      Get.log("$e");
+      return null;
+    }
   }
 }
 

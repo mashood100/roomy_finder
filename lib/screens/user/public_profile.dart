@@ -14,7 +14,7 @@ import 'package:roomy_finder/helpers/asset_helper.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
 import 'package:roomy_finder/models/property_ad.dart';
 import 'package:roomy_finder/models/roommate_ad.dart';
-import 'package:roomy_finder/models/user.dart';
+import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/screens/ads/property_ad/view_ad.dart';
 import 'package:roomy_finder/screens/ads/roomate_ad/view_ad.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
