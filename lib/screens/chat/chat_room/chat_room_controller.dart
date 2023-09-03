@@ -10,7 +10,9 @@ class _ChatRoomController extends LoadingController {
   });
 
   late final ItemScrollController _scrollController;
-  late final TextEditingController _newMessageController;
+
+  TextEditingController get _newMessageController => _chatMessageController;
+
   late final StreamSubscription _messageSyncSubscription;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
@@ -74,7 +76,6 @@ class _ChatRoomController extends LoadingController {
     _createAudioSession();
 
     _scrollController = ItemScrollController();
-    _newMessageController = TextEditingController();
 
 // New message voice player
     _newMessageSoundPlayer = FlutterSoundPlayer(logLevel: Level.warning);
@@ -121,7 +122,7 @@ class _ChatRoomController extends LoadingController {
 
           messages.insert(0, lastM);
 
-          _notifyThatIHaveReadMessages();
+          if (AppController.isForeground) _notifyThatIHaveReadMessages();
         }
       } else if (event.$1 == ChatEvents.messageRead) {
         _markMyMessagesAsRead();
@@ -260,7 +261,7 @@ class _ChatRoomController extends LoadingController {
     ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
     _setUnreadMessagesCount();
 
-    _newMessageController.dispose();
+    _newMessageController.clear();
 
     ChatConversationV2.currentChatRoomKey = null;
   }
@@ -458,7 +459,7 @@ class _ChatRoomController extends LoadingController {
       _recordDuration = Duration.zero;
       repliedMessage = null;
 
-      update(["bottom-widget"]);
+      update();
 
       try {
         file.deleteSync(recursive: true);
@@ -915,3 +916,5 @@ enum _AttachedTypes {
   document,
   file,
 }
+
+final _chatMessageController = TextEditingController();

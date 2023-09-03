@@ -700,17 +700,18 @@ Future<void> moveToChatRoom(
     conv.first.value = first;
     conv.second.value = second;
 
-    if (Get.currentRoute.contains("ChatRoomScreen")) Get.back();
-
     ChatConversationV2.currentChatRoomKey = conv.key;
 
-    await Get.to(() {
-      return _ChatRoomScreen(
-        conv: conv!,
-        initialRoommateAd: roommateAd,
-        initialBooking: booking,
-      );
-    })?.then((value) {
+    await Get.to(
+      () {
+        return _ChatRoomScreen(
+          conv: conv!,
+          initialRoommateAd: roommateAd,
+          initialBooking: booking,
+        );
+      },
+      routeName: "ChatRoomScreen/$key",
+    )?.then((value) {
       ChatConversationV2.currentChatRoomKey = null;
     });
   } catch (e, trace) {

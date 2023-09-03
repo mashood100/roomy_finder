@@ -46,7 +46,7 @@ class _HomeController extends LoadingController {
 
     Future(_runStartFutures);
 
-    Future.delayed(const Duration(seconds: 1), _handleInitialMessage);
+    Future.delayed(const Duration(seconds: 2), _handleInitialMessage);
 
     super.onInit();
 
