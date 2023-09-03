@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:isar/isar.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/controllers/notification_controller.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
@@ -264,6 +265,10 @@ class ChatEventHelper {
         shouldShow = false;
       }
 
+      if (!AppController.isForeground) {
+        shouldShow = true;
+      }
+
       ChatConversationV2.messagesNotificationIds.add(msg.localNotificationsId);
 
       if (shouldShow) {
@@ -273,6 +278,7 @@ class ChatEventHelper {
           payload: msg.createLocalNotificationPayload(data["key"]),
           category: category,
           id: msg.localNotificationsId,
+          groupKey: msg.key,
         );
       }
     } catch (e, trace) {

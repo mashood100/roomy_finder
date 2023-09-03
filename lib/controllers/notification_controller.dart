@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:roomy_finder/functions/utility.dart';
 import 'package:roomy_finder/helpers/chat_events_helper.dart';
 import 'package:roomy_finder/helpers/roomy_notification.dart';
+import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
 import 'package:roomy_finder/screens/chat/chat_room/chat_room_screen.dart';
 import 'package:roomy_finder/utilities/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -210,11 +211,12 @@ class NotificationController {
     final androidDetails = AndroidNotificationDetails(
       'default_channel',
       'Default channel',
-      channelDescription: 'Default Roomy Finder notification channnel',
+      channelDescription: 'Default Roomy Finder notification channel',
       importance: Importance.defaultImportance,
       priority: Priority.high,
       groupKey: groupKey,
       actions: actions,
+      setAsGroupSummary: true,
     );
 
     final darwinDetail = DarwinNotificationDetails(
@@ -367,6 +369,7 @@ class NotificationController {
               notification.body,
               payload: msg.data,
               category: category,
+              groupKey: msg.data["key"]?.toString(),
             );
         }
 
@@ -658,6 +661,10 @@ class NotificationController {
     final senderId = data["senderId"] as String;
 
     if (isForeground) {
+      if (Get.currentRoute.contains("ChatRoomScreen")) {
+        if (ChatConversationV2.currentChatRoomKey == data["key"]) return;
+        Get.back();
+      }
       var user = ISAR.txnSync(() => ISAR.users.getSync(fastHash(senderId)));
 
       user ??= await ApiService.fetchUser(senderId);
