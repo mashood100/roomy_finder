@@ -177,9 +177,7 @@ class _ConversationsController extends LoadingController {
   }
 
   void _syncMessages() async {
-    if (!ChatConversationV2.messagesAreSync) {
-      await syncChatMessages();
-    }
+    await syncChatMessages();
 
     await _loadConversations(isSilent: true);
     _setUnreadMessagesCount();
@@ -289,12 +287,6 @@ class ChatConversationsTab extends StatelessWidget
           title: const Text('Chats'),
           centerTitle: false,
           elevation: 0,
-          actions: const [
-            IconButton(
-              onPressed: syncChatMessages,
-              icon: Icon(Icons.refresh),
-            )
-          ],
         ),
         body: Stack(
           children: [
@@ -342,9 +334,14 @@ class ChatConversationsTab extends StatelessWidget
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            conv.other.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              conv.other.fullName,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (conv.lastMessage.value != null)
                             Text(
@@ -363,39 +360,41 @@ class ChatConversationsTab extends StatelessWidget
                         builder: (context) {
                           final msg = conv.lastMessage.value;
 
-                          if (msg == null) return const SizedBox();
-
                           return Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  msg.content ?? "Sent a ${msg.type}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              if (msg != null) ...[
+                                Expanded(
+                                  child: Text(
+                                    msg.content ?? "Sent a ${msg.type}",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              if (msg.isMine &&
-                                  (conv.lastMessage.value?.isRead == true ||
-                                      msg.isRead))
-                                const Icon(
-                                  Icons.done_all,
-                                  color: Colors.blue,
-                                  size: 16,
-                                )
-                              else if (msg.isMine &&
-                                  (conv.lastMessage.value?.isRecieved == true ||
-                                      msg.isRecieved))
-                                const Icon(
-                                  Icons.done_all,
-                                  color: Colors.grey,
-                                  size: 16,
-                                )
-                              else if (msg.isMine)
-                                const Icon(
-                                  Icons.done,
-                                  color: Colors.grey,
-                                  size: 16,
-                                ),
+                                if (msg.isMine &&
+                                    (conv.lastMessage.value?.isRead == true ||
+                                        msg.isRead))
+                                  const Icon(
+                                    Icons.done_all,
+                                    color: Colors.blue,
+                                    size: 16,
+                                  )
+                                else if (msg.isMine &&
+                                    (conv.lastMessage.value?.isRecieved ==
+                                            true ||
+                                        msg.isRecieved))
+                                  const Icon(
+                                    Icons.done_all,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  )
+                                else if (msg.isMine)
+                                  const Icon(
+                                    Icons.done,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  ),
+                              ],
                               if (conv.unReadMessageCount > 0)
                                 Container(
                                   padding: const EdgeInsets.all(5),

@@ -56,6 +56,7 @@ class _HomeController extends LoadingController {
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
       if (event == FGBGType.foreground) {
         ApiService.setUnreadBookingCount();
+        ApiService.setLanlordIsBlocked();
       }
     });
 

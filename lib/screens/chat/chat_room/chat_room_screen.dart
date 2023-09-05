@@ -98,11 +98,12 @@ class _ChatRoomScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        GetBuilder<_ChatRoomController>(
-                          tag: conv.key,
-                          builder: (controller) {
-                            return Text(controller.conversation.other.fullName);
-                          },
+                        Expanded(
+                          child: Text(
+                            controller.conversation.other.fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         )
                       ],
                     ),
@@ -692,10 +693,6 @@ Future<void> moveToChatRoom(
 
     conv ??=
         ChatConversationV2(key: key, blocks: [], createdAt: DateTime.now());
-    ISAR.writeTxnSync(() {
-      ISAR.users.putSync(first);
-      ISAR.users.putSync(second);
-    });
 
     conv.first.value = first;
     conv.second.value = second;

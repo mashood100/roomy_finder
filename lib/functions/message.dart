@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:isar/isar.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
 import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/models/user/user.dart';
@@ -56,7 +57,23 @@ Future<void> syncChatMessages() async {
       Get.log("Conversations : ${conversations.length}");
 
       for (var c in conversations) {
-        c.unReadMessageCount = messages.where((e) => e.key == c.key).length;
+        final myMessages = messages.where((e) => e.key == c.key).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        if (myMessages.isEmpty) continue;
+
+        c.lastMessage.value = myMessages.first;
+
+        for (var i = myMessages.length - 1; i >= 0; i--) {
+          var m = myMessages[i];
+          if (m.isMine) continue;
+
+          if (m.reads.contains(AppController.me.id)) {
+            c.unReadMessageCount = 0;
+          } else {
+            c.unReadMessageCount++;
+          }
+        }
       }
 
       final users = conversations

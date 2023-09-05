@@ -65,6 +65,12 @@ class _ChatRoomController extends LoadingController {
 
     ChatConversationV2.currentChatRoomKey = conversation.key;
 
+// Socket
+
+    socket = io(SERVER_URL, AppController.me.socketOption);
+
+    socket.connect();
+
     _loadMessages(false);
     conversation.unReadMessageCount = 0;
     ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
@@ -93,12 +99,6 @@ class _ChatRoomController extends LoadingController {
     _voiceRecoder.openRecorder().then((_) {
       _voiceRecoder.setSubscriptionDuration(const Duration(seconds: 1));
     });
-
-// Socket
-
-    socket = io(SERVER_URL, AppController.me.socketOption);
-
-    socket.connect();
 
 // Chat events
     _chatEventsSubscription = ChatEventHelper.stream.listen((event) {
