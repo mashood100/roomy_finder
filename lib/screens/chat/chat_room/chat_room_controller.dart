@@ -65,6 +65,12 @@ class _ChatRoomController extends LoadingController {
 
     ChatConversationV2.currentChatRoomKey = conversation.key;
 
+// Socket
+
+    socket = io(SERVER_URL, AppController.me.socketOption);
+
+    socket.connect();
+
     _loadMessages(false);
     conversation.unReadMessageCount = 0;
     ISAR.writeTxnSync(() => ISAR.chatConversationV2s.putSync(conversation));
@@ -72,8 +78,6 @@ class _ChatRoomController extends LoadingController {
     conversation.updateUserProfiles().then((value) => update());
 
     _clearChatNotifications();
-
-    _createAudioSession();
 
     _scrollController = ItemScrollController();
 
@@ -95,12 +99,6 @@ class _ChatRoomController extends LoadingController {
     _voiceRecoder.openRecorder().then((_) {
       _voiceRecoder.setSubscriptionDuration(const Duration(seconds: 1));
     });
-
-// Socket
-
-    socket = io(SERVER_URL, AppController.me.socketOption);
-
-    socket.connect();
 
 // Chat events
     _chatEventsSubscription = ChatEventHelper.stream.listen((event) {
@@ -253,8 +251,6 @@ class _ChatRoomController extends LoadingController {
 
     _recordStream?.cancel();
 
-    _endAudioSession();
-
     _chatEventsSubscription.cancel();
 
     conversation.unReadMessageCount = 0;
@@ -317,7 +313,7 @@ class _ChatRoomController extends LoadingController {
     try {
       final session = await AudioSession.instance;
 
-      await session.setActive(true);
+      await session.setActive(false);
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -364,6 +360,8 @@ class _ChatRoomController extends LoadingController {
         return;
       }
 
+      await _createAudioSession();
+
       if (_voiceRecoder.isRecording) await _voiceRecoder.stopRecorder();
 
       Codec? codec = await _getSupporttedCodec();
@@ -396,6 +394,8 @@ class _ChatRoomController extends LoadingController {
       }
 
       final filePath = await _voiceRecoder.stopRecorder();
+
+      _endAudioSession();
 
       if (filePath == null) return;
 

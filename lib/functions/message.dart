@@ -1,20 +1,22 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:isar/isar.dart';
 import 'package:roomy_finder/classes/api_service.dart';
+import 'package:roomy_finder/controllers/app_controller.dart';
 import 'package:roomy_finder/models/chat/chat_conversation_v2.dart';
 import 'package:roomy_finder/models/chat/chat_message_v2.dart';
 import 'package:roomy_finder/models/user/user.dart';
 import 'package:roomy_finder/utilities/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma("vm:entry-point")
 Future<void> syncChatMessages() async {
   try {
-    final lastM = ISAR.txnSync(() =>
-        ISAR.chatMessageV2s.where().sortByCreatedAtDesc().findFirstSync());
+    final pref = await SharedPreferences.getInstance();
 
-    final lastMessageSyncDate = lastM?.createdAt.toIso8601String();
+    var syncKey = "lastMessageSyncDate-${AppController.me.id}";
+
+    final lastMessageSyncDate = pref.getString(syncKey);
 
     final res = await ApiService.getDio.get(
       "/messaging-v2/sync-messages",
@@ -27,6 +29,7 @@ Future<void> syncChatMessages() async {
             try {
               return ChatMessageV2.fromMap(e);
             } catch (e) {
+              // Get.log("$e\n$trace");
               return null;
             }
           })
@@ -45,7 +48,8 @@ Future<void> syncChatMessages() async {
           .map((e) {
             try {
               return ChatConversationV2.fromMap(e);
-            } catch (e) {
+            } catch (e, trace) {
+              Get.log("$e,$trace");
               return null;
             }
           })
@@ -55,12 +59,24 @@ Future<void> syncChatMessages() async {
       Get.log("Conversations : ${conversations.length}");
 
       for (var c in conversations) {
-        c.unReadMessageCount = messages.where((e) => e.key == c.key).length;
-      }
+        final myMessages = messages.where((e) => e.key == c.key).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      ISAR.writeTxnSync(() {
-        ISAR.chatConversationV2s.putAllSync(conversations);
-      });
+        if (myMessages.isEmpty) continue;
+
+        c.lastMessage.value = myMessages.first;
+
+        for (var i = myMessages.length - 1; i >= 0; i--) {
+          var m = myMessages[i];
+          if (m.isMine) continue;
+
+          if (m.reads.contains(AppController.me.id)) {
+            c.unReadMessageCount = 0;
+          } else {
+            c.unReadMessageCount++;
+          }
+        }
+      }
 
       final users = conversations
           .expand((item) => [item.first.value, item.second.value])
@@ -71,6 +87,12 @@ Future<void> syncChatMessages() async {
       Get.log("Users : ${users.length}");
 
       ISAR.writeTxnSync(() => ISAR.users.putAllSync(users));
+
+      ISAR.writeTxnSync(() {
+        ISAR.chatConversationV2s.putAllSync(conversations);
+      });
+
+      pref.setString(syncKey, DateTime.now().toUtc().toIso8601String());
 
       _syncStreamController.add(messages.map((e) => e.key).toSet().toList());
     }

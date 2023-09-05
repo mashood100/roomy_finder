@@ -151,6 +151,10 @@ class ChatMessageV2 {
   }
 
   factory ChatMessageV2.fromMap(Map<String, dynamic> map) {
+    if (map["deletes"] is! List) map["deletes"] = [];
+    if (map["recieveds"] is! List) map["recieveds"] = [];
+    if (map["reads"] is! List) map["reads"] = [];
+
     return ChatMessageV2(
       id: map['id'] as String,
       key: map['key'] as String,

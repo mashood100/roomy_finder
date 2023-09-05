@@ -528,9 +528,8 @@ class NotificationController {
           .toList();
 
       return notifications;
-    } catch (e, trace) {
+    } catch (e) {
       log(e);
-      log(trace);
       return [];
     }
   }

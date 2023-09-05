@@ -30,6 +30,7 @@ class _ConversationsController extends LoadingController {
   late final StreamSubscription<RemoteMessage> _fcmStream;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
+  late final StreamSubscription _messageSyncSubscription;
 
   final conversations = <ChatConversationV2>[].obs;
 
@@ -115,6 +116,12 @@ class _ConversationsController extends LoadingController {
       (data) => ChatEventHelper.messageDeletedHandler(data),
     );
 
+// Message Sync events
+    _messageSyncSubscription = messageSyncStream.listen((keys) {
+      _loadConversations();
+      _setUnreadMessagesCount();
+    });
+
 // FCM
     _fcmStream = FirebaseMessaging.onMessage
         .asBroadcastStream()
@@ -170,9 +177,7 @@ class _ConversationsController extends LoadingController {
   }
 
   void _syncMessages() async {
-    if (!ChatConversationV2.messagesAreSync) {
-      await syncChatMessages();
-    }
+    await syncChatMessages();
 
     await _loadConversations(isSilent: true);
     _setUnreadMessagesCount();
@@ -190,6 +195,7 @@ class _ConversationsController extends LoadingController {
 
     _fcmStream.cancel();
     _fGBGNotifierSubScription.cancel();
+    _messageSyncSubscription.cancel();
     _chatEventsSubscription.cancel();
   }
 
@@ -272,9 +278,9 @@ class ChatConversationsTab extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_ConversationsController());
+    Get.put(_ConversationsController());
 
-    return GetBuilder<_ConversationsController>(builder: (context) {
+    return GetBuilder<_ConversationsController>(builder: (controller) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: ROOMY_PURPLE,
@@ -303,9 +309,7 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations.where((c) {
-                  return c.first.value != null && c.second.value != null;
-                }).toList();
+                final data = controller.conversations.toList();
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
@@ -326,16 +330,18 @@ class ChatConversationsTab extends StatelessWidget
                           controller.update();
                         });
                       },
-                      leading: Hero(
-                        tag: "${conv.other.id}profile-picture",
-                        child: conv.other.ppWidget(size: 22),
-                      ),
+                      leading: conv.other.ppWidget(size: 22),
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            conv.other.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              conv.other.fullName,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (conv.lastMessage.value != null)
                             Text(
@@ -354,39 +360,41 @@ class ChatConversationsTab extends StatelessWidget
                         builder: (context) {
                           final msg = conv.lastMessage.value;
 
-                          if (msg == null) return const SizedBox();
-
                           return Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  msg.content ?? "Sent a ${msg.type}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              if (msg != null) ...[
+                                Expanded(
+                                  child: Text(
+                                    msg.content ?? "Sent a ${msg.type}",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              if (msg.isMine &&
-                                  (conv.lastMessage.value?.isRead == true ||
-                                      msg.isRead))
-                                const Icon(
-                                  Icons.done_all,
-                                  color: Colors.blue,
-                                  size: 16,
-                                )
-                              else if (msg.isMine &&
-                                  (conv.lastMessage.value?.isRecieved == true ||
-                                      msg.isRecieved))
-                                const Icon(
-                                  Icons.done_all,
-                                  color: Colors.grey,
-                                  size: 16,
-                                )
-                              else if (msg.isMine)
-                                const Icon(
-                                  Icons.done,
-                                  color: Colors.grey,
-                                  size: 16,
-                                ),
+                                if (msg.isMine &&
+                                    (conv.lastMessage.value?.isRead == true ||
+                                        msg.isRead))
+                                  const Icon(
+                                    Icons.done_all,
+                                    color: Colors.blue,
+                                    size: 16,
+                                  )
+                                else if (msg.isMine &&
+                                    (conv.lastMessage.value?.isRecieved ==
+                                            true ||
+                                        msg.isRecieved))
+                                  const Icon(
+                                    Icons.done_all,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  )
+                                else if (msg.isMine)
+                                  const Icon(
+                                    Icons.done,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  ),
+                              ],
                               if (conv.unReadMessageCount > 0)
                                 Container(
                                   padding: const EdgeInsets.all(5),

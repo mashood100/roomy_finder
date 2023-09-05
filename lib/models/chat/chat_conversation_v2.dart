@@ -85,12 +85,14 @@ class ChatConversationV2 {
 
     final second = User.fromMap(map['second'] as Map<String, dynamic>);
 
-    final lastMessage =
-        ChatMessageV2.fromMap(map['lastMessage'] as Map<String, dynamic>);
+    if (map['lastMessage'] != null) {
+      final lastMessage =
+          ChatMessageV2.fromMap(map['lastMessage'] as Map<String, dynamic>);
+      chat.lastMessage.value = lastMessage;
+    }
 
     chat.first.value = first;
     chat.second.value = second;
-    chat.lastMessage.value = lastMessage;
 
     return chat;
   }

@@ -68,7 +68,7 @@ class _LandlordHomeTabState extends State<LandlordHomeTab> {
     Future.delayed(const Duration(), () async {
       setState(() => _isLoading = true);
       await ApiService.setLanlordIsBlocked();
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     });
 
     _fGBGNotifierSubScription = FGBGEvents.stream.listen((event) async {
