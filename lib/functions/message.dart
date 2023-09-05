@@ -45,7 +45,8 @@ Future<void> syncChatMessages() async {
           .map((e) {
             try {
               return ChatConversationV2.fromMap(e);
-            } catch (e) {
+            } catch (e, trace) {
+              Get.log("$e,$trace");
               return null;
             }
           })
@@ -58,10 +59,6 @@ Future<void> syncChatMessages() async {
         c.unReadMessageCount = messages.where((e) => e.key == c.key).length;
       }
 
-      ISAR.writeTxnSync(() {
-        ISAR.chatConversationV2s.putAllSync(conversations);
-      });
-
       final users = conversations
           .expand((item) => [item.first.value, item.second.value])
           .whereType<User>()
@@ -71,6 +68,10 @@ Future<void> syncChatMessages() async {
       Get.log("Users : ${users.length}");
 
       ISAR.writeTxnSync(() => ISAR.users.putAllSync(users));
+
+      ISAR.writeTxnSync(() {
+        ISAR.chatConversationV2s.putAllSync(conversations);
+      });
 
       _syncStreamController.add(messages.map((e) => e.key).toSet().toList());
     }

@@ -38,6 +38,9 @@ void main() async {
 
   // Database
   await initIsar();
+  // ISAR.writeTxnSync(() => ISAR.chatConversationV2s.clearSync());
+  // ISAR.writeTxnSync(() => ISAR.chatMessageV2s.clearSync());
+  // ISAR.writeTxnSync(() => ISAR.users.clearSync());
 
   // instantiating firebase
   await Firebase.initializeApp(

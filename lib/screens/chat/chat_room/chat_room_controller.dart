@@ -73,8 +73,6 @@ class _ChatRoomController extends LoadingController {
 
     _clearChatNotifications();
 
-    _createAudioSession();
-
     _scrollController = ItemScrollController();
 
 // New message voice player
@@ -253,8 +251,6 @@ class _ChatRoomController extends LoadingController {
 
     _recordStream?.cancel();
 
-    _endAudioSession();
-
     _chatEventsSubscription.cancel();
 
     conversation.unReadMessageCount = 0;
@@ -317,7 +313,7 @@ class _ChatRoomController extends LoadingController {
     try {
       final session = await AudioSession.instance;
 
-      await session.setActive(true);
+      await session.setActive(false);
     } catch (e, trace) {
       Get.log("$e");
       Get.log("$trace");
@@ -364,6 +360,8 @@ class _ChatRoomController extends LoadingController {
         return;
       }
 
+      await _createAudioSession();
+
       if (_voiceRecoder.isRecording) await _voiceRecoder.stopRecorder();
 
       Codec? codec = await _getSupporttedCodec();
@@ -396,6 +394,8 @@ class _ChatRoomController extends LoadingController {
       }
 
       final filePath = await _voiceRecoder.stopRecorder();
+
+      _endAudioSession();
 
       if (filePath == null) return;
 

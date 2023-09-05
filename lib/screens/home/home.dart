@@ -68,6 +68,18 @@ class _HomeController extends LoadingController {
         ApiService.setUnreadBookingCount();
       }
       switch (data["event"]) {
+        case "pay-out-completed":
+        case "pay-out-failed":
+        case "pay-property-rent-fee-failed-client":
+        case "pay-property-rent-fee-completed-client":
+        case "pay-property-rent-fee-completed-landlord":
+        case "pay-property-rent-fee-paid-cash":
+        case "stripe-connect-account-created":
+        case "withdraw-completed":
+        case "withdraw-failed":
+          ApiService.setLanlordIsBlocked();
+          ApiService.setLanlordIsBlocked();
+          break;
         case "plan-upgraded-successfully":
           AppController.instance.user.update((val) {
             if (val != null) val.isPremium = true;

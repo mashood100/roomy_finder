@@ -30,6 +30,7 @@ class _ConversationsController extends LoadingController {
   late final StreamSubscription<RemoteMessage> _fcmStream;
   late final StreamSubscription<FGBGType> _fGBGNotifierSubScription;
   late final StreamSubscription<ChatEventStreamData> _chatEventsSubscription;
+  late final StreamSubscription _messageSyncSubscription;
 
   final conversations = <ChatConversationV2>[].obs;
 
@@ -115,6 +116,12 @@ class _ConversationsController extends LoadingController {
       (data) => ChatEventHelper.messageDeletedHandler(data),
     );
 
+// Message Sync events
+    _messageSyncSubscription = messageSyncStream.listen((keys) {
+      _loadConversations();
+      _setUnreadMessagesCount();
+    });
+
 // FCM
     _fcmStream = FirebaseMessaging.onMessage
         .asBroadcastStream()
@@ -190,6 +197,7 @@ class _ConversationsController extends LoadingController {
 
     _fcmStream.cancel();
     _fGBGNotifierSubScription.cancel();
+    _messageSyncSubscription.cancel();
     _chatEventsSubscription.cancel();
   }
 
@@ -272,15 +280,21 @@ class ChatConversationsTab extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(_ConversationsController());
+    Get.put(_ConversationsController());
 
-    return GetBuilder<_ConversationsController>(builder: (context) {
+    return GetBuilder<_ConversationsController>(builder: (controller) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: ROOMY_PURPLE,
           title: const Text('Chats'),
           centerTitle: false,
           elevation: 0,
+          actions: const [
+            IconButton(
+              onPressed: syncChatMessages,
+              icon: Icon(Icons.refresh),
+            )
+          ],
         ),
         body: Stack(
           children: [
@@ -303,9 +317,7 @@ class ChatConversationsTab extends StatelessWidget
                   );
                 }
 
-                final data = controller.conversations.where((c) {
-                  return c.first.value != null && c.second.value != null;
-                }).toList();
+                final data = controller.conversations.toList();
 
                 return ListView.builder(
                   itemBuilder: (context, index) {
@@ -326,10 +338,7 @@ class ChatConversationsTab extends StatelessWidget
                           controller.update();
                         });
                       },
-                      leading: Hero(
-                        tag: "${conv.other.id}profile-picture",
-                        child: conv.other.ppWidget(size: 22),
-                      ),
+                      leading: conv.other.ppWidget(size: 22),
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

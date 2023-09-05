@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -129,8 +130,41 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
   //   return Jiffy.parseFromDateTime(date).Hm;
   // }
 
+  Future<void> _createAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(
+        AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.allowBluetooth |
+                  AVAudioSessionCategoryOptions.defaultToSpeaker,
+          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+          androidAudioAttributes: const AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.speech,
+            flags: AndroidAudioFlags.none,
+            usage: AndroidAudioUsage.voiceCommunication,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+          androidWillPauseWhenDucked: true,
+        ),
+      );
+
+      await session.setActive(true);
+    } catch (e, trace) {
+      Get.log("$e");
+      Get.log("$trace");
+    }
+  }
+
   Future<void> _pauseVoice() async {
-    if (isPlaying) await _player.pausePlayer();
+    if (isPlaying) {
+      await _createAudioSession();
+      await _player.pausePlayer();
+    }
 
     setState(() {});
   }
@@ -139,6 +173,7 @@ class _ChatMessageV2WidgetState extends State<ChatMessageV2Widget> {
     VoicePlayerHelper.currentId = msg.id;
 
     _player.stopPlayer();
+    await _createAudioSession();
     await _player.seekToPlayer(_playedProgress);
 
     var d = await _player.startPlayer(
