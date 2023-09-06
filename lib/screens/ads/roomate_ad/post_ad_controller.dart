@@ -154,11 +154,20 @@ class _PostRoomAdController extends LoadingController {
     if (videos.length >= 10) return;
 
     try {
-      final ImagePicker picker = ImagePicker();
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        dialogTitle: "Select Videos",
+        type: FileType.video,
+      );
 
-      final data = await picker.pickVideo(source: ImageSource.gallery);
-      if (data != null) {
-        videos.add(data);
+      if (result == null) {
+        return;
+      }
+
+      for (var i = 0; i < result.files.length; i++) {
+        final f = result.files[i];
+
+        if (f.path != null) videos.add(XFile(f.path!));
       }
     } catch (e, trace) {
       Get.log("$e");
