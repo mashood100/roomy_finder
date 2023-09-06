@@ -605,26 +605,40 @@ class _ChatRoomController extends LoadingController {
 
         break;
       case _AttachedTypes.videoGallery:
-        var file = await ImagePicker().pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(minutes: 10),
+        final result = await FilePicker.platform.pickFiles(
+          allowMultiple: false,
+          dialogTitle: "Select Videos",
+          type: FileType.video,
         );
 
-        if (file != null) {
-          files.add(File(file.path));
+        if (result == null) {
+          return [];
         }
 
-        break;
-      case _AttachedTypes.videoCammera:
-        var file = await ImagePicker().pickVideo(
-          source: ImageSource.camera,
-          maxDuration: const Duration(minutes: 10),
-        );
+        for (var i = 0; i < result.files.length; i++) {
+          final f = result.files[i];
 
-        if (file != null) {
-          files.add(File(file.path));
+          if (f.path != null) files.add(File(f.path!));
         }
         break;
+      // case _AttachedTypes.videoCammera:
+      //   final result = await FilePicker.platform.pickFiles(
+      //     allowMultiple: false,
+      //     dialogTitle: "Select Videos",
+      //     type: FileType.video,
+      //   );
+
+      //   if (result == null) {
+      //     return [];
+      //   }
+
+      //   for (var i = 0; i < result.files.length; i++) {
+      //     final f = result.files[i];
+
+      //     if (f.path != null) files.add(File(f.path!));
+      //   }
+
+      //   break;
       case _AttachedTypes.document:
         final result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
@@ -911,7 +925,6 @@ enum _AttachedTypes {
   imageGallery,
   imageCamera,
   videoGallery,
-  videoCammera,
   audio,
   document,
   file,
